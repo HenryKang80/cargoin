@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
+<title>CargoIN — 화주 조회</title>
+<link rel="manifest" href="manifest.json"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="CargoIN 화주"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Pretendard:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --blue:#0F4C8F;--blue2:#1A6EC4;--bl:#E8F2FF;
+  --green:#0E7A56;--green2:#12A070;--gl:#E6F5EE;
+  --amber:#B96A00;--al:#FFF4E0;
+  --red:#C0392B;--rl:#FDEEEC;
+  --g0:#F5F6F8;--g1:#E8EAED;--g2:#C9CDD4;--g3:#8892A0;--g4:#3D4552;--g5:#1A1F2A;
+  --r:12px;--rs:8px;--mono:'IBM Plex Mono',monospace;--sans:'Pretendard',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{min-height:100vh;max-width:480px;margin:0 auto;background:var(--g0);color:var(--g5);font-family:var(--sans);font-size:14px}
+
+/* LOGIN */
+.login-wrap{min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding:32px 24px;background:var(--g0)}
+.login-logo{font-family:var(--mono);font-size:24px;font-weight:500;color:var(--blue);letter-spacing:-.5px;margin-bottom:4px}
+.login-sub{font-size:14px;color:var(--g3);margin-bottom:32px}
+.login-card{background:#fff;border-radius:var(--r);border:0.5px solid var(--g1);padding:24px;display:flex;flex-direction:column;gap:16px}
+.login-title{font-size:15px;font-weight:600;color:var(--g5)}
+.login-fld{display:flex;flex-direction:column;gap:5px}
+.login-fld label{font-size:12px;color:var(--g3);font-weight:500}
+.login-fld input{height:44px;border-radius:var(--rs);border:1.5px solid var(--g1);background:var(--g0);color:var(--g5);font-size:14px;padding:0 14px;outline:none;font-family:var(--sans);transition:border-color .15s}
+.login-fld input:focus{border-color:var(--blue2);background:#fff}
+.login-btn{height:48px;background:var(--blue);color:#fff;border:none;border-radius:var(--rs);font-size:15px;font-weight:600;cursor:pointer;font-family:var(--sans);transition:opacity .15s}
+.login-btn:hover{opacity:.9}
+.login-btn:disabled{opacity:.5}
+.login-err{font-size:12px;color:var(--red);background:var(--rl);border-radius:var(--rs);padding:8px 12px;display:none}
+.login-err.show{display:block}
+.url-row{display:flex;gap:6px;margin-top:8px}
+.url-input{flex:1;height:34px;border:1px solid var(--g1);border-radius:var(--rs);background:var(--g0);padding:0 10px;font-size:11px;color:var(--g5);outline:none;font-family:var(--mono)}
+.url-btn{height:34px;padding:0 12px;border-radius:var(--rs);background:var(--g4);color:#fff;border:none;font-size:11px;cursor:pointer;white-space:nowrap}
+.demo-hint{font-size:11px;color:var(--g3);margin-top:8px;line-height:1.6}
+
+/* MAIN APP */
+.app{display:none;flex-direction:column;min-height:100vh}
+.app.show{display:flex}
+.topbar{background:var(--blue);color:#fff;padding:env(safe-area-inset-top,0) 16px 0;position:sticky;top:0;z-index:50}
+.tb-inner{display:flex;align-items:center;height:52px;gap:10px}
+.logo{font-family:var(--mono);font-size:14px;font-weight:500;color:#fff;letter-spacing:-.5px}
+.company-badge{background:rgba(255,255,255,.2);border-radius:20px;padding:3px 10px;font-size:11px;color:#fff}
+.tb-r{margin-left:auto}
+.logout-btn{background:rgba(255,255,255,.15);border:none;color:#fff;font-size:11px;padding:4px 10px;border-radius:20px;cursor:pointer;font-family:var(--sans)}
+
+/* 상태 탭 */
+.tab-bar{background:#fff;border-bottom:1px solid var(--g1);display:flex;padding:0 14px;gap:0}
+.tab{flex:1;height:42px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;color:var(--g3);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;gap:5px}
+.tab.active{color:var(--blue);border-bottom-color:var(--blue)}
+.tab-count{font-size:10px;background:var(--g1);color:var(--g3);border-radius:10px;padding:1px 6px;font-weight:600}
+.tab.active .tab-count{background:var(--bl);color:var(--blue)}
+
+/* 화물 카드 */
+.list-sec{padding:12px 14px;flex:1}
+.empty-state{text-align:center;padding:60px 24px;color:var(--g3);font-size:13px;line-height:1.7}
+.cargo-card{background:#fff;border-radius:var(--r);border:1px solid var(--g1);margin-bottom:10px;overflow:hidden;cursor:pointer;transition:border-color .15s}
+.cargo-card:hover{border-color:var(--blue2)}
+.card-head{padding:12px 14px 10px;border-bottom:1px solid var(--g0)}
+.card-awb-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.card-awb{font-family:var(--mono);font-size:14px;font-weight:500;color:var(--g5)}
+.badge{display:inline-flex;align-items:center;gap:3px;font-size:10px;padding:3px 9px;border-radius:20px;font-weight:500}
+.b-wait{background:var(--al);color:var(--amber)}.b-field{background:var(--bl);color:var(--blue)}.b-done{background:var(--gl);color:var(--green)}
+.card-route{font-size:12px;color:var(--g3)}
+/* 진행 타임라인 */
+.timeline{padding:10px 14px;display:flex;gap:0;align-items:center}
+.tl-step{display:flex;flex-direction:column;align-items:center;flex:1;position:relative}
+.tl-dot{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;z-index:1;position:relative}
+.tl-dot.done{background:var(--green);color:#fff}
+.tl-dot.active{background:var(--blue);color:#fff}
+.tl-dot.pend{background:var(--g1);color:var(--g3);border:1px solid var(--g2)}
+.tl-label{font-size:9px;color:var(--g3);margin-top:3px;text-align:center;white-space:nowrap}
+.tl-label.active{color:var(--blue);font-weight:600}
+.tl-line{height:2px;flex:1;background:var(--g1)}
+.tl-line.done{background:var(--green)}
+/* 카드 바디 - 수치 */
+.card-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-top:1px solid var(--g0)}
+.cm-item{padding:8px 10px;text-align:center;border-right:1px solid var(--g0)}
+.cm-item:last-child{border-right:none}
+.cm-label{font-size:9px;color:var(--g3);margin-bottom:2px;text-transform:uppercase;letter-spacing:.3px}
+.cm-value{font-size:12px;font-weight:600;color:var(--g5);font-family:var(--mono)}
+.cm-value.updated{color:var(--green)}
+/* 상세 모달 오버레이 */
+.modal-overlay{display:none;min-height:100vh;background:rgba(15,76,143,.08);align-items:flex-start;padding-top:0}
+.modal-overlay.show{display:flex;flex-direction:column}
+.modal{background:#fff;width:100%;border-radius:0;flex:1;overflow-y:auto;padding-bottom:40px}
+.modal-hd{background:var(--blue);color:#fff;padding:10px 14px 14px;position:sticky;top:0}
+.modal-back{display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;opacity:.85;margin-bottom:8px;width:fit-content}
+.modal-awb{font-family:var(--mono);font-size:17px;font-weight:500}
+.modal-route{font-size:12px;opacity:.8;margin-top:2px}
+.modal-sec{padding:12px 14px 0}
+.modal-sec-title{font-size:11px;font-weight:600;color:var(--g3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.info-item{background:var(--g0);border-radius:var(--rs);padding:8px 10px}
+.info-lbl{font-size:10px;color:var(--g3);margin-bottom:2px}
+.info-val{font-size:12px;font-weight:500;color:var(--g5)}
+.info-val.green{color:var(--green)}.info-val.blue{color:var(--blue)}
+/* 타임라인 상세 */
+.timeline-detail{display:flex;flex-direction:column;gap:0;padding:4px 0}
+.td-row{display:flex;gap:10px;padding:8px 0;position:relative}
+.td-icon{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.td-icon.done{background:var(--gl);color:var(--green)}
+.td-icon.active{background:var(--bl);color:var(--blue)}
+.td-icon.pend{background:var(--g1);color:var(--g3)}
+.td-line{position:absolute;left:11px;top:32px;width:2px;height:calc(100% - 8px);background:var(--g1)}
+.td-line.done{background:var(--green)}
+.td-content{flex:1;padding-top:2px}
+.td-title{font-size:13px;font-weight:500;color:var(--g5)}
+.td-title.active{color:var(--blue)}
+.td-time{font-size:11px;color:var(--g3);margin-top:2px}
+/* 현장 업데이트 박스 */
+.field-update-box{background:var(--gl);border:1px solid #9FE1CB;border-radius:var(--rs);padding:10px 12px;margin-top:8px}
+.fub-title{font-size:11px;font-weight:600;color:var(--green);margin-bottom:6px;display:flex;align-items:center;gap:5px}
+.fub-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.fub-item{display:flex;flex-direction:column;gap:1px}
+.fub-lbl{font-size:10px;color:#3B6D11}
+.fub-val{font-size:13px;font-weight:600;color:#1A3D0A}
+.no-update{font-size:12px;color:var(--g3);font-style:italic}
+/* 사진 */
+.photo-note{display:flex;align-items:center;gap:6px;background:var(--g0);border-radius:var(--rs);padding:8px 10px;font-size:12px;color:var(--g4)}
+/* toast */
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(8px);background:var(--g5);color:#fff;font-size:13px;padding:10px 20px;border-radius:24px;z-index:999;opacity:0;transition:all .25s;pointer-events:none;white-space:nowrap;max-width:90vw;text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+/* refresh chip */
+.refresh-row{display:flex;justify-content:space-between;align-items:center;padding:8px 14px;font-size:11px;color:var(--g3)}
+.refresh-btn{background:none;border:none;cursor:pointer;color:var(--blue);font-size:11px;font-family:var(--sans);display:flex;align-items:center;gap:4px}
+</style>
+</head>
+<body>
+
+<!-- 로그인 화면 -->
+<div class="login-wrap" id="login-view">
+  <div class="login-logo">CargoIN</div>
+  <div class="login-sub">화주 전용 화물 조회 서비스</div>
+  <div class="login-card">
+    <div class="login-title">로그인</div>
+    <div class="login-fld">
+      <label>이메일</label>
+      <input type="email" id="login-email" placeholder="your@email.com" autocomplete="email"/>
+    </div>
+    <div class="login-fld">
+      <label>비밀번호</label>
+      <input type="password" id="login-pw" placeholder="비밀번호 입력" onkeydown="if(event.key==='Enter')doLogin()"/>
+    </div>
+    <div class="login-err" id="login-err"></div>
+    <button class="login-btn" id="login-btn" onclick="doLogin()">로그인</button>
+    <div class="demo-hint">
+      <strong>데모 계정</strong><br>
+      이메일: samsung@test.com  /  비밀번호: 1234<br>
+      이메일: lg@test.com  /  비밀번호: 5678
+    </div>
+  </div>
+  <!-- Sheets URL 설정 -->
+  <div style="margin-top:20px">
+    <div style="font-size:12px;color:var(--g3);margin-bottom:6px">Google Apps Script URL (포워더에게 받으세요)</div>
+    <div class="url-row">
+      <input class="url-input" id="login-sheet-url" placeholder="https://script.google.com/macros/s/..."/>
+      <button class="url-btn" onclick="saveSheetUrl()">저장</button>
+    </div>
+    <div class="demo-hint" style="margin-top:6px">URL 없이도 데모 데이터로 테스트 가능합니다.</div>
+  </div>
+</div>
+
+<!-- 메인 앱 -->
+<div class="app" id="main-app">
+  <div class="topbar">
+    <div class="tb-inner">
+      <div class="logo">CargoIN</div>
+      <div class="company-badge" id="company-badge">회사명</div>
+      <div class="tb-r">
+        <button class="logout-btn" onclick="doLogout()">로그아웃</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 상태 탭 -->
+  <div class="tab-bar">
+    <div class="tab active" id="tab-all" onclick="setTab('all')">
+      전체 <span class="tab-count" id="cnt-all">0</span>
+    </div>
+    <div class="tab" id="tab-wait" onclick="setTab('wait')">
+      대기 <span class="tab-count" id="cnt-wait">0</span>
+    </div>
+    <div class="tab" id="tab-progress" onclick="setTab('progress')">
+      진행 <span class="tab-count" id="cnt-progress">0</span>
+    </div>
+    <div class="tab" id="tab-done" onclick="setTab('done')">
+      완료 <span class="tab-count" id="cnt-done">0</span>
+    </div>
+  </div>
+
+  <div class="refresh-row">
+    <span id="last-updated">불러오는 중...</span>
+    <button class="refresh-btn" onclick="loadShipperCargos()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+      새로고침
+    </button>
+  </div>
+
+  <div class="list-sec" id="cargo-list-sec">
+    <div class="empty-state">로딩 중...</div>
+  </div>
+</div>
+
+<!-- 상세 모달 -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-back" onclick="closeModal()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+        내 화물 목록
+      </div>
+      <div class="modal-awb" id="m-awb"></div>
+      <div class="modal-route" id="m-route"></div>
+    </div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast-el"></div>
+
+<script>
+const STORAGE_KEY  = "cargoin_sheet_url";
+const SESSION_KEY  = "cargoin_shipper";
+let SHEET_URL = localStorage.getItem(STORAGE_KEY) || "";
+let session = null;
+let shipperCargos = [];
+let currentTab = "all";
+let currentModal = null;
+
+// ── 초기화 ──
+window.onload = function() {
+  document.getElementById("login-sheet-url").value = SHEET_URL;
+  const saved = localStorage.getItem(SESSION_KEY);
+  if (saved) {
+    session = JSON.parse(saved);
+    showApp();
+    loadShipperCargos();
+  }
+};
+
+function saveSheetUrl() {
+  const url = document.getElementById("login-sheet-url").value.trim();
+  SHEET_URL = url;
+  localStorage.setItem(STORAGE_KEY, url);
+  toast("URL이 저장되었습니다.");
+}
+
+// ── 로그인 ──
+async function doLogin() {
+  const email = document.getElementById("login-email").value.trim();
+  const pw    = document.getElementById("login-pw").value.trim();
+  if (!email||!pw) { showErr("이메일과 비밀번호를 입력해 주세요."); return; }
+
+  const btn = document.getElementById("login-btn");
+  btn.disabled=true; btn.textContent="로그인 중...";
+
+  try {
+    let result;
+    if (SHEET_URL) {
+      const res = await fetch(SHEET_URL, {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ action:"shipperLogin", email, password:pw })
+      });
+      result = await res.json();
+    } else {
+      // 데모 로그인
+      const demoAccounts = [
+        {email:"samsung@test.com",password:"1234",shipperId:"SHIPPER001",companyName:"삼성전자"},
+        {email:"lg@test.com",password:"5678",shipperId:"SHIPPER002",companyName:"LG전자"}
+      ];
+      const found = demoAccounts.find(a=>a.email===email&&a.password===pw);
+      result = found ? {ok:true,...found} : {ok:false,error:"이메일 또는 비밀번호가 틀렸습니다."};
+    }
+
+    if (!result.ok) { showErr(result.error||"로그인 실패"); btn.disabled=false; btn.textContent="로그인"; return; }
+
+    session = { shipperId:result.shipperId, companyName:result.companyName };
+    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    showApp();
+    loadShipperCargos();
+  } catch(e) {
+    showErr("연결 오류: "+e.message+". 데모 데이터를 사용합니다.");
+    // 오프라인 데모 로그인
+    const demoAccounts = [
+      {email:"samsung@test.com",password:"1234",shipperId:"SHIPPER001",companyName:"삼성전자"},
+      {email:"lg@test.com",password:"5678",shipperId:"SHIPPER002",companyName:"LG전자"}
+    ];
+    const found = demoAccounts.find(a=>a.email===email&&a.password===pw);
+    if (found) {
+      session = {shipperId:found.shipperId, companyName:found.companyName};
+      localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+      showApp(); loadShipperCargos();
+    }
+  }
+  btn.disabled=false; btn.textContent="로그인";
+}
+
+function showErr(msg) {
+  const el=document.getElementById("login-err"); el.textContent=msg; el.classList.add("show");
+  setTimeout(()=>el.classList.remove("show"),4000);
+}
+
+function doLogout() {
+  session=null; shipperCargos=[];
+  localStorage.removeItem(SESSION_KEY);
+  document.getElementById("main-app").classList.remove("show");
+  document.getElementById("login-view").style.display="flex";
+}
+
+function showApp() {
+  document.getElementById("login-view").style.display="none";
+  document.getElementById("main-app").classList.add("show");
+  document.getElementById("company-badge").textContent=session.companyName||"화주";
+}
+
+// ── 화물 불러오기 ──
+async function loadShipperCargos() {
+  document.getElementById("last-updated").textContent="불러오는 중...";
+  try {
+    let data;
+    if (SHEET_URL) {
+      const res = await fetch(`${SHEET_URL}?action=getShipperCargos&id=${session.shipperId}`);
+      data = await res.json();
+      if (!Array.isArray(data)) throw new Error(data.error||"오류");
+    } else {
+      data = getDemoData().filter(c=>c["화주ID"]===session.shipperId);
+    }
+    shipperCargos = data;
+    document.getElementById("last-updated").textContent="업데이트: "+now();
+    renderCounts();
+    renderCards(currentTab);
+  } catch(e) {
+    shipperCargos = getDemoData().filter(c=>c["화주ID"]===session.shipperId);
+    document.getElementById("last-updated").textContent="데모 데이터";
+    renderCounts(); renderCards(currentTab);
+  }
+}
+
+function setTab(tab) {
+  currentTab=tab;
+  ["all","wait","progress","done"].forEach(t=>{
+    document.getElementById("tab-"+t).classList.toggle("active",t===tab);
+  });
+  renderCards(tab);
+}
+
+function renderCounts() {
+  const all   = shipperCargos.length;
+  const wait  = shipperCargos.filter(c=>c["상태"]==="입력대기").length;
+  const prog  = shipperCargos.filter(c=>c["상태"]==="현장완료").length;
+  const done  = shipperCargos.filter(c=>c["상태"]==="반입완료").length;
+  document.getElementById("cnt-all").textContent=all;
+  document.getElementById("cnt-wait").textContent=wait;
+  document.getElementById("cnt-progress").textContent=prog;
+  document.getElementById("cnt-done").textContent=done;
+}
+
+function renderCards(tab) {
+  let list = shipperCargos;
+  if (tab==="wait")     list=list.filter(c=>c["상태"]==="입력대기");
+  if (tab==="progress") list=list.filter(c=>c["상태"]==="현장완료");
+  if (tab==="done")     list=list.filter(c=>c["상태"]==="반입완료");
+
+  const el=document.getElementById("cargo-list-sec");
+  if (!list.length) {
+    el.innerHTML='<div class="empty-state">해당 화물이 없습니다.</div>';
+    return;
+  }
+  el.innerHTML = list.map(c=>{
+    const status = c["상태"]||"입력대기";
+    const bCls = status==="반입완료"?"b-done":status==="현장완료"?"b-field":"b-wait";
+    const dep = c["출발일시"]?new Date(c["출발일시"]):null;
+    const steps = getSteps(c);
+    const hasField = !!(c["현장중량"]||c["현장수량"]);
+    return `<div class="cargo-card" onclick="openModal('${escAWB(c["AWB"])}')">
+      <div class="card-head">
+        <div class="card-awb-row">
+          <div class="card-awb">${c["AWB"]||"—"}</div>
+          <span class="badge ${bCls}">${status}</span>
+        </div>
+        <div class="card-route">${c["항공사"]||""} ${c["편명"]||""} · ${c["출발지"]||""}→${c["목적지"]||""}${dep?" · "+dep.toLocaleDateString("ko",{month:"2-digit",day:"2-digit"})+" "+dep.toLocaleTimeString("ko",{hour:"2-digit",minute:"2-digit"}):""}
+        </div>
+      </div>
+      ${renderTimeline(steps)}
+      <div class="card-metrics">
+        <div class="cm-item">
+          <div class="cm-label">수량</div>
+          <div class="cm-value${hasField?" updated":""}">${(hasField?c["현장수량"]:c["총수량"])||"—"}<span style="font-size:9px">pcs</span></div>
+        </div>
+        <div class="cm-item">
+          <div class="cm-label">중량</div>
+          <div class="cm-value${hasField?" updated":""}">${(hasField?c["현장중량"]:c["총중량"])||"—"}<span style="font-size:9px">kg</span></div>
+        </div>
+        <div class="cm-item">
+          <div class="cm-label">볼륨중량</div>
+          <div class="cm-value">${c["볼륨중량"]||"—"}<span style="font-size:9px">kg</span></div>
+        </div>
+        <div class="cm-item">
+          <div class="cm-label">운임중량</div>
+          <div class="cm-value">${c["운임중량"]||"—"}<span style="font-size:9px">kg</span></div>
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function getSteps(c) {
+  const status = c["상태"]||"입력대기";
+  const steps = [
+    {label:"서류등록", key:"reg"},
+    {label:"현장반입", key:"field"},
+    {label:"세관신고", key:"customs"},
+    {label:"탑재완료", key:"loaded"}
+  ];
+  return steps.map((s,i)=>{
+    let state = "pend";
+    if (status==="입력대기" && i===0) state="active";
+    if (status==="현장완료" && i<=1) state = i===1?"active":"done";
+    if (status==="현장완료" && i===0) state = "done";
+    if (status==="반입완료") state = i<=2?"done":i===3?"active":"pend";
+    return {...s, state};
+  });
+}
+
+function renderTimeline(steps) {
+  return `<div class="timeline">${steps.map((s,i)=>`
+    <div class="tl-step">
+      <div class="tl-dot ${s.state}">${s.state==="done"?"✓":i+1}</div>
+      <div class="tl-label${s.state==="active"?" active":""}">${s.label}</div>
+    </div>
+    ${i<steps.length-1?`<div class="tl-line${s.state==="done"?" done":""}"></div>`:""}`).join("")}
+  </div>`;
+}
+
+// ── 상세 모달 ──
+function openModal(awb) {
+  const c = shipperCargos.find(x=>x["AWB"]===awb);
+  if (!c) return;
+  currentModal = c;
+  document.getElementById("m-awb").textContent = c["AWB"];
+  document.getElementById("m-route").textContent = `${c["항공사"]||""} ${c["편명"]||""} · ${c["출발지"]||""} → ${c["목적지"]||""}`;
+
+  const dep = c["출발일시"]?new Date(c["출발일시"]):null;
+  const ct = c["화물구분"]||"";
+  const ch = ct.includes("DG")||ct.includes("위험물")?6:4;
+  const cutoff = dep?new Date(dep.getTime()-ch*3600000):null;
+  const steps = getSteps(c);
+  const hasField = !!(c["현장중량"]||c["현장수량"]);
+  const status = c["상태"]||"입력대기";
+
+  document.getElementById("modal-body").innerHTML = `
+    <div class="modal-sec">
+      <div class="modal-sec-title">항공 정보</div>
+      <div class="info-grid">
+        <div class="info-item"><div class="info-lbl">출발 예정</div><div class="info-val">${dep?dep.toLocaleString("ko",{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"}):"—"}</div></div>
+        <div class="info-item"><div class="info-lbl">반입 마감</div><div class="info-val${cutoff&&(cutoff-new Date())/3600000<0?" blue":""}">${cutoff?cutoff.toLocaleString("ko",{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"}):"—"}</div></div>
+        <div class="info-item"><div class="info-lbl">품목</div><div class="info-val" style="grid-column:1/-1">${c["품목"]||"—"}</div></div>
+      </div>
+    </div>
+
+    <div class="modal-sec" style="margin-top:14px">
+      <div class="modal-sec-title">진행 현황</div>
+      <div class="timeline-detail">
+        ${steps.map((s,i)=>`
+          <div class="td-row">
+            ${i<steps.length-1?`<div class="td-line${s.state==="done"?" done":""}"></div>`:""}
+            <div class="td-icon ${s.state}">${s.state==="done"?`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>`:`<span style="font-size:10px;font-weight:600">${i+1}</span>`}</div>
+            <div class="td-content">
+              <div class="td-title${s.state==="active"?" active":""}">${s.label}${s.state==="active"?" — 진행 중":s.state==="done"?" — 완료":""}</div>
+              ${s.key==="field"&&c["반입시간"]?`<div class="td-time">${c["반입시간"]}</div>`:""}
+            </div>
+          </div>`).join("")}
+      </div>
+    </div>
+
+    <div class="modal-sec" style="margin-top:14px">
+      <div class="modal-sec-title">화물 정보</div>
+      <div class="info-grid">
+        <div class="info-item"><div class="info-lbl">등록 수량</div><div class="info-val">${c["총수량"]||"—"}pcs</div></div>
+        <div class="info-item"><div class="info-lbl">등록 중량</div><div class="info-val">${c["총중량"]||"—"}kg</div></div>
+      </div>
+    </div>
+
+    <div class="modal-sec" style="margin-top:14px">
+      <div class="modal-sec-title">현장 업데이트</div>
+      ${hasField ? `
+        <div class="field-update-box">
+          <div class="fub-title">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+            현장에서 확인된 실측 정보
+          </div>
+          <div class="fub-grid">
+            <div class="fub-item"><div class="fub-lbl">실측 수량</div><div class="fub-val">${c["현장수량"]||"—"}pcs</div></div>
+            <div class="fub-item"><div class="fub-lbl">실측 중량</div><div class="fub-val">${c["현장중량"]||"—"}kg</div></div>
+            <div class="fub-item"><div class="fub-lbl">볼륨중량</div><div class="fub-val">${c["볼륨중량"]||"—"}kg</div></div>
+            <div class="fub-item"><div class="fub-lbl">운임중량</div><div class="fub-val">${c["운임중량"]||"—"}kg</div></div>
+          </div>
+          ${c["반입시간"]?`<div style="font-size:10px;color:#3B6D11;margin-top:6px">반입시간: ${c["반입시간"]}</div>`:""}
+          ${c["현장메모"]?`<div style="font-size:11px;color:#1A3D0A;margin-top:4px;padding:6px 8px;background:rgba(255,255,255,.6);border-radius:4px">메모: ${c["현장메모"]}</div>`:""}
+        </div>
+        ${c["사진URL"]?`<div class="photo-note" style="margin-top:8px">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          현장 사진 ${c["사진URL"]}
+        </div>`:""}
+      ` : `<div class="no-update">아직 현장에서 업데이트하지 않았습니다.<br>현장 담당자가 확인 후 업데이트하면 이 곳에 표시됩니다.</div>`}
+    </div>
+    <div style="height:20px"></div>
+  `;
+
+  document.getElementById("modal-overlay").classList.add("show");
+  window.scrollTo(0,0);
+}
+
+function closeModal() {
+  document.getElementById("modal-overlay").classList.remove("show");
+}
+
+// ── 유틸 ──
+function now(){return new Date().toLocaleTimeString("ko",{hour:"2-digit",minute:"2-digit"});}
+function escAWB(awb){return(awb||"").replace(/'/g,"\\'");}
+function toast(msg){const t=document.getElementById("toast-el");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),3000);}
+
+function getDemoData(){
+  return [
+    {"AWB":"180-12345678","항공사":"KE","편명":"KE901","출발지":"ICN","목적지":"LAX","출발일시":"2025-04-19T22:10","화물구분":"일반화물","품목":"Electronic parts","총수량":"5","총중량":"114","볼륨중량":"98.3","운임중량":"114","기사명":"김철수","기사연락처":"010-1234-5678","차량번호":"12가 3456","운송사":"한진운송","도착예정":"2025-04-19T18:00","상태":"현장완료","현장수량":"5","현장중량":"116","볼륨중량":"98.3","운임중량":"116","현장메모":"전량 이상 없음","반입시간":"2025-04-19 17:45","화주ID":"SHIPPER001","사진URL":"4장 촬영"},
+    {"AWB":"172-11223344","항공사":"KE","편명":"KE085","출발지":"ICN","목적지":"NRT","출발일시":"2025-04-20T09:55","화물구분":"위험물 (DG)","품목":"Lithium battery","총수량":"3","총중량":"84","볼륨중량":"72","운임중량":"84","기사명":"이영희","기사연락처":"010-9876-5432","차량번호":"34나 5678","운송사":"자가운송","도착예정":"2025-04-20T06:00","상태":"입력대기","현장수량":"","현장중량":"","현장메모":"","반입시간":"","화주ID":"SHIPPER001","사진URL":""},
+    {"AWB":"020-98765432","항공사":"OZ","편명":"OZ222","출발지":"ICN","목적지":"FRA","출발일시":"2025-04-20T14:30","화물구분":"일반화물","품목":"Automotive parts","총수량":"1","총중량":"85","볼륨중량":"","운임중량":"","기사명":"","기사연락처":"","차량번호":"","운송사":"","도착예정":"","상태":"입력대기","현장수량":"","현장중량":"","현장메모":"","반입시간":"","화주ID":"SHIPPER002","사진URL":""}
+  ];
+}
+
+// 5분마다 자동 새로고침
+setInterval(()=>{ if(session) loadShipperCargos(); }, 300000);
+</script>
+<script>
+if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('./sw.js').then(()=>console.log('CargoIN Shipper SW 등록됨')).catch(e=>console.log('SW 오류:',e));});}
+</script>
+</body>
+</html>

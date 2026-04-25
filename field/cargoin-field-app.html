@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
+<title>CargoIN — 현장 앱</title>
+<link rel="manifest" href="manifest.json"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="CargoIN"/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Pretendard:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --green:#0E7A56;--green2:#12A070;--green-light:#E6F5EE;
+  --blue:#0F4C8F;--blue2:#1A6EC4;--blue-light:#E8F2FF;
+  --amber:#B96A00;--amber-light:#FFF4E0;
+  --red:#C0392B;--red-light:#FDEEEC;
+  --gray0:#F5F6F8;--gray1:#E8EAED;--gray2:#C9CDD4;--gray3:#8892A0;--gray4:#3D4552;--gray5:#1A1F2A;
+  --radius:12px;--radius-sm:8px;
+  --mono:'IBM Plex Mono',monospace;--sans:'Pretendard',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{background:var(--gray0);font-family:var(--sans)}
+body{min-height:100vh;max-width:480px;margin:0 auto;background:var(--gray0);color:var(--gray5);font-size:14px;padding-bottom:32px}
+.topbar{background:var(--green);color:#fff;padding:env(safe-area-inset-top,0) 16px 0;position:sticky;top:0;z-index:50}
+.tb-inner{display:flex;align-items:center;gap:10px;height:52px}
+.logo{font-family:var(--mono);font-size:14px;font-weight:500;letter-spacing:-.5px;color:#fff}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.sync-chip{background:rgba(255,255,255,.2);border-radius:20px;padding:3px 10px;font-size:11px;display:flex;align-items:center;gap:5px;color:#fff}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:#fff;animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.search-bar{background:#fff;padding:10px 14px;border-bottom:1px solid var(--gray1);display:flex;gap:8px;align-items:center}
+.search-input{flex:1;height:36px;border-radius:20px;border:1px solid var(--gray1);background:var(--gray0);color:var(--gray5);font-size:13px;padding:0 14px;outline:none;font-family:var(--sans)}
+.search-input:focus{border-color:var(--green2);background:#fff}
+.scan-btn{width:36px;height:36px;border-radius:50%;background:var(--green);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.list-section{padding:12px 14px}
+.section-label{font-size:11px;font-weight:600;color:var(--gray3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.cargo-card{background:#fff;border-radius:var(--radius);border:1px solid var(--gray1);padding:12px 14px;margin-bottom:8px;cursor:pointer;transition:border-color .15s,transform .1s}
+.cargo-card:active{transform:scale(.98)}
+.cargo-card.selected{border-color:var(--green);border-width:2px}
+.cc-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px}
+.cc-awb{font-family:var(--mono);font-size:13px;font-weight:500;color:var(--gray5)}
+.badge{display:inline-flex;align-items:center;gap:3px;font-size:10px;padding:2px 8px;border-radius:20px;font-weight:500}
+.status-wait{background:var(--amber-light);color:var(--amber)}
+.status-field{background:var(--blue-light);color:var(--blue)}
+.status-done{background:var(--green-light);color:var(--green)}
+.cc-sub{font-size:12px;color:var(--gray3);margin-top:2px}
+.cc-cutoff{font-size:11px;font-weight:500;margin-top:4px}
+.cc-cutoff.danger{color:var(--red)}.cc-cutoff.warn{color:var(--amber)}.cc-cutoff.ok{color:var(--green)}
+.detail{display:none;flex-direction:column}
+.detail.show{display:flex}
+.det-header{background:var(--green);color:#fff;padding:10px 14px 14px}
+.det-back{display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;opacity:.85;margin-bottom:8px;width:fit-content}
+.det-awb{font-family:var(--mono);font-size:17px;font-weight:500}
+.det-meta{font-size:12px;opacity:.8;margin-top:2px}
+.ro-card{margin:12px 14px 0;border-radius:var(--radius);padding:12px 14px}
+.ro-card.blue{background:var(--blue-light);border:1px solid #B8D4F5}
+.ro-card.amber{background:var(--amber-light);border:1px solid #F5D99B}
+.ro-card.gray{background:var(--gray0);border:1px solid var(--gray1)}
+.ro-title{font-size:11px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:5px}
+.ro-title.blue{color:var(--blue)}.ro-title.amber{color:var(--amber)}.ro-title.gray{color:var(--gray3)}
+.ro-badge{font-size:9px;background:rgba(255,255,255,.7);border-radius:10px;padding:1px 7px;margin-left:4px;font-weight:400}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.info-item{display:flex;flex-direction:column;gap:1px}
+.info-label{font-size:10px;color:#4A7FC1}
+.info-value{font-size:12px;font-weight:500;color:var(--blue)}
+.info-value.cutoff{font-size:14px;font-weight:600}
+.info-value.danger{color:var(--red)}.info-value.warn{color:var(--amber)}
+.drv-layout{display:flex;gap:12px;align-items:flex-start}
+.drv-left{display:flex;flex-direction:column;align-items:center;gap:6px;flex-shrink:0}
+.drv-avatar{width:44px;height:44px;border-radius:50%;background:#F5D99B;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:600;color:var(--amber)}
+.drv-tel-btn{display:flex;align-items:center;gap:4px;background:#fff;border:1px solid #F5D99B;border-radius:20px;padding:4px 10px;font-size:11px;font-weight:600;color:var(--amber);cursor:pointer;white-space:nowrap;text-decoration:none}
+.drv-right{flex:1;min-width:0}
+.drv-name{font-size:15px;font-weight:600;color:var(--gray5);margin-bottom:2px}
+.drv-company{font-size:11px;color:var(--gray3);margin-bottom:8px}
+.drv-big-row{display:flex;gap:8px}
+.drv-big-item{flex:1;background:#fff;border:1px solid #F5D99B;border-radius:var(--radius-sm);padding:8px 10px;display:flex;flex-direction:column;gap:2px}
+.drv-big-label{font-size:9px;font-weight:600;color:var(--amber);text-transform:uppercase;letter-spacing:.4px}
+.drv-big-value{font-size:15px;font-weight:600;color:var(--gray5);font-family:var(--mono);line-height:1.2}
+.drv-big-sub{font-size:10px;color:var(--gray3);margin-top:1px}
+.pieces-ro{overflow-x:auto;margin-top:4px;border-radius:var(--radius-sm);overflow:hidden;border:1px solid rgba(0,0,0,.06)}
+.pieces-ro table{width:100%;border-collapse:collapse;font-size:11px;min-width:320px}
+.pieces-ro th{background:rgba(255,255,255,.55);color:var(--gray3);font-weight:600;padding:5px 7px;text-align:center;border-bottom:1px solid rgba(0,0,0,.06);white-space:nowrap}
+.pieces-ro th:nth-child(2){text-align:left}
+.pieces-ro td{padding:6px 7px;text-align:center;border-bottom:1px solid rgba(0,0,0,.04);color:var(--gray4)}
+.pieces-ro td.desc-td{text-align:left;color:var(--gray5);font-weight:500}
+.pieces-ro td.cbm-td{color:var(--green);font-family:var(--mono);font-weight:500}
+.pieces-ro tr:last-child td{border-bottom:none}
+.pieces-ro tfoot td{background:rgba(255,255,255,.7);font-weight:600;color:var(--gray4);font-size:11px}
+.pieces-ro tfoot td.hl{color:var(--blue)}
+.piece-check-list{display:flex;flex-direction:column;gap:5px;margin-top:8px}
+.pcheck-row{display:flex;align-items:center;gap:10px;padding:8px 10px;background:#fff;border-radius:var(--radius-sm);border:1px solid var(--gray1);transition:all .15s}
+.pcheck-row.confirmed{background:var(--green-light);border-color:#9FE1CB}
+.pcheck-num{font-family:var(--mono);font-size:11px;color:var(--gray3);min-width:18px;text-align:center}
+.pcheck-info{flex:1}
+.pcheck-desc{font-size:12px;font-weight:500;color:var(--gray5)}
+.pcheck-dim{font-size:10px;color:var(--gray3);margin-top:1px;font-family:var(--mono)}
+.pcheck-btn{width:30px;height:30px;border-radius:50%;border:1.5px solid var(--gray2);background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
+.pcheck-btn:active{transform:scale(.88)}
+.pcheck-btn.checked{background:var(--green);border-color:var(--green)}
+.pcheck-btn svg{stroke:var(--gray3)}.pcheck-btn.checked svg{stroke:#fff}
+.field-body{padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.fi-card{background:#fff;border-radius:var(--radius);border:1px solid var(--gray1);padding:13px 14px}
+.fi-title{font-size:12px;font-weight:600;color:var(--green);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.fi-badge{font-size:9px;background:var(--green-light);color:var(--green);border-radius:10px;padding:1px 7px;font-weight:500;margin-left:auto}
+.fi-hint{font-size:11px;color:var(--gray3);margin-bottom:8px}
+.toggle-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tgl{height:44px;border-radius:var(--radius-sm);border:1.5px solid var(--gray1);background:var(--gray0);color:var(--gray4);font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .15s}
+.tgl:active{transform:scale(.97)}
+.tgl.on.load{background:var(--blue-light);border-color:#1A6EC4;color:var(--blue)}
+.tgl.on.unload{background:var(--green-light);border-color:var(--green2);color:var(--green)}
+.fi-fld{display:flex;flex-direction:column;gap:3px}
+.fi-fld label{font-size:11px;color:var(--gray3);font-weight:500}
+.fi-fld input{height:40px;border-radius:var(--radius-sm);border:1.5px solid var(--gray1);background:var(--gray0);color:var(--gray5);font-size:15px;padding:0 10px;outline:none;text-align:center;font-family:var(--mono);transition:border-color .15s;width:100%}
+.fi-fld input:focus{border-color:var(--green2);background:#fff}
+.size-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px}
+.size-grid.r2{grid-template-columns:1fr 1fr}
+.pcs-row{display:flex;align-items:center;justify-content:center;gap:16px;padding:2px 0}
+.pcs-btn{width:38px;height:38px;border-radius:50%;border:1.5px solid var(--gray1);background:#fff;color:var(--gray5);font-size:22px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.pcs-btn:active{transform:scale(.9);background:var(--green-light);border-color:var(--green2)}
+.pcs-num{font-size:30px;font-weight:600;font-family:var(--mono);color:var(--gray5);min-width:52px;text-align:center}
+.pcs-unit{font-size:12px;color:var(--gray3)}
+.cbm-result{background:var(--green-light);border-radius:var(--radius-sm);padding:10px 12px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px}
+.cbm-col{display:flex;flex-direction:column;align-items:center;gap:2px}
+.cbm-lbl{font-size:10px;color:var(--green);font-weight:500}
+.cbm-val{font-size:14px;font-weight:600;font-family:var(--mono);color:#0E5A3A}
+.photo-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.ph-slot{aspect-ratio:1;border-radius:var(--radius-sm);border:1.5px dashed var(--gray2);background:var(--gray0);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;position:relative;overflow:hidden;transition:border-color .15s}
+.ph-slot:active{transform:scale(.96)}
+.ph-slot.filled{border-style:solid;border-color:#9FE1CB;background:var(--green-light)}
+.ph-slot input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;font-size:0}
+.ph-slot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.ph-lbl{font-size:9px;color:var(--gray3);margin-top:3px;z-index:1}
+.ph-icon{z-index:1}
+.ph-tag{position:absolute;bottom:0;left:0;right:0;background:rgba(14,122,86,.8);color:#fff;font-size:8px;text-align:center;padding:2px 0;z-index:2}
+.memo-input{width:100%;min-height:60px;border-radius:var(--radius-sm);border:1.5px solid var(--gray1);background:var(--gray0);color:var(--gray5);font-size:13px;padding:10px 12px;outline:none;font-family:var(--sans);resize:none;transition:border-color .15s}
+.memo-input:focus{border-color:var(--green2);background:#fff}
+.submit-wrap{padding:4px 14px 24px}
+.submit-btn{width:100%;height:52px;background:var(--green);color:#fff;border:none;border-radius:var(--radius);font-size:16px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity .15s;font-family:var(--sans)}
+.submit-btn:disabled{opacity:.5}
+.submit-btn:active:not(:disabled){opacity:.85}
+.done-screen{display:none;flex-direction:column;align-items:center;padding:40px 24px;text-align:center;gap:14px}
+.done-screen.show{display:flex}
+.done-icon{width:64px;height:64px;border-radius:50%;background:var(--green-light);border:2px solid var(--green2);display:flex;align-items:center;justify-content:center}
+.done-title{font-size:18px;font-weight:600;color:var(--gray5)}
+.done-sub{font-size:13px;color:var(--gray3);line-height:1.7;white-space:pre-line}
+.done-actions{display:flex;gap:8px;width:100%;max-width:280px}
+.btn-back{flex:1;height:44px;border-radius:var(--radius);border:1.5px solid var(--gray1);background:#fff;color:var(--gray5);font-size:14px;font-weight:500;cursor:pointer;font-family:var(--sans)}
+.btn-edit{flex:1;height:44px;border-radius:var(--radius);border:none;background:var(--amber);color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--sans);display:flex;align-items:center;justify-content:center;gap:6px}
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(8px);background:var(--gray5);color:#fff;font-size:13px;padding:10px 20px;border-radius:24px;z-index:999;opacity:0;transition:all .25s;pointer-events:none;white-space:nowrap;max-width:90vw;text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<!-- LIST VIEW -->
+<div id="list-view">
+  <div class="topbar">
+    <div class="tb-inner">
+      <div class="logo">CargoIN <span style="font-size:11px;opacity:.7">현장</span></div>
+      <div class="tb-right">
+        <div class="sync-chip"><div class="sync-dot"></div><span id="sync-txt">동기화됨</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="search-bar">
+    <input class="search-input" id="search-input" placeholder="AWB · 기사명 · 목적지 검색..." oninput="filterList()"/>
+    <button class="scan-btn" onclick="showToast('QR 스캔은 실제 앱에서 지원됩니다.')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="3" height="3"/></svg>
+    </button>
+  </div>
+  <div class="list-section">
+    <div class="section-label" id="list-label">오늘 화물</div>
+    <div id="cargo-list"></div>
+  </div>
+</div>
+
+<!-- DETAIL VIEW -->
+<div id="detail-view" class="detail">
+  <div class="det-header">
+    <div class="det-back" onclick="backToList()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+      목록으로
+    </div>
+    <div class="det-awb" id="det-awb"></div>
+    <div class="det-meta" id="det-meta"></div>
+  </div>
+
+  <!-- ① 기본 정보 -->
+  <div class="ro-card blue">
+    <div class="ro-title blue">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#185FA5" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+      사무실 입력 기본 정보 <span class="ro-badge">읽기 전용</span>
+    </div>
+    <div class="info-grid">
+      <div class="info-item"><div class="info-label">항공사·편명</div><div class="info-value" id="rc-flt"></div></div>
+      <div class="info-item"><div class="info-label">노선</div><div class="info-value" id="rc-route"></div></div>
+      <div class="info-item"><div class="info-label">출발 예정</div><div class="info-value" id="rc-etd"></div></div>
+      <div class="info-item"><div class="info-label">반입 마감</div><div class="info-value cutoff" id="rc-cutoff"></div></div>
+      <div class="info-item" style="grid-column:1/-1"><div class="info-label">품목</div><div class="info-value" id="rc-comm"></div></div>
+    </div>
+  </div>
+
+  <!-- ② 기사 정보 -->
+  <div class="ro-card amber" id="ro-driver" style="display:none">
+    <div class="ro-title amber">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#B96A00" stroke-width="2"><circle cx="12" cy="7" r="4"/><path d="M5.5 21a8.38 8.38 0 0 1 13 0"/></svg>
+      기사 정보 <span class="ro-badge">사무실 등록</span>
+    </div>
+    <div class="drv-layout">
+      <div class="drv-left">
+        <div class="drv-avatar" id="drv-avatar">?</div>
+        <a class="drv-tel-btn" id="drv-tel-btn" href="#">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.25h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.96a16 16 0 0 0 6 6l.92-.92a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16.92z"/></svg>
+          전화
+        </a>
+      </div>
+      <div class="drv-right">
+        <div class="drv-name" id="drv-name"></div>
+        <div class="drv-company" id="drv-company"></div>
+        <div class="drv-big-row">
+          <div class="drv-big-item" id="drv-car-block">
+            <div class="drv-big-label">차량번호</div>
+            <div class="drv-big-value" id="drv-car-val">—</div>
+          </div>
+          <div class="drv-big-item" id="drv-eta-block">
+            <div class="drv-big-label">도착 예정</div>
+            <div class="drv-big-value" id="drv-eta-val">—</div>
+            <div class="drv-big-sub" id="drv-eta-remain"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ③ 피스별 사이즈·중량 + 현장 확인 체크 -->
+  <div class="ro-card gray" id="ro-pieces" style="display:none">
+    <div class="ro-title gray">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+      피스별 사이즈·중량 <span id="pieces-check-count" style="font-size:10px;color:var(--green);margin-left:4px;font-weight:400"></span>
+    </div>
+    <div class="pieces-ro" id="pieces-ro-table"></div>
+    <div style="font-size:11px;color:var(--gray3);margin:8px 0 4px">각 피스를 현장에서 확인 후 체크하세요</div>
+    <div class="piece-check-list" id="piece-check-list"></div>
+  </div>
+
+  <!-- ④ 현장 입력 -->
+  <div class="field-body" id="field-input-area">
+
+    <div class="fi-card">
+      <div class="fi-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 11 12 6 7 11"/><line x1="12" y1="6" x2="12" y2="18"/></svg>
+        상하차 구분 <span class="fi-badge">현장 입력</span>
+      </div>
+      <div class="toggle-row">
+        <button class="tgl load" id="btn-load" onclick="setLoad('load')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 11 12 6 7 11"/><line x1="12" y1="6" x2="12" y2="18"/></svg>
+          입고 (반입)
+        </button>
+        <button class="tgl unload" id="btn-unload" onclick="setLoad('unload')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="7 13 12 18 17 13"/><line x1="12" y1="18" x2="12" y2="6"/></svg>
+          출고 (인도)
+        </button>
+      </div>
+    </div>
+
+    <div class="fi-card">
+      <div class="fi-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+        실측 사이즈 · 중량 <span class="fi-badge">현장 입력</span>
+      </div>
+      <div class="fi-hint">사무실 등록값과 다를 경우 실측값으로 덮어쓰세요</div>
+      <div class="size-grid">
+        <div class="fi-fld"><label>가로 (cm)</label><input type="number" id="f-w" inputmode="decimal" placeholder="0" oninput="calcCBM()"/></div>
+        <div class="fi-fld"><label>세로 (cm)</label><input type="number" id="f-d" inputmode="decimal" placeholder="0" oninput="calcCBM()"/></div>
+        <div class="fi-fld"><label>높이 (cm)</label><input type="number" id="f-h" inputmode="decimal" placeholder="0" oninput="calcCBM()"/></div>
+      </div>
+      <div class="size-grid r2">
+        <div class="fi-fld"><label>실중량 (kg)</label><input type="number" id="f-gw" inputmode="decimal" placeholder="0.0" step="0.1" oninput="calcCBM()"/></div>
+        <div class="fi-fld">
+          <label>총 개수 (pcs)</label>
+          <div class="pcs-row">
+            <button class="pcs-btn" onclick="chgPcs(-1)">−</button>
+            <span class="pcs-num" id="pcs-n">1</span>
+            <span class="pcs-unit">pcs</span>
+            <button class="pcs-btn" onclick="chgPcs(1)">+</button>
+          </div>
+        </div>
+      </div>
+      <div class="cbm-result" id="cbm-result" style="display:none">
+        <div class="cbm-col"><div class="cbm-lbl">총 CBM</div><div class="cbm-val" id="c-cbm">—</div></div>
+        <div class="cbm-col">
+          <div class="cbm-lbl">볼륨중량</div>
+          <div class="cbm-val" id="c-vw">—</div>
+          <div style="font-size:8px;color:var(--green);margin-top:1px">W×D×H×pcs÷6000</div>
+        </div>
+        <div class="cbm-col"><div class="cbm-lbl">운임중량</div><div class="cbm-val" id="c-cw">—</div></div>
+      </div>
+    </div>
+
+    <div class="fi-card">
+      <div class="fi-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        화물 사진
+        <span style="font-size:10px;color:var(--gray3);font-weight:400;margin-left:2px" id="photo-count">0/8</span>
+        <span class="fi-badge">현장 입력</span>
+      </div>
+      <div class="photo-grid" id="photo-grid">
+        <div class="ph-slot" id="ps0"><input type="file" accept="image/*" capture="environment" onchange="loadPhoto(this,0,'전면')"><svg class="ph-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><div class="ph-lbl">전면</div></div>
+        <div class="ph-slot" id="ps1"><input type="file" accept="image/*" capture="environment" onchange="loadPhoto(this,1,'측면')"><svg class="ph-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><div class="ph-lbl">측면</div></div>
+        <div class="ph-slot" id="ps2"><input type="file" accept="image/*" capture="environment" onchange="loadPhoto(this,2,'라벨')"><svg class="ph-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><div class="ph-lbl">라벨</div></div>
+        <div class="ph-slot" id="ps3"><input type="file" accept="image/*" capture="environment" onchange="loadPhoto(this,3,'손상')"><svg class="ph-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><div class="ph-lbl">손상</div></div>
+        <div class="ph-slot" id="ps4"><input type="file" accept="image/*" capture="environment" onchange="loadPhoto(this,4,'기타')"><svg class="ph-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><div class="ph-lbl">추가</div></div>
+        <div class="ph-slot" id="ps5"><input type="file" accept="image/*" capture="environment" onchange="loadPhoto(this,5,'기타')"><svg class="ph-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><div class="ph-lbl">추가</div></div>
+        <div class="ph-slot" id="ps6"><input type="file" accept="image/*" capture="environment" onchange="loadPhoto(this,6,'기타')"><svg class="ph-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><div class="ph-lbl">추가</div></div>
+        <div class="ph-slot" id="ps7"><input type="file" accept="image/*" capture="environment" onchange="loadPhoto(this,7,'기타')"><svg class="ph-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><div class="ph-lbl">추가</div></div>
+      </div>
+    </div>
+
+    <div class="fi-card">
+      <div class="fi-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        현장 메모 <span class="fi-badge">현장 입력</span>
+      </div>
+      <textarea class="memo-input" id="f-note" placeholder="손상 여부, 특이사항, 기사 전달사항..."></textarea>
+    </div>
+
+  </div>
+
+  <div class="done-screen" id="done-screen">
+    <div class="done-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0E7A56" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+    <div class="done-title">현장 입력 완료!</div>
+    <div class="done-sub" id="done-sub"></div>
+    <div class="done-actions">
+      <button class="btn-back" onclick="backToList()">목록으로</button>
+      <button class="btn-edit" onclick="enableEdit()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        수정하기
+      </button>
+    </div>
+  </div>
+
+  <div class="submit-wrap" id="submit-wrap">
+    <button class="submit-btn" id="submit-btn" onclick="submitField()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      입력 완료 · 동기화
+    </button>
+  </div>
+</div>
+
+<div class="toast" id="toast-el"></div>
+
+<script>
+const DEMO=[
+  {id:"1",mawb:"180-1234 5678",blType:"single",airline:"KE",flightNo:"KE901",origin:"ICN",dest:"LAX",etd:"2025-04-18T22:10",
+   singleInfo:{cargoType:"일반화물",commodity:"Electronic parts",shipperId:"삼성전자"},
+   singlePieces:[{desc:"Main unit",pcs:2,w:80,d:60,h:50,gw:45},{desc:"Accessories",pcs:3,w:40,d:30,h:20,gw:12}],
+   hawbs:[],
+   driver:{name:"김철수",tel:"010-1234-5678",car:"12가 3456",company:"한진운송",eta:"2025-04-18T18:00"},
+   status:"pending_field",loadType:null,note:""},
+  {id:"2",mawb:"020-9876 5432",blType:"hawb",airline:"OZ",flightNo:"OZ222",origin:"ICN",dest:"FRA",etd:"2025-04-19T14:30",
+   singleInfo:null,singlePieces:[],
+   hawbs:[
+     {hawb:"SEL-240010",cargoType:"일반화물",commodity:"Automotive parts",shipperId:"현대모비스",pieces:[{desc:"",pcs:1,w:120,d:80,h:60,gw:85}]},
+     {hawb:"SEL-240011",cargoType:"일반화물",commodity:"Steel parts",shipperId:"POSCO",pieces:[{desc:"",pcs:2,w:80,d:60,h:40,gw:120}]}
+   ],
+   driver:{name:"",tel:"",car:"",company:"",eta:""},status:"pending_field",loadType:null,note:""},
+  {id:"3",mawb:"172-1122 3344",blType:"single",airline:"KE",flightNo:"KE085",origin:"ICN",dest:"NRT",etd:"2025-04-18T09:55",
+   singleInfo:{cargoType:"위험물 (DG)",commodity:"Lithium battery (UN3480)",shipperId:"삼성SDI"},
+   singlePieces:[{desc:"Battery pack",pcs:3,w:60,d:40,h:50,gw:28}],
+   hawbs:[],
+   driver:{name:"이영희",tel:"010-9876-5432",car:"34나 5678",company:"자가운송",eta:"2025-04-18T05:30"},
+   status:"field_done",loadType:"load",note:"DGD 첨부 완료"}
+];
+const STORAGE_URL_KEY="cargoin_sheet_url";
+let SHEET_URL=localStorage.getItem(STORAGE_URL_KEY)||"";
+let allCargos=[];
+let currentCargo=null;
+let pcsVal=1;
+let loadType=null;
+let photoData=[];
+let pieceChecks=[];
+
+window.onload=function(){
+  const saved=localStorage.getItem(STORAGE_URL_KEY)||"";
+  document.getElementById("sheet-url").value=saved;
+  if(saved){SHEET_URL=saved;loadCargos();}
+  else{hide("loading");document.getElementById("sync-txt").textContent="URL 미설정";renderList([]);}
+};
+
+function saveUrl(){const url=document.getElementById("sheet-url").value.trim();if(!url){toast("Apps Script URL을 입력해 주세요.");return;}SHEET_URL=url;localStorage.setItem(STORAGE_URL_KEY,url);loadCargos();}
+
+async function loadCargos(){
+  if(!SHEET_URL)return;
+  show("loading");setMsg("구글 시트에서 불러오는 중...");
+  try{
+    const res=await fetch(SHEET_URL+"?action=getCargos");
+    const data=await res.json();
+    if(data.error)throw new Error(data.error);
+    allCargos=Array.isArray(data)?data:[];
+    document.getElementById("sync-txt").textContent="동기화됨 · "+now();
+    hide("loading");renderList(allCargos);
+  }catch(e){
+    hide("loading");document.getElementById("sync-txt").textContent="연결 실패";
+    toast("시트 연결 실패. 데모 데이터 사용");
+    allCargos=getDemoData();renderList(allCargos);
+  }
+}
+
+function calcPieceTotals(pieces){let tp=0,tg=0,tc=0;(pieces||[]).forEach(p=>{const n=Number(p.pcs)||0;const cbm=(Number(p.w)||0)*(Number(p.d)||0)*(Number(p.h)||0)/1000000;tp+=n;tg+=(Number(p.gw)||0)*n;tc+=cbm*n;});return{tp,tg,tc,cw:Math.max(tg,tc*166.67)};}
+function getCargoTotals(c){if(c.blType==="single"||(!c.blType&&(!c.hawbs||!c.hawbs.length))){return calcPieceTotals(c.singlePieces||[]);}return calcMawbTotals(c.hawbs||[]);}
+function calcMawbTotals(hawbs){let tp=0,tg=0,tc=0;(hawbs||[]).forEach(h=>{const t=calcPieceTotals(h.pieces||[]);tp+=t.tp;tg+=t.tg;tc+=t.tc;});return{tp,tg,tc,cw:Math.max(tg,tc*166.67)};}
+function cutHours(hawbs){return (hawbs||[]).some(h=>h.cargoType?.includes("DG")||h.cargoType?.includes("위험물"))?6:4;}
+function statusLabel(s){return{pending_field:"입력 대기",field_done:"현장 완료",complete:"반입 완료"}[s]||s;}
+function statusClass(s){return{pending_field:"b-wait",field_done:"b-field",complete:"b-done"}[s]||"";}
+function show(id,d="block"){document.getElementById(id).style.display=d;}
+function hide(id){document.getElementById(id).style.display="none";}
+function setMsg(m){document.getElementById("loading-msg").textContent=m;}
+function now(){return new Date().toLocaleTimeString("ko",{hour:"2-digit",minute:"2-digit"});}
+function escAWB(awb){return(awb||"").replace(/'/g,"\\'");}
+function toast(msg){const t=document.getElementById("toast-el");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),3000);}
+
+function renderList(list){
+  document.getElementById("list-label").textContent=`오늘 화물 (${list.length}건)`;
+  const el=document.getElementById("cargo-list");
+  if(!list.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--g3);font-size:13px">화물이 없습니다.<br>구글 시트에 화물을 등록해 주세요.</div>';return;}
+  el.innerHTML=list.map(c=>{
+    const dep=c.etd?new Date(c.etd):null;
+    const ch=cutHours(c.hawbs);const cutoff=dep?new Date(dep.getTime()-ch*3600000):null;
+    const remain=cutoff?(cutoff-new Date())/3600000:null;
+    const ccls=remain===null?"":remain<0?"danger":remain<2?"warn":"ok";
+    const remainTxt=remain===null?"":remain<0?"⚠ 마감초과":remain.toFixed(1)+"h 남음";
+    const t=getCargoTotals(c);const drv=c.driver||{};
+    const hawbList=(c.hawbs||[]).map(h=>`<span style="font-size:10px;background:var(--bl);color:var(--blue);border-radius:10px;padding:1px 7px;margin-right:3px">${h.hawb}</span>`).join("");
+    return `<div class="cargo-card" onclick="openDetail('${escAWB(c.mawb||c.id)}')">
+      <div class="cc-head"><div><div class="cc-awb">${c.mawb}</div><div style="margin-top:3px">${hawbList}</div></div><span class="badge ${statusClass(c.status)}">${statusLabel(c.status)}</span></div>
+      <div class="cc-sub">${c.airline||""} ${c.flightNo||""} · ${c.origin||""}→${c.dest||""}${dep?" · "+dep.toLocaleTimeString("ko",{hour:"2-digit",minute:"2-digit"}):""} · ${t.tp}pcs / ${t.tg.toFixed(0)}kg</div>
+      ${drv.name?`<div class="cc-drv"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><circle cx="12" cy="7" r="4"/><path d="M5.5 21a8.38 8.38 0 0 1 13 0"/></svg>${drv.name} · ${drv.car||""}</div>`:""}
+      ${cutoff?`<div class="cc-cut ${ccls}">반입 마감 ${cutoff.toLocaleTimeString("ko",{hour:"2-digit",minute:"2-digit"})} · ${remainTxt}</div>`:""}
+    </div>`;
+  }).join("");
+}
+
+function filterList(){
+  const q=document.getElementById("search-input").value.trim().toLowerCase();
+  if(!q){renderList(allCargos);return;}
+  renderList(allCargos.filter(c=>
+    (c.mawb||"").toLowerCase().includes(q)||
+    (c.hawbs||[]).some(h=>(h.hawb||"").toLowerCase().includes(q))||
+    (c.dest||"").toLowerCase().includes(q)||
+    (c.driver?.name||"").toLowerCase().includes(q)
+  ));
+}
+
+function openDetail(key){
+  const c=allCargos.find(x=>x.mawb===key||x.id===key);
+  if(!c)return;
+  currentCargo=c;
+  document.getElementById("list-view").style.display="none";
+  document.getElementById("detail-view").classList.add("show");
+  document.getElementById("det-awb").textContent=c.mawb;
+  document.getElementById("det-meta").textContent=`${c.airline||""} ${c.flightNo||""} · ${c.origin||""} → ${c.dest||""}`;
+
+  // 기본 정보
+  document.getElementById("rc-flt").textContent=`${c.airline||""} ${c.flightNo||""}`;
+  document.getElementById("rc-route").textContent=`${c.origin||""} → ${c.dest||""}`;
+  const t=getCargoTotals(c);
+  document.getElementById("rc-pcs").textContent=t.tp?t.tp+"pcs":"—";
+  document.getElementById("rc-gw").textContent=t.tg?t.tg.toFixed(1)+"kg":"—";
+  // 품목: 각 HAWB 품목 합쳐서 표시
+  document.getElementById("rc-comm").textContent=(c.hawbs||[]).map(h=>h.commodity).filter(Boolean).join(" / ")||"—";
+  const dep=c.etd?new Date(c.etd):null;
+  document.getElementById("rc-etd").textContent=dep?dep.toLocaleString("ko",{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"}):"—";
+  if(dep){
+    const ch=cutHours(c.hawbs);const cut=new Date(dep.getTime()-ch*3600000);const rem=(cut-new Date())/3600000;
+    const cls=rem<0?"danger":rem<2?"warn":"";
+    const el=document.getElementById("rc-cutoff");
+    el.textContent=cut.toLocaleString("ko",{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"})+(rem<0?" ⚠ 마감초과":rem<2?` (${rem.toFixed(1)}h 남음)`:"");
+    el.className="info-val cutoff"+(cls?" "+cls:"");
+  }
+
+  // BL 정보 표시 (Single or HAWB)
+  const isSingle=c.blType==="single"||(!c.blType&&(!c.hawbs||!c.hawbs.length));
+  let blSummary="";
+  if(isSingle){
+    const si=c.singleInfo||{};
+    blSummary=`<div style="display:flex;align-items:center;gap:8px;padding:5px 0">
+      <span style="font-size:10px;background:var(--gl);color:var(--green);border-radius:10px;padding:1px 7px;font-weight:600">Single</span>
+      <span style="font-size:11px;color:#0E7A56">${si.shipperId||""} · ${si.commodity||""}</span>
+      <span style="font-size:10px;color:#3B6D11;font-family:var(--mono)">${si.cargoType||""}</span>
+    </div>`;
+  }else{
+    blSummary=(c.hawbs||[]).map(h=>{
+      const ht=calcPieceTotals(h.pieces||[]);
+      return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:0.5px solid rgba(0,0,0,.05)">
+        <span style="font-size:10px;background:var(--bl);color:var(--blue);border-radius:10px;padding:1px 7px;font-weight:600;white-space:nowrap">${h.hawb}</span>
+        <span style="font-size:11px;color:#185FA5;flex:1">${h.shipperId||""} · ${h.commodity||""}</span>
+        <span style="font-size:10px;color:#4A7FC1;font-family:var(--mono)">${ht.tp}pcs/${ht.tg.toFixed(0)}kg</span>
+      </div>`;
+    }).join("");
+  }
+  document.getElementById("rc-hawb-list").innerHTML=blSummary;
+
+  // 기사 정보
+  const dcard=document.getElementById("ro-driver");
+  const drv=c.driver||{};
+  if(drv.name){
+    dcard.style.display="block";
+    document.getElementById("drv-avatar").textContent=drv.name.charAt(0);
+    document.getElementById("drv-name").textContent=drv.name;
+    document.getElementById("drv-co").textContent=drv.company||"";
+    const tel=(drv.tel||"").replace(/-/g,"");
+    const telEl=document.getElementById("drv-tel");
+    if(tel){telEl.href="tel:"+tel;}else{telEl.style.opacity=".4";telEl.style.pointerEvents="none";}
+    document.getElementById("drv-car").textContent=drv.car||"—";
+    if(drv.eta){
+      const eta=new Date(drv.eta);const diff=(eta-new Date())/60000;
+      document.getElementById("drv-eta").textContent=eta.toLocaleTimeString("ko",{hour:"2-digit",minute:"2-digit"});
+      document.getElementById("drv-eta-sub").textContent=diff<0?"도착 완료":diff<60?Math.round(diff)+"분 후":(diff/60).toFixed(1)+"시간 후";
+    }else{document.getElementById("drv-eta").textContent="미정";document.getElementById("drv-eta-sub").textContent="";}
+  }else{dcard.style.display="none";}
+
+  // 피스 목록: single 또는 HAWB 모드에 따라 표시
+  const piecesCard=document.getElementById("ro-pieces");
+  const hasPieces=isSingle?(c.singlePieces||[]).length>0:(c.hawbs||[]).some(h=>(h.pieces||[]).length>0);
+  if(hasPieces){
+    piecesCard.style.display="block";
+    let tableRows="";
+    let allPieces=[];
+    if(isSingle){
+      (c.singlePieces||[]).forEach((p,pi)=>{
+        const cbm=(Number(p.w)||0)*(Number(p.d)||0)*(Number(p.h)||0)/1000000*(Number(p.pcs)||1);
+        const si=c.singleInfo||{};
+        tableRows+=`<tr><td style="background:rgba(14,122,86,.04);font-size:9px;color:var(--green);font-weight:600;padding:4px 7px">Single</td><td class="dn">${p.desc||si.commodity||"—"}</td><td>${p.pcs||1}</td><td>${p.w||"—"}</td><td>${p.d||"—"}</td><td>${p.h||"—"}</td><td>${p.gw||"—"}</td><td class="cv">${cbm>0?cbm.toFixed(3):"—"}</td></tr>`;
+        allPieces.push({...p, hawb:"Single", commodity:si.commodity});
+      });
+    }else{
+      (c.hawbs||[]).forEach(h=>{
+        (h.pieces||[]).forEach((p,pi)=>{
+          const cbm=(Number(p.w)||0)*(Number(p.d)||0)*(Number(p.h)||0)/1000000*(Number(p.pcs)||1);
+          tableRows+=`<tr><td style="background:rgba(14,95,165,.04);font-size:9px;color:var(--blue);font-weight:600;padding:4px 7px">${h.hawb}</td><td class="dn">${p.desc||h.commodity||"—"}</td><td>${p.pcs||1}</td><td>${p.w||"—"}</td><td>${p.d||"—"}</td><td>${p.h||"—"}</td><td>${p.gw||"—"}</td><td class="cv">${cbm>0?cbm.toFixed(3):"—"}</td></tr>`;
+          allPieces.push({...p, hawb:h.hawb});
+        });
+      });
+    }
+    document.getElementById("pieces-ro-table").innerHTML=`<table>
+      <thead><tr><th>HAWB</th><th>품목</th><th>pcs</th><th>W</th><th>D</th><th>H</th><th>GW</th><th>CBM</th></tr></thead>
+      <tbody>${tableRows}</tbody>
+      <tfoot><tr><td colspan="2" style="text-align:right;color:var(--g3)">합계</td><td class="hl">${t.tp}</td><td colspan="3"></td><td class="hl">${t.tg.toFixed(1)}</td><td class="hl">${t.tc.toFixed(3)}</td></tr></tfoot>
+    </table>`;
+    pieceChecks=allPieces.map(()=>false);
+    renderPieceChecks(allPieces);
+  }else{piecesCard.style.display="none";}
+
+  // 이전 현장 입력 복원
+  const fm=c.fieldMeasure||{};
+  document.getElementById("f-gw").value=fm.gw||"";
+  document.getElementById("f-w").value=fm.w||"";
+  document.getElementById("f-d").value=fm.d||"";
+  document.getElementById("f-h").value=fm.h||"";
+  pcsVal=fm.pcs||t.tp||1;
+  document.getElementById("pcs-n").textContent=pcsVal;
+  document.getElementById("f-note").value=c.note||"";
+  loadType=c.loadType||null;
+  document.getElementById("btn-load").className="tgl load"+(loadType==="load"?" on":"");
+  document.getElementById("btn-unload").className="tgl unload"+(loadType==="unload"?" on":"");
+  photoData=[];updatePhotoCount();calcCBM();
+
+  const done=c.status==="field_done"||c.status==="complete";
+  document.getElementById("done-screen").className="done-screen"+(done?" show":"");
+  document.getElementById("field-input-area").style.display=done?"none":"flex";
+  document.getElementById("submit-wrap").style.display=done?"none":"block";
+  if(done)document.getElementById("done-sub").textContent=`MAWB ${c.mawb}\nHAWB ${(c.hawbs||[]).length}건\n현장 입력 완료\n화주에게 공유되었습니다.`;
+  window.scrollTo(0,0);
+}
+
+function renderPieceChecks(pieces){
+  const n=pieceChecks.filter(Boolean).length;
+  document.getElementById("pieces-ck-count").textContent=`${n}/${pieces.length} 확인됨`;
+  document.getElementById("piece-check-list").innerHTML=pieces.map((p,i)=>`
+    <div class="pcr${pieceChecks[i]?" confirmed":""}" id="pcr-${i}">
+      <div class="pcr-num">${i+1}</div>
+      <div class="pcr-info">
+        <div class="pcr-desc">${p.desc||p.commodity||"피스 "+(i+1)} <span style="font-size:10px;color:var(--g3)">×${p.pcs||1} [${p.hawb||""}]</span></div>
+        <div class="pcr-dim">${p.w||0}×${p.d||0}×${p.h||0}cm · ${p.gw||0}kg/pc</div>
+      </div>
+      <button class="pcr-btn${pieceChecks[i]?" checked":""}" onclick="toggleCheck(${i},${pieces.length})">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      </button>
+    </div>`).join("");
+}
+window.toggleCheck=function(i,total){
+  pieceChecks[i]=!pieceChecks[i];
+  const allPieces=[];(currentCargo.hawbs||[]).forEach(h=>(h.pieces||[]).forEach(p=>allPieces.push({...p,hawb:h.hawb})));
+  renderPieceChecks(allPieces);
+  if(pieceChecks.slice(0,total).every(Boolean))toast("전체 피스 확인 완료! ✓");
+};
+
+function backToList(){currentCargo=null;document.getElementById("list-view").style.display="block";document.getElementById("detail-view").classList.remove("show");renderList(allCargos);window.scrollTo(0,0);}
+function setLoad(t){loadType=t;document.getElementById("btn-load").className="tgl load"+(t==="load"?" on":"");document.getElementById("btn-unload").className="tgl unload"+(t==="unload"?" on":"");}
+function chgPcs(d){pcsVal=Math.max(1,pcsVal+d);document.getElementById("pcs-n").textContent=pcsVal;calcCBM();}
+function calcCBM(){
+  const w=parseFloat(document.getElementById("f-w").value)||0,d=parseFloat(document.getElementById("f-d").value)||0,h=parseFloat(document.getElementById("f-h").value)||0,gw=parseFloat(document.getElementById("f-gw").value)||0,p=pcsVal||1;
+  const res=document.getElementById("cbm-result");
+  if((w&&d&&h)||gw){
+    res.style.display="grid";const cbm=w&&d&&h?w*d*h/1000000:0;const vw=w&&d&&h?w*d*h*p/6000:0;const cw=Math.max(gw,vw);
+    document.getElementById("c-cbm").textContent=cbm?(cbm*p).toFixed(3)+"m³":"—";
+    document.getElementById("c-vw").textContent=vw?vw.toFixed(1)+"kg":"—";
+    document.getElementById("c-cw").textContent=cw?cw.toFixed(1)+"kg":"—";
+  }else{res.style.display="none";}
+}
+function loadPhoto(input,idx,tag){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{photoData[idx]=e.target.result;const slot=document.getElementById("ps"+idx);slot.querySelector("img")?.remove();const sv=slot.querySelector("svg.ph-icon");if(sv)sv.style.display="none";const lb=slot.querySelector(".ph-lbl");if(lb)lb.style.display="none";const img=document.createElement("img");img.src=e.target.result;slot.appendChild(img);slot.classList.add("filled");const pt=slot.querySelector(".ph-tag")||document.createElement("div");pt.className="ph-tag";pt.textContent=tag;slot.appendChild(pt);updatePhotoCount();};
+  reader.readAsDataURL(file);
+}
+function updatePhotoCount(){document.getElementById("photo-count").textContent=photoData.filter(Boolean).length+"/8";}
+
+async function submitField(){
+  const gw=parseFloat(document.getElementById("f-gw").value);if(!gw){toast("실중량을 입력해 주세요.");return;}
+  const btn=document.getElementById("submit-btn");btn.disabled=true;btn.textContent="구글 시트에 저장 중...";
+  const w=parseFloat(document.getElementById("f-w").value)||0,d=parseFloat(document.getElementById("f-d").value)||0,h=parseFloat(document.getElementById("f-h").value)||0;
+  const vw=w&&d&&h?w*d*h*pcsVal/6000:0;const cw=Math.max(gw,vw);
+  const payload={action:"updateField",awb:currentCargo.mawb,status:"field_done",fieldPcs:pcsVal,fieldGw:gw,fieldVw:vw?vw.toFixed(1):"",fieldCw:cw?cw.toFixed(1):"",note:document.getElementById("f-note").value,checkedAt:new Date().toLocaleString("ko-KR"),photoNote:photoData.filter(Boolean).length+"장 촬영"};
+  try{
+    if(SHEET_URL){const res=await fetch(SHEET_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});const result=await res.json();if(!result.ok)throw new Error(result.error||"저장 실패");}
+    const idx=allCargos.findIndex(x=>x.mawb===currentCargo.mawb||x.id===currentCargo.id);
+    if(idx>=0){allCargos[idx].status="field_done";allCargos[idx].fieldMeasure={gw,w,d,h,pcs:pcsVal};currentCargo=allCargos[idx];}
+    document.getElementById("field-input-area").style.display="none";document.getElementById("submit-wrap").style.display="none";
+    document.getElementById("done-screen").className="done-screen show";
+    document.getElementById("done-sub").textContent=`MAWB ${currentCargo.mawb}\nHAWB ${(currentCargo.hawbs||[]).length}건\n${pcsVal}pcs · ${gw}kg\n구글 시트 업데이트 완료`;
+    document.getElementById("sync-txt").textContent="방금 저장됨";
+    toast("구글 시트에 저장 완료! 화주에게 즉시 공유됩니다.");
+  }catch(e){toast("저장 오류: "+e.message);}
+  btn.disabled=false;btn.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> 구글 시트에 저장 · 화주에게 공유';
+}
+
+function enableEdit(){
+  document.getElementById("done-screen").className="done-screen";
+  document.getElementById("field-input-area").style.display="flex";
+  document.getElementById("submit-wrap").style.display="block";
+  toast("수정 모드로 전환되었습니다.");
+  document.getElementById("field-input-area").scrollIntoView({behavior:"smooth"});
+}
+function getDemoData(){return DEMO;}
+if(!localStorage.getItem(STORAGE_URL_KEY)){}
+renderList(getDemoData());
+setInterval(()=>{if(!currentCargo)renderList(allCargos.length?allCargos:getDemoData());},5000);
+</script>
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('./sw.js')
+      .then(()=>console.log('CargoIN SW 등록됨'))
+      .catch(e=>console.log('SW 오류:',e));
+  });
+}
+// iOS 홈 화면 추가 배너 (Safari에서만 표시)
+window.addEventListener('load',()=>{
+  const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isStandalone=window.navigator.standalone;
+  const dismissed=localStorage.getItem('pwa_banner_dismissed');
+  if(isIOS && !isStandalone && !dismissed){
+    const banner=document.createElement('div');
+    banner.style.cssText='position:fixed;bottom:0;left:0;right:0;background:#0E7A56;color:#fff;padding:12px 16px;font-size:13px;display:flex;align-items:center;gap:10px;z-index:9999;safe-area-inset-bottom:env(safe-area-inset-bottom)';
+    banner.innerHTML=`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg><span style="flex:1">홈 화면에 추가하려면 <strong>공유 → 홈 화면에 추가</strong></span><button onclick="localStorage.setItem('pwa_banner_dismissed','1');this.parentElement.remove()" style="background:rgba(255,255,255,.2);border:none;color:#fff;padding:4px 10px;border-radius:20px;font-size:12px;cursor:pointer">닫기</button>`;
+    document.body.appendChild(banner);
+  }
+});
+</script>
+</body>
+</html>

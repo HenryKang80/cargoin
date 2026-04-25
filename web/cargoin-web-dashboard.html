@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>CargoIN — 사무실 대시보드</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Pretendard:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --blue:#0F4C8F;--blue2:#1A6EC4;--blue-light:#E8F2FF;
+  --green:#0E7A56;--green-light:#E6F5EE;
+  --amber:#B96A00;--amber-light:#FFF4E0;
+  --red:#C0392B;--red-light:#FDEEEC;
+  --gray0:#F5F6F8;--gray1:#E8EAED;--gray2:#C9CDD4;--gray3:#8892A0;--gray4:#3D4552;--gray5:#1A1F2A;
+  --radius:10px;--radius-sm:6px;
+  --mono:'IBM Plex Mono',monospace;
+  --sans:'Pretendard',sans-serif;
+  --shadow:0 1px 3px rgba(0,0,0,.08),0 4px 16px rgba(0,0,0,.04);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--gray0);font-family:var(--sans);color:var(--gray5);font-size:14px}
+
+/* ── LAYOUT ── */
+.app{display:grid;grid-template-columns:220px 1fr;grid-template-rows:56px 1fr;height:100vh}
+.topbar{grid-column:1/-1;background:#fff;border-bottom:1px solid var(--gray1);display:flex;align-items:center;padding:0 20px;gap:12px;z-index:10}
+.logo{font-family:var(--mono);font-weight:500;font-size:15px;color:var(--blue);letter-spacing:-0.5px}
+.logo span{color:var(--green)}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.env-badge{font-size:11px;background:var(--amber-light);color:var(--amber);border:1px solid #F5D99B;border-radius:20px;padding:3px 10px}
+.user-avatar{width:30px;height:30px;border-radius:50%;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;cursor:pointer}
+
+.sidebar{background:#fff;border-right:1px solid var(--gray1);padding:16px 12px;display:flex;flex-direction:column;gap:4px;overflow-y:auto}
+.nav-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--radius-sm);font-size:13px;color:var(--gray3);cursor:pointer;transition:all .15s}
+.nav-item:hover{background:var(--gray0);color:var(--gray5)}
+.nav-item.active{background:var(--blue-light);color:var(--blue);font-weight:500}
+.nav-item svg{flex-shrink:0}
+.nav-section{font-size:10px;color:var(--gray2);font-weight:500;padding:10px 10px 4px;letter-spacing:.5px;text-transform:uppercase}
+
+.main{overflow-y:auto;padding:20px}
+
+/* ── STATS ROW ── */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.stat-card{background:#fff;border:1px solid var(--gray1);border-radius:var(--radius);padding:14px 16px}
+.stat-label{font-size:11px;color:var(--gray3);margin-bottom:6px}
+.stat-num{font-size:24px;font-weight:600;font-family:var(--mono);color:var(--gray5)}
+.stat-sub{font-size:11px;color:var(--gray3);margin-top:3px}
+.stat-card.blue .stat-num{color:var(--blue)}
+.stat-card.green .stat-num{color:var(--green)}
+.stat-card.amber .stat-num{color:var(--amber)}
+
+/* ── TWO COLUMN ── */
+.two-col{display:grid;grid-template-columns:1fr 380px;gap:16px}
+
+/* ── PANEL ── */
+.panel{background:#fff;border:1px solid var(--gray1);border-radius:var(--radius);overflow:hidden}
+.panel-head{padding:14px 16px;border-bottom:1px solid var(--gray1);display:flex;align-items:center;gap:8px}
+.panel-title{font-size:13px;font-weight:600;color:var(--gray5)}
+.panel-sub{font-size:11px;color:var(--gray3);margin-left:auto}
+.panel-body{padding:12px 14px}
+
+/* ── SHEETS BAR ── */
+.sheets-bar{background:var(--blue-light);border:1px solid #B8D4F5;border-radius:var(--radius-sm);padding:10px 14px;display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.sheets-icon{width:28px;height:28px;background:var(--blue);border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sheets-text{flex:1}
+.sheets-label{font-size:12px;font-weight:500;color:var(--blue)}
+.sheets-hint{font-size:11px;color:#4A7FC1;margin-top:1px}
+.sheets-input{flex:2;height:30px;border:1px solid #B8D4F5;border-radius:6px;background:#fff;padding:0 10px;font-size:12px;color:var(--gray5);outline:none}
+.sheets-input:focus{border-color:var(--blue2)}
+.btn{height:30px;padding:0 14px;border-radius:6px;border:none;font-size:12px;font-weight:500;cursor:pointer;transition:opacity .15s}
+.btn:hover{opacity:.85}
+.btn-primary{background:var(--blue);color:#fff}
+.btn-ghost{background:var(--gray0);color:var(--gray4);border:1px solid var(--gray1)}
+.btn-green{background:var(--green);color:#fff}
+
+/* ── FORM ── */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.form-grid.g3{grid-template-columns:1fr 1fr 1fr}
+.form-grid.g1{grid-template-columns:1fr}
+.fld{display:flex;flex-direction:column;gap:3px}
+.fld label{font-size:11px;color:var(--gray3);font-weight:500}
+.fld input,.fld select,.fld textarea{height:30px;border:1px solid var(--gray1);border-radius:var(--radius-sm);background:var(--gray0);color:var(--gray5);font-size:12px;padding:0 8px;outline:none;font-family:var(--sans);transition:border-color .15s}
+.fld input:focus,.fld select:focus,.fld textarea:focus{border-color:var(--blue2);background:#fff}
+.fld textarea{height:56px;padding:6px 8px;resize:none}
+.form-sep{height:1px;background:var(--gray1);margin:4px 0}
+.req{color:var(--red);margin-left:2px}
+.form-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}
+
+/* ── CARGO LIST ── */
+.cargo-table{width:100%;border-collapse:collapse}
+.cargo-table th{font-size:11px;color:var(--gray3);font-weight:500;text-align:left;padding:8px 10px;border-bottom:1px solid var(--gray1);white-space:nowrap}
+.cargo-table td{padding:10px 10px;border-bottom:1px solid var(--gray0);vertical-align:middle;font-size:13px}
+.cargo-table tr:hover td{background:var(--gray0);cursor:pointer}
+.cargo-table tr.selected td{background:var(--blue-light)}
+.awb-mono{font-family:var(--mono);font-size:12px;font-weight:500}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;padding:2px 8px;border-radius:20px;font-weight:500;white-space:nowrap}
+.badge-dot{width:5px;height:5px;border-radius:50%}
+.status-wait{background:var(--amber-light);color:var(--amber)}
+.status-field{background:var(--blue-light);color:var(--blue)}
+.status-done{background:var(--green-light);color:var(--green)}
+.route-cell{font-size:12px;color:var(--gray4)}
+.route-mono{font-family:var(--mono);font-size:11px}
+.action-btn{height:24px;padding:0 10px;border-radius:4px;border:1px solid var(--gray1);background:#fff;font-size:11px;color:var(--gray4);cursor:pointer}
+.action-btn:hover{background:var(--blue-light);border-color:var(--blue2);color:var(--blue)}
+
+/* ── CUTOFF SIDEBAR ── */
+.cutoff-card{background:var(--gray0);border-radius:var(--radius-sm);padding:12px;margin-bottom:10px}
+.co-awb{font-family:var(--mono);font-size:11px;color:var(--gray4);margin-bottom:6px}
+.co-row{display:flex;justify-content:space-between;align-items:center;font-size:12px;margin-bottom:3px}
+.co-label{color:var(--gray3)}
+.co-value{font-weight:500;color:var(--gray5)}
+.co-time{font-size:16px;font-weight:600;font-family:var(--mono)}
+.co-danger{color:var(--red)}
+.co-warn{color:var(--amber)}
+.co-ok{color:var(--green)}
+.co-bar{height:4px;background:var(--gray1);border-radius:2px;margin-top:8px;overflow:hidden}
+.co-fill{height:100%;border-radius:2px;transition:width .3s}
+
+/* ── QR BADGE ── */
+.qr-hint{background:var(--green-light);border:1px solid #9FE1CB;border-radius:var(--radius-sm);padding:10px 12px;font-size:12px;color:var(--green);display:flex;align-items:center;gap:8px}
+
+/* ── PIECES TABLE ── */
+/* 컬럼: # | 품목 | pcs | W | D | H | VW(kg) | GW(kg) | CBM | del */
+.pieces-wrap{border:1px solid var(--gray1);border-radius:var(--radius-sm);overflow:hidden;margin-top:4px}
+.pieces-head{display:grid;grid-template-columns:28px minmax(0,1.8fr) 52px 58px 58px 58px 62px 62px 62px 28px;gap:0;background:var(--gray0);border-bottom:1px solid var(--gray1)}
+.pieces-head span{font-size:10px;font-weight:600;color:var(--gray3);padding:5px 6px;text-align:center;white-space:nowrap}
+.pieces-head span:first-child,.pieces-head span:last-child{padding:5px 3px}
+.pieces-head span:nth-child(2){text-align:left;padding-left:8px}
+.piece-row{display:grid;grid-template-columns:28px minmax(0,1.8fr) 52px 58px 58px 58px 62px 62px 62px 28px;gap:0;border-bottom:1px solid var(--gray0);align-items:center}
+.piece-row:last-child{border-bottom:none}
+.piece-row:hover{background:var(--gray0)}
+.piece-row input{height:30px;border:none;border-right:1px solid var(--gray1);background:transparent;color:var(--gray5);font-size:11px;padding:0 6px;outline:none;width:100%;text-align:center;font-family:var(--sans)}
+.piece-row input:focus{background:var(--blue-light)}
+.piece-row input.desc-input{text-align:left;padding-left:8px}
+.piece-row .row-num{font-size:10px;color:var(--gray3);text-align:center;padding:0 3px;font-family:var(--mono)}
+.piece-row .cbm-cell{font-size:10px;color:var(--green);text-align:center;padding:0 4px;font-family:var(--mono);font-weight:500}
+.piece-row .vw-cell{font-size:10px;color:var(--blue);text-align:center;padding:0 4px;font-family:var(--mono);font-weight:500;border-right:1px solid var(--gray1)}
+.piece-del{width:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--gray2);transition:color .15s}
+.piece-del:hover{color:var(--red)}
+.pieces-footer{background:var(--gray0);border-top:1px solid var(--gray1);display:grid;grid-template-columns:28px minmax(0,1.8fr) 52px 58px 58px 58px 62px 62px 62px 28px;padding:5px 0}
+.pf-cell{font-size:10px;font-weight:600;color:var(--gray4);text-align:center;padding:0 6px;font-family:var(--mono)}
+.pf-label{font-size:10px;color:var(--gray3);padding:0 6px}
+.add-piece-btn{display:flex;align-items:center;gap:6px;height:28px;padding:0 12px;border:1.5px dashed var(--gray2);border-radius:var(--radius-sm);background:transparent;color:var(--gray3);font-size:11px;cursor:pointer;margin-top:6px;transition:all .15s;width:100%;justify-content:center}
+.add-piece-btn:hover{border-color:var(--blue2);color:var(--blue);background:var(--blue-light)}
+
+/* ── DRIVER SECTION ── */
+.section-divider{display:flex;align-items:center;gap:8px;margin:8px 0 6px}
+.section-divider span{font-size:10px;font-weight:600;color:var(--gray3);white-space:nowrap;text-transform:uppercase;letter-spacing:.5px}
+.section-divider::before,.section-divider::after{content:'';flex:1;height:1px;background:var(--gray1)}
+
+/* ── HAWB CARD ── */
+.hawb-card{background:var(--gray0);border:1px solid var(--gray1);border-radius:var(--radius);padding:12px 14px;position:relative}
+.hawb-card-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.hawb-num{font-size:11px;font-weight:600;color:#fff;background:var(--blue);border-radius:20px;padding:2px 10px;flex-shrink:0}
+.hawb-del{margin-left:auto;width:24px;height:24px;border-radius:50%;border:1px solid var(--gray2);background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--gray3);transition:all .15s}
+.hawb-del:hover{background:var(--red-light);border-color:var(--red);color:var(--red)}
+.hawb-inner{background:#fff;border-radius:var(--radius-sm);border:1px solid var(--gray1);padding:10px 12px;margin-bottom:8px}
+.hawb-section-lbl{font-size:10px;font-weight:600;color:var(--gray3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px}
+
+/* ── BL TYPE SELECTOR ── */
+.bl-type-btn{flex:1;padding:10px 14px;border-radius:var(--radius-sm);border:1.5px solid var(--gray1);background:#fff;color:var(--gray4);font-size:12px;font-weight:500;cursor:pointer;text-align:left;transition:all .15s;line-height:1.4;font-family:var(--sans)}
+.bl-type-btn:hover{border-color:var(--blue2);background:var(--blue-light);color:var(--blue)}
+.bl-type-active{border-color:var(--blue);background:var(--blue-light);color:var(--blue)}
+.mawb-totals{background:var(--blue-light);border:1px solid #B5D4F4;border-radius:var(--radius-sm);padding:10px 14px;margin-top:12px}
+.mawb-totals-title{font-size:11px;font-weight:600;color:var(--blue);margin-bottom:8px}
+.mawb-totals-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.mt-cell{background:#fff;border-radius:6px;padding:7px 10px;text-align:center}
+.mt-label{font-size:10px;color:var(--gray3);margin-bottom:2px}
+.mt-value{font-size:14px;font-weight:600;font-family:var(--mono);color:var(--blue)}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--gray5);color:#fff;font-size:13px;padding:10px 18px;border-radius:var(--radius);z-index:999;opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none}
+.toast.show{opacity:1;transform:none}
+
+/* ── SYNC STATUS ── */
+.sync-row{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--green)}
+.sync-pulse{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- topbar -->
+  <div class="topbar">
+    <div class="logo">Cargo<span>IN</span></div>
+    <div style="font-size:12px;color:var(--gray3);margin-left:4px">사무실 대시보드</div>
+    <div class="topbar-right">
+      <div class="sync-row"><div class="sync-pulse"></div><span id="sync-label">Google Sheets 연결됨</span></div>
+      <div class="env-badge">데모 모드</div>
+      <div class="user-avatar">담당</div>
+    </div>
+  </div>
+
+  <!-- sidebar -->
+  <div class="sidebar">
+    <div class="nav-section">메뉴</div>
+    <div class="nav-item active">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      대시보드
+    </div>
+    <div class="nav-item">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+      화물 목록
+    </div>
+    <div class="nav-item">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      AWB 추적
+    </div>
+    <div class="nav-section">설정</div>
+    <div class="nav-item" onclick="openFieldApp()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+      현장 앱 열기
+    </div>
+    <div class="nav-item">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+      Sheets 연동
+    </div>
+  </div>
+
+  <!-- main -->
+  <div class="main">
+
+    <!-- stats -->
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-label">오늘 등록 화물</div>
+        <div class="stat-num" id="stat-total">0</div>
+        <div class="stat-sub">건</div>
+      </div>
+      <div class="stat-card amber">
+        <div class="stat-label">현장 입력 대기</div>
+        <div class="stat-num" id="stat-wait">0</div>
+        <div class="stat-sub">건</div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-label">현장 완료</div>
+        <div class="stat-num" id="stat-done">0</div>
+        <div class="stat-sub">건</div>
+      </div>
+      <div class="stat-card blue">
+        <div class="stat-label">반입 완료</div>
+        <div class="stat-num" id="stat-complete">0</div>
+        <div class="stat-sub">건</div>
+      </div>
+    </div>
+
+    <div class="two-col">
+
+      <!-- left: list + form -->
+      <div style="display:flex;flex-direction:column;gap:14px">
+
+        <!-- Google Sheets bar -->
+        <div class="panel">
+          <div class="panel-body" style="padding:12px 16px">
+            <div class="sheets-bar">
+              <div class="sheets-icon">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+              </div>
+              <div class="sheets-text">
+                <div class="sheets-label">Google Sheets 연동</div>
+                <div class="sheets-hint">Apps Script Web App URL을 입력하면 실시간 동기화됩니다</div>
+              </div>
+              <input class="sheets-input" id="sheets-url" placeholder="https://script.google.com/macros/s/..." />
+              <button class="btn btn-primary" onclick="loadSheets()">불러오기</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- cargo list -->
+        <div class="panel">
+          <div class="panel-head">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            <div class="panel-title">화물 목록</div>
+            <div class="panel-sub" id="list-count"></div>
+            <button class="btn btn-ghost" style="margin-left:8px" onclick="exportCSV()">CSV 내보내기</button>
+            <button class="btn btn-primary" onclick="showForm(null)">+ 신규 등록</button>
+          </div>
+          <div class="panel-body" style="padding:0;overflow-x:auto">
+            <table class="cargo-table">
+              <thead><tr>
+                <th>AWB</th><th>항공사·편명</th><th>노선</th><th>출발</th><th>품목</th><th>상태</th><th></th>
+              </tr></thead>
+              <tbody id="cargo-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- registration form -->
+        <div class="panel" id="form-panel">
+          <div class="panel-head">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            <div class="panel-title" id="form-title">신규 화물 등록</div>
+          </div>
+          <div class="panel-body">
+            <input type="hidden" id="edit-id"/>
+
+            <!-- ① 기본 정보 -->
+            <div class="section-divider"><span>기본 정보</span></div>
+            <div class="form-grid g3" style="margin-bottom:7px">
+              <div class="fld">
+                <label>MAWB (마스터) <span class="req">*</span></label>
+                <input id="f-awb" placeholder="000-1234 5678" style="font-family:var(--mono);letter-spacing:.5px" oninput="formatMAWB(this)"/>
+                <div style="font-size:10px;color:var(--gray3);margin-top:2px">형식: 000-1234 5678 (항공사코드-일련번호)</div>
+              </div>
+              <div class="fld">
+                <label>항공사 코드</label>
+                <input id="f-airline" placeholder="예) KE, OZ, FX, CX" maxlength="4" style="text-transform:uppercase;font-family:var(--mono)" oninput="this.value=this.value.toUpperCase()"/>
+              </div>
+              <div class="fld"><label>편명 번호</label><input id="f-fltno" placeholder="901"/></div>
+            </div>
+            <div class="form-grid g3" style="margin-bottom:7px">
+              <div class="fld"><label>출발지 (IATA)</label><input id="f-org" placeholder="ICN" maxlength="3" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"/></div>
+              <div class="fld"><label>목적지 (IATA)</label><input id="f-dst" placeholder="LAX" maxlength="3" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"/></div>
+              <div class="fld"><label>출발 예정일시</label><input id="f-etd" type="datetime-local" step="300"/></div>
+            </div>
+
+            <!-- BL 타입 선택 -->
+            <div class="section-divider" style="margin-top:8px"><span>BL 유형 선택</span></div>
+            <div style="display:flex;gap:8px;margin-bottom:12px">
+              <button id="btn-type-single" class="bl-type-btn bl-type-active" onclick="setBLType('single')">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                MAWB Single
+                <span style="font-size:10px;display:block;font-weight:400;margin-top:1px;opacity:.8">HAWB 없이 단독 진행</span>
+              </button>
+              <button id="btn-type-hawb" class="bl-type-btn" onclick="setBLType('hawb')">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="14" y2="16"/></svg>
+                MAWB + HAWB
+                <span style="font-size:10px;display:block;font-weight:400;margin-top:1px;opacity:.8">HAWB 여러 개 사용</span>
+              </button>
+            </div>
+
+            <!-- MAWB Single 영역 -->
+            <div id="single-section">
+              <div style="font-size:11px;color:var(--gray3);margin-bottom:8px">MAWB 단독으로 화물 정보를 직접 입력합니다.</div>
+              <div class="hawb-inner" style="background:var(--gray0);border-radius:var(--radius-sm);border:1px solid var(--gray1);padding:10px 12px">
+                <div class="hawb-section-lbl">화물 정보</div>
+                <div class="form-grid" style="margin-bottom:6px">
+                  <div class="fld"><label>화물 종류</label>
+                    <select id="f-single-type">
+                      <option>일반화물</option><option>위험물 (DG)</option><option>냉장 (COL)</option>
+                      <option>냉동 (FRO)</option><option>귀중품 (VAL)</option><option>생동물 (AVI)</option><option>의약품 (PIL)</option>
+                    </select>
+                  </div>
+                  <div class="fld"><label>화주 (Shipper)</label><input id="f-single-shipper" placeholder="회사명"/></div>
+                </div>
+                <div class="form-grid g1" style="margin-bottom:7px">
+                  <div class="fld"><label>품목 (영문)</label><input id="f-single-comm" placeholder="예) Electronic parts, Lithium battery pack"/></div>
+                </div>
+                <div class="hawb-section-lbl">피스 · 사이즈 · 중량</div>
+                <div class="pieces-wrap" style="margin-top:0">
+                  <div class="pieces-head">
+                    <span>#</span><span>품목</span><span>pcs</span><span>W(cm)</span><span>D(cm)</span><span>H(cm)</span><span>VW(kg)</span><span>GW(kg)</span><span>CBM</span><span></span>
+                  </div>
+                  <div id="single-pieces-body"></div>
+                  <div class="pieces-footer">
+                    <span></span><span class="pf-label">합계</span>
+                    <span class="pf-cell" id="s-tot-pcs">—</span>
+                    <span class="pf-cell"></span><span class="pf-cell"></span><span class="pf-cell"></span>
+                    <span class="pf-cell" id="s-tot-vw">—</span>
+                    <span class="pf-cell" id="s-tot-gw">—</span>
+                    <span class="pf-cell" id="s-tot-cbm">—</span>
+                    <span></span>
+                  </div>
+                </div>
+                <button class="add-piece-btn" style="margin-top:6px" onclick="addSinglePiece()">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  피스 행 추가
+                </button>
+              </div>
+              <div class="mawb-totals" style="margin-top:8px" id="single-totals-area"></div>
+            </div>
+
+            <!-- MAWB + HAWB 영역 -->
+            <div id="hawb-section" style="display:none">
+              <div style="font-size:11px;color:var(--gray3);margin-bottom:8px">HAWB 하나 = 화주 한 명. 각 HAWB에 품목·화주·피스 정보를 별도로 입력하세요.</div>
+              <div id="hawb-list" style="display:flex;flex-direction:column;gap:10px"></div>
+              <div id="mawb-totals-area"></div>
+              <button class="add-piece-btn" style="margin-top:8px" onclick="addHawb()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                HAWB 추가
+              </button>
+            </div>
+
+            <!-- ③ 기사 정보 -->
+            <div class="section-divider" style="margin-top:10px"><span>기사 정보 (전체 공통)</span></div>
+            <div class="form-grid g3" style="margin-bottom:7px">
+              <div class="fld"><label>기사 이름</label><input id="f-drv-name" placeholder="홍길동"/></div>
+              <div class="fld"><label>연락처</label><input id="f-drv-tel" placeholder="010-0000-0000" type="tel"/></div>
+              <div class="fld"><label>차량 번호</label><input id="f-drv-car" placeholder="12가 3456" style="font-family:var(--mono)"/></div>
+            </div>
+            <div class="form-grid" style="margin-bottom:0">
+              <div class="fld"><label>운송사</label><input id="f-drv-co" placeholder="예) 한진택배, 로젠택배, 자가운송"/></div>
+              <div class="fld"><label>도착 예정시간</label><input id="f-drv-eta" type="datetime-local" step="300"/></div>
+            </div>
+
+            <div class="form-actions" style="margin-top:8px">
+              <button class="btn btn-ghost" onclick="resetForm()">취소</button>
+              <button class="btn btn-green" onclick="saveForm()">저장 + 현장 전송</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- right sidebar: cutoff + qr -->
+      <div style="display:flex;flex-direction:column;gap:14px">
+
+        <div class="panel">
+          <div class="panel-head">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <div class="panel-title">Cut-off 타이머</div>
+          </div>
+          <div class="panel-body" id="cutoff-body">
+            <div style="font-size:12px;color:var(--gray3)">화물을 선택하면 반입 마감 시간을 확인할 수 있습니다.</div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="3" height="3"/></svg>
+            <div class="panel-title">현장 앱 링크</div>
+          </div>
+          <div class="panel-body">
+            <div class="qr-hint">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+              <div>
+                <div style="font-weight:500;font-size:12px">현장 직원에게 공유</div>
+                <div style="font-size:11px;margin-top:2px;opacity:.8">아래 버튼으로 현장 앱을 새 탭에서 열거나 링크를 복사하세요</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:6px;margin-top:10px">
+              <button class="btn btn-green" style="flex:1" onclick="openFieldApp()">현장 앱 열기</button>
+              <button class="btn btn-ghost" onclick="copyFieldLink()">링크 복사</button>
+            </div>
+            <div style="margin-top:10px;font-size:11px;color:var(--gray3)">
+              현장 앱에서는 사이즈·중량·사진·상하차만 입력합니다.<br>기본 정보는 여기서 자동으로 불러옵니다.
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            <div class="panel-title">실시간 현황</div>
+          </div>
+          <div class="panel-body" id="activity-body" style="display:flex;flex-direction:column;gap:6px">
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const DEMO=[
+  // MAWB Single 케이스
+  {
+    id:"1",mawb:"180-1234 5678",blType:"single",airline:"KE",flightNo:"KE901",origin:"ICN",dest:"LAX",
+    etd:"2025-04-18T22:10",
+    singleInfo:{cargoType:"일반화물",commodity:"Electronic parts",shipperId:"삼성전자"},
+    singlePieces:[
+      {desc:"Main unit",pcs:2,w:80,d:60,h:50,gw:45},
+      {desc:"Accessories",pcs:3,w:40,d:30,h:20,gw:12}
+    ],
+    hawbs:[],
+    driver:{name:"김철수",tel:"010-1234-5678",car:"12가 3456",company:"한진운송",eta:"2025-04-18T18:00"},
+    status:"pending_field",loadType:null,note:""
+  },
+  // MAWB + HAWB 케이스
+  {
+    id:"2",mawb:"020-9876 5432",blType:"hawb",airline:"OZ",flightNo:"OZ222",origin:"ICN",dest:"FRA",
+    etd:"2025-04-19T14:30",
+    singleInfo:null,singlePieces:[],
+    hawbs:[
+      {hawb:"SEL-240010",cargoType:"일반화물",commodity:"Automotive parts",shipperId:"현대모비스",pieces:[{desc:"",pcs:1,w:120,d:80,h:60,gw:85}]},
+      {hawb:"SEL-240011",cargoType:"일반화물",commodity:"Steel parts",shipperId:"POSCO",pieces:[{desc:"",pcs:2,w:80,d:60,h:40,gw:120}]}
+    ],
+    driver:{name:"",tel:"",car:"",company:"",eta:""},
+    status:"pending_field",loadType:null,note:""
+  },
+  // MAWB Single + DG
+  {
+    id:"3",mawb:"172-1122 3344",blType:"single",airline:"KE",flightNo:"KE085",origin:"ICN",dest:"NRT",
+    etd:"2025-04-18T09:55",
+    singleInfo:{cargoType:"위험물 (DG)",commodity:"Lithium battery (UN3480)",shipperId:"삼성SDI"},
+    singlePieces:[{desc:"Battery pack",pcs:3,w:60,d:40,h:50,gw:28}],
+    hawbs:[],
+    driver:{name:"이영희",tel:"010-9876-5432",car:"34나 5678",company:"자가운송",eta:"2025-04-18T05:30"},
+    status:"field_done",loadType:"load",note:"DGD 첨부 완료"
+  }
+];
+function getAll(){try{const r=localStorage.getItem("cargoin_v1");return r?JSON.parse(r):DEMO}catch{return DEMO}}
+function saveAll(l){localStorage.setItem("cargoin_v1",JSON.stringify(l))}
+function upsert(item){const l=getAll();const i=l.findIndex(c=>c.id===item.id);if(i>=0)l[i]={...l[i],...item};else l.unshift({...item,id:String(Date.now())});saveAll(l)}
+function statusLabel(s){return{pending_field:"입력 대기",field_done:"현장 완료",complete:"반입 완료"}[s]||s}
+function statusClass(s){return{pending_field:"status-wait",field_done:"status-field",complete:"status-done"}[s]||""}
+function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2800)}
+function cutHours(hawbs){return (hawbs||[]).some(h=>h.cargoType?.includes("DG")||h.cargoType?.includes("위험물"))?6:4}
+
+function calcPieceTotals(pieces){
+  let tp=0,tg=0,tc=0;
+  (pieces||[]).forEach(p=>{const n=Number(p.pcs)||0;const cbm=(Number(p.w)||0)*(Number(p.d)||0)*(Number(p.h)||0)/1000000;tp+=n;tg+=(Number(p.gw)||0)*n;tc+=cbm*n;});
+  const vw=tc*166.67;return{totalPcs:tp,totalGw:tg,totalCbm:tc,totalVw:vw,cw:Math.max(tg,vw)};
+}
+// 화물 합계 계산 (single/hawb 모드 공통)
+function getCargoTotals(c){
+  if(c.blType==="single"||(!c.blType&&(!c.hawbs||!c.hawbs.length))){
+    return calcPieceTotals(c.singlePieces||[]);
+  }
+  return calcMawbTotals(c.hawbs||[]);
+}
+// HAWB 모드 cut-off (DG 포함 여부)
+function cargoHasDG(c){
+  if(c.blType==="single"){return (c.singleInfo?.cargoType||"").includes("DG")||(c.singleInfo?.cargoType||"").includes("위험물");}
+  return (c.hawbs||[]).some(h=>h.cargoType?.includes("DG")||h.cargoType?.includes("위험물"));
+}
+
+// ── MAWB 번호 자동 포맷 (000-1234 5678) ──
+window.formatMAWB=function(el){
+  // 숫자와 하이픈만 허용, 공백 포함 형식으로 자동 변환
+  let v=el.value.replace(/[^\d]/g,"");
+  if(v.length<=3) el.value=v;
+  else if(v.length<=7) el.value=v.slice(0,3)+"-"+v.slice(3);
+  else el.value=v.slice(0,3)+"-"+v.slice(3,7)+" "+v.slice(7,11);
+  // 유효성 색상
+  const clean=el.value.replace(/\s/g,"");
+  const valid=/^\d{3}-\d{8}$/.test(clean);
+  el.style.borderColor=el.value?(valid?"var(--green)":"var(--amber)"):"";
+}
+
+// MAWB 정규화 (저장 시 공백 제거)
+function normMAWB(v){return (v||"").replace(/\s/g,"");}
+
+// ── BL 타입 토글 ──
+let blType="single"; // "single" | "hawb"
+
+window.setBLType=function(type){
+  blType=type;
+  document.getElementById("btn-type-single").className="bl-type-btn"+(type==="single"?" bl-type-active":"");
+  document.getElementById("btn-type-hawb").className="bl-type-btn"+(type==="hawb"?" bl-type-active":"");
+  document.getElementById("single-section").style.display=type==="single"?"block":"none";
+  document.getElementById("hawb-section").style.display=type==="hawb"?"block":"none";
+}
+
+// ── Single Piece 관리 ──
+let singlePieces=[];
+
+function renderSinglePiecesTable(){
+  const body=document.getElementById("single-pieces-body");
+  body.innerHTML=singlePieces.map((p,i)=>{
+    const w=Number(p.w)||0,d=Number(p.d)||0,h=Number(p.h)||0,pcs=Number(p.pcs)||1;
+    const cbm=w*d*h/1000000*pcs;
+    const vw=w*d*h*pcs/6000;
+    return `<div class="piece-row" id="spr-${i}">
+      <div class="row-num">${i+1}</div>
+      <input class="desc-input" value="${p.desc||""}" placeholder="품목명" oninput="updateSinglePiece(${i},'desc',this.value)"/>
+      <input type="number" value="${p.pcs||1}" min="1" oninput="updateSinglePiece(${i},'pcs',this.value)"/>
+      <input type="number" value="${p.w||""}" placeholder="0" oninput="updateSinglePiece(${i},'w',this.value)"/>
+      <input type="number" value="${p.d||""}" placeholder="0" oninput="updateSinglePiece(${i},'d',this.value)"/>
+      <input type="number" value="${p.h||""}" placeholder="0" oninput="updateSinglePiece(${i},'h',this.value)"/>
+      <div class="vw-cell" id="spr-vw-${i}">${vw>0?vw.toFixed(1):"—"}</div>
+      <input type="number" value="${p.gw||""}" placeholder="0.0" step="0.1" oninput="updateSinglePiece(${i},'gw',this.value)"/>
+      <div class="cbm-cell" id="spr-cbm-${i}">${cbm>0?cbm.toFixed(3):"—"}</div>
+      <div class="piece-del" onclick="deleteSinglePiece(${i})">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </div>
+    </div>`;
+  }).join("");
+  updateSingleTotals();
+}
+
+function updateSinglePiece(i,field,val){
+  singlePieces[i][field]=val;
+  const p=singlePieces[i];
+  const w=Number(p.w)||0,d=Number(p.d)||0,h=Number(p.h)||0,pcs=Number(p.pcs)||1;
+  const cbm=w*d*h/1000000*pcs;
+  const vw=w*d*h*pcs/6000;
+  const cbmEl=document.getElementById("spr-cbm-"+i);
+  const vwEl=document.getElementById("spr-vw-"+i);
+  if(cbmEl) cbmEl.textContent=cbm>0?cbm.toFixed(3):"—";
+  if(vwEl)  vwEl.textContent=vw>0?vw.toFixed(1):"—";
+  updateSingleTotals();
+}
+
+function updateSingleTotals(){
+  const t=calcPieceTotals(singlePieces);
+  document.getElementById("s-tot-pcs").textContent=t.totalPcs||"—";
+  document.getElementById("s-tot-vw").textContent=t.totalVw>0?t.totalVw.toFixed(1)+"kg":"—";
+  document.getElementById("s-tot-gw").textContent=t.totalGw?t.totalGw.toFixed(1)+"kg":"—";
+  document.getElementById("s-tot-cbm").textContent=t.totalCbm?t.totalCbm.toFixed(3):"—";
+  const el=document.getElementById("single-totals-area");
+  if(!el)return;
+  el.innerHTML=t.totalPcs?`<div class="mawb-totals"><div class="mawb-totals-title">합계 (MAWB Single)</div><div class="mawb-totals-grid"><div class="mt-cell"><div class="mt-label">총 수량</div><div class="mt-value">${t.totalPcs} pcs</div></div><div class="mt-cell"><div class="mt-label">총 실중량</div><div class="mt-value">${t.totalGw.toFixed(1)} kg</div></div><div class="mt-cell"><div class="mt-label">볼륨중량</div><div class="mt-value">${t.totalVw.toFixed(1)} kg</div></div><div class="mt-cell"><div class="mt-label">운임중량</div><div class="mt-value">${t.cw.toFixed(1)} kg</div></div></div></div>`:"";
+}
+
+window.addSinglePiece=function(){
+  singlePieces.push({desc:"",pcs:1,w:"",d:"",h:"",gw:""});
+  renderSinglePiecesTable();
+}
+window.deleteSinglePiece=function(i){
+  if(singlePieces.length<=1){toast("최소 1개의 행은 유지해야 합니다.");return;}
+  singlePieces.splice(i,1);
+  renderSinglePiecesTable();
+}
+
+function hawbHtml(h,idx){
+  const t=calcPieceTotals(h.pieces||[]);
+  const piecesHtml=(h.pieces||[]).map((p,pi)=>{
+    const w=Number(p.w)||0,d=Number(p.d)||0,hh=Number(p.h)||0,pcs=Number(p.pcs)||1;
+    const cbm=w*d*hh/1000000*pcs;
+    const vw=w*d*hh*pcs/6000;
+    return `<div class="piece-row" id="pr-${idx}-${pi}">
+      <div class="row-num">${pi+1}</div>
+      <input class="desc-input" value="${p.desc||""}" placeholder="품목명" oninput="updateHawbPiece(${idx},${pi},'desc',this.value)"/>
+      <input type="number" value="${p.pcs||1}" min="1" oninput="updateHawbPiece(${idx},${pi},'pcs',this.value)"/>
+      <input type="number" value="${p.w||""}" placeholder="0" oninput="updateHawbPiece(${idx},${pi},'w',this.value)"/>
+      <input type="number" value="${p.d||""}" placeholder="0" oninput="updateHawbPiece(${idx},${pi},'d',this.value)"/>
+      <input type="number" value="${p.h||""}" placeholder="0" oninput="updateHawbPiece(${idx},${pi},'h',this.value)"/>
+      <div class="vw-cell" id="hpr-vw-${idx}-${pi}">${vw>0?vw.toFixed(1):"—"}</div>
+      <input type="number" value="${p.gw||""}" placeholder="0.0" step="0.1" oninput="updateHawbPiece(${idx},${pi},'gw',this.value)"/>
+      <div class="cbm-cell" id="hpr-cbm-${idx}-${pi}">${cbm>0?cbm.toFixed(3):"—"}</div>
+      <div class="piece-del" onclick="deleteHawbPiece(${idx},${pi})"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+    </div>`;
+  }).join("");
+  const cargoOpts=["일반화물","위험물 (DG)","냉장 (COL)","냉동 (FRO)","귀중품 (VAL)","생동물 (AVI)","의약품 (PIL)"];
+  return `<div class="hawb-card" id="hawb-card-${idx}">
+    <div class="hawb-card-head">
+      <span class="hawb-num">HAWB ${idx+1}</span>
+      <span style="font-size:12px;font-weight:500;color:var(--gray4);font-family:var(--mono)">${h.hawb||""}</span>
+      <div class="hawb-del" onclick="deleteHawb(${idx})" title="HAWB 삭제"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></div>
+    </div>
+    <div class="hawb-inner">
+      <div class="hawb-section-lbl">HAWB 기본 정보</div>
+      <div class="form-grid g3" style="margin-bottom:6px">
+        <div class="fld"><label>HAWB 번호 <span class="req">*</span></label><input style="font-family:var(--mono)" value="${h.hawb||""}" placeholder="예) KGL-240001" oninput="hawbRows[${idx}].hawb=this.value;renderMawbTotals()"/></div>
+        <div class="fld"><label>화물 종류</label><select onchange="hawbRows[${idx}].cargoType=this.value">${cargoOpts.map(o=>`<option${h.cargoType===o?" selected":""}>${o}</option>`).join("")}</select></div>
+        <div class="fld"><label>화주 (Shipper)</label><input value="${h.shipperId||""}" placeholder="회사명" oninput="hawbRows[${idx}].shipperId=this.value"/></div>
+      </div>
+      <div class="form-grid g1"><div class="fld"><label>품목 (영문)</label><input value="${h.commodity||""}" placeholder="예) Electronic parts" oninput="hawbRows[${idx}].commodity=this.value"/></div></div>
+    </div>
+    <div class="hawb-inner">
+      <div class="hawb-section-lbl">피스 · 사이즈 · 중량</div>
+      <div class="pieces-wrap" style="margin-top:0">
+        <div class="pieces-head"><span>#</span><span>품목</span><span>pcs</span><span>W</span><span>D</span><span>H</span><span>VW(kg)</span><span>GW(kg)</span><span>CBM</span><span></span></div>
+        <div id="hpieces-${idx}">${piecesHtml}</div>
+        <div class="pieces-footer"><span></span><span class="pf-label">합계</span><span class="pf-cell">${t.totalPcs||"—"}</span><span class="pf-cell"></span><span class="pf-cell"></span><span class="pf-cell"></span><span class="pf-cell">${t.totalVw?t.totalVw.toFixed(1)+"kg":"—"}</span><span class="pf-cell">${t.totalGw?t.totalGw.toFixed(1)+"kg":"—"}</span><span class="pf-cell">${t.totalCbm?t.totalCbm.toFixed(3):"—"}</span><span></span></div>
+      </div>
+      <button class="add-piece-btn" style="margin-top:6px" onclick="addHawbPiece(${idx})"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> 피스 행 추가</button>
+    </div>
+  </div>`;
+}
+
+function renderHawbList(){document.getElementById("hawb-list").innerHTML=hawbRows.map((h,i)=>hawbHtml(h,i)).join("");renderMawbTotals();}
+function renderMawbTotals(){
+  const t=calcMawbTotals(hawbRows);const el=document.getElementById("mawb-totals-area");if(!el)return;
+  el.innerHTML=`<div class="mawb-totals"><div class="mawb-totals-title">MAWB 전체 합계 (${hawbRows.length}개 HAWB)</div><div class="mawb-totals-grid"><div class="mt-cell"><div class="mt-label">총 수량</div><div class="mt-value">${t.totalPcs} pcs</div></div><div class="mt-cell"><div class="mt-label">총 실중량</div><div class="mt-value">${t.totalGw.toFixed(1)} kg</div></div><div class="mt-cell"><div class="mt-label">총 CBM</div><div class="mt-value">${t.totalCbm.toFixed(3)}</div></div><div class="mt-cell"><div class="mt-label">총 운임중량</div><div class="mt-value">${t.cw.toFixed(1)} kg</div></div></div></div>`;
+}
+window.addHawb=function(){hawbRows.push({hawb:"",cargoType:"일반화물",commodity:"",shipperId:"",pieces:[{desc:"",pcs:1,w:"",d:"",h:"",gw:""}]});renderHawbList();setTimeout(()=>{const cards=document.querySelectorAll(".hawb-card");if(cards.length)cards[cards.length-1].scrollIntoView({behavior:"smooth"});},100);}
+window.deleteHawb=function(idx){if(hawbRows.length<=1){toast("최소 1개의 HAWB가 필요합니다.");return;}hawbRows.splice(idx,1);renderHawbList();}
+window.addHawbPiece=function(hIdx){hawbRows[hIdx].pieces.push({desc:"",pcs:1,w:"",d:"",h:"",gw:""});renderHawbList();}
+window.deleteHawbPiece=function(hIdx,pIdx){if((hawbRows[hIdx].pieces||[]).length<=1){toast("피스가 최소 1개 필요합니다.");return;}hawbRows[hIdx].pieces.splice(pIdx,1);renderHawbList();}
+window.updateHawbPiece=function(hIdx,pIdx,field,val){
+  hawbRows[hIdx].pieces[pIdx][field]=val;
+  const p=hawbRows[hIdx].pieces[pIdx];
+  const w=Number(p.w)||0,d=Number(p.d)||0,h=Number(p.h)||0,pcs=Number(p.pcs)||1;
+  const cbm=w*d*h/1000000*pcs;
+  const vw=w*d*h*pcs/6000;
+  const cbmEl=document.getElementById(`hpr-cbm-${hIdx}-${pIdx}`);
+  const vwEl=document.getElementById(`hpr-vw-${hIdx}-${pIdx}`);
+  if(cbmEl) cbmEl.textContent=cbm>0?cbm.toFixed(3):"—";
+  if(vwEl)  vwEl.textContent=vw>0?vw.toFixed(1):"—";
+  renderMawbTotals();
+}
+
+let selectedId=null;
+function renderStats(){const l=getAll();document.getElementById("stat-total").textContent=l.length;document.getElementById("stat-wait").textContent=l.filter(c=>c.status==="pending_field").length;document.getElementById("stat-done").textContent=l.filter(c=>c.status==="field_done").length;document.getElementById("stat-complete").textContent=l.filter(c=>c.status==="complete").length;}
+function renderList(){
+  const l=getAll();
+  document.getElementById("list-count").textContent=l.length+"건";
+  const tb=document.getElementById("cargo-tbody");
+  tb.innerHTML=l.map(c=>{
+    const dep=c.etd?new Date(c.etd):null;
+    const depStr=dep?dep.toLocaleDateString("ko",{month:"2-digit",day:"2-digit"})+" "+dep.toLocaleTimeString("ko",{hour:"2-digit",minute:"2-digit"}):"—";
+    const t=getCargoTotals(c);
+    const isSingle=c.blType==="single"||(!c.blType&&(!c.hawbs||!c.hawbs.length));
+    const blBadge=isSingle
+      ?`<span style="font-size:9px;background:var(--green-light);color:var(--green);border-radius:10px;padding:1px 6px;font-weight:600">Single</span>`
+      :`<span style="font-size:9px;background:var(--blue-light);color:var(--blue);border-radius:10px;padding:1px 6px;font-weight:600">HAWB ${(c.hawbs||[]).length}건</span>`;
+    return `<tr class="${selectedId===c.id?"selected":""}" onclick="window.selectRow('${c.id}')">
+      <td><div class="awb-mono">${c.mawb}</div><div style="margin-top:3px">${blBadge}</div></td>
+      <td><span class="route-mono">${c.airline} ${c.flightNo||""}</span></td>
+      <td><span class="route-cell">${c.origin} → ${c.dest}</span></td>
+      <td><span style="font-size:12px">${depStr}</span></td>
+      <td style="font-size:12px;color:var(--gray4)">${t.totalPcs?`<strong>${t.totalPcs}pcs</strong> / ${t.totalGw.toFixed(0)}kg`:"—"}</td>
+      <td style="font-size:12px;color:var(--gray3)">${c.driver?.name||"—"}</td>
+      <td><span class="badge ${statusClass(c.status)}"><span class="badge-dot" style="background:currentColor"></span>${statusLabel(c.status)}</span></td>
+      <td><button class="action-btn" onclick="event.stopPropagation();window.editRow('${c.id}')">수정</button></td>
+    </tr>`;
+  }).join("");
+}
+function renderCutoff(id){
+  const c=getAll().find(x=>x.id===id);
+  if(!c){document.getElementById("cutoff-body").innerHTML='<div style="font-size:12px;color:var(--gray3)">화물을 선택하세요.</div>';return;}
+  const dep=new Date(c.etd);
+  const ch=cargoHasDG(c)?6:4;
+  const cutoff=new Date(dep.getTime()-ch*3600000);const now=new Date();const remain=(cutoff-now)/3600000;
+  const pct=Math.max(0,Math.min(100,(ch-(dep-now)/3600000)/ch*100));
+  const cls=remain<0?"co-danger":remain<1?"co-warn":"co-ok";
+  const fillColor=remain<0?"#C0392B":remain<1?"#B96A00":"#0E7A56";
+  const t=getCargoTotals(c);const drv=c.driver||{};
+  const isSingle=c.blType==="single"||(!c.blType&&(!c.hawbs||!c.hawbs.length));
+  const blInfo=isSingle
+    ?`<div class="co-row"><span class="co-label">유형</span><span class="co-value">MAWB Single</span></div>`
+    :`<div class="co-row"><span class="co-label">HAWB</span><span class="co-value">${(c.hawbs||[]).length}건</span></div>`;
+  document.getElementById("cutoff-body").innerHTML=`
+    <div class="cutoff-card">
+      <div class="co-awb">${c.mawb}</div>
+      ${blInfo}
+      <div class="co-row"><span class="co-label">반입 마감</span><span class="co-time ${cls}">${cutoff.toLocaleDateString("ko",{month:"2-digit",day:"2-digit"})} ${cutoff.toLocaleTimeString("ko",{hour:"2-digit",minute:"2-digit"})}</span></div>
+      <div class="co-row"><span class="co-label">남은 시간</span><span class="co-value ${cls}">${remain<0?"마감 초과":remain.toFixed(1)+"h"}</span></div>
+      <div class="co-bar"><div class="co-fill" style="width:${pct}%;background:${fillColor}"></div></div>
+    </div>
+    <div style="margin-top:6px;font-size:11px;color:var(--gray3)">총 ${t.totalPcs||0}pcs · ${(t.totalGw||0).toFixed(1)}kg · CBM ${(t.totalCbm||0).toFixed(3)}</div>
+    ${drv.name?`<div style="margin-top:6px;padding:8px 10px;background:var(--blue-light);border-radius:6px;font-size:12px;color:var(--blue)"><strong>${drv.name}</strong> · ${drv.tel||""} · ${drv.car||""}</div>`:""}`;
+}
+function renderActivity(){
+  const l=getAll();
+  document.getElementById("activity-body").innerHTML=l.slice(0,5).map(c=>{
+    const t=getCargoTotals(c);
+    return `<div style="display:flex;align-items:center;gap:8px;font-size:12px">
+      <span class="badge ${statusClass(c.status)}" style="flex-shrink:0">${statusLabel(c.status)}</span>
+      <span style="font-family:var(--mono);color:var(--gray4);font-size:11px">${c.mawb}</span>
+      <span style="color:var(--gray3)">${c.origin}→${c.dest}</span>
+      ${t.totalPcs?`<span style="color:var(--gray3);font-size:11px">${t.totalPcs}pcs</span>`:""}
+    </div>`;
+  }).join("")||'<div style="font-size:12px;color:var(--gray3)">데이터 없음</div>';
+}
+
+document.querySelector(".cargo-table thead tr").innerHTML="<th>MAWB</th><th>항공사·편명</th><th>노선</th><th>출발</th><th>수량·중량</th><th>기사</th><th>상태</th><th></th>";
+function render(){renderStats();renderList();renderActivity();}
+window.selectRow=function(id){selectedId=id;renderList();renderCutoff(id);}
+
+window.editRow=function(id){
+  const c=getAll().find(x=>x.id===id);if(!c)return;
+  document.getElementById("edit-id").value=c.id;
+  document.getElementById("f-awb").value=c.mawb||"";
+  document.getElementById("f-airline").value=c.airline||"KE";
+  document.getElementById("f-fltno").value=(c.flightNo||"").replace(/^[A-Z]+/,"");
+  document.getElementById("f-etd").value=c.etd||"";
+  document.getElementById("f-org").value=c.origin||"";
+  document.getElementById("f-dst").value=c.dest||"";
+  const drv=c.driver||{};
+  document.getElementById("f-drv-name").value=drv.name||"";
+  document.getElementById("f-drv-tel").value=drv.tel||"";
+  document.getElementById("f-drv-car").value=drv.car||"";
+  document.getElementById("f-drv-co").value=drv.company||"";
+  document.getElementById("f-drv-eta").value=drv.eta||"";
+
+  const isSingle=c.blType==="single"||(!c.blType&&(!c.hawbs||!c.hawbs.length));
+  setBLType(isSingle?"single":"hawb");
+
+  if(isSingle){
+    const si=c.singleInfo||{};
+    const st=document.getElementById("f-single-type");if(st)st.value=si.cargoType||"일반화물";
+    const ss=document.getElementById("f-single-shipper");if(ss)ss.value=si.shipperId||"";
+    const sc=document.getElementById("f-single-comm");if(sc)sc.value=si.commodity||"";
+    singlePieces=(c.singlePieces&&c.singlePieces.length)?JSON.parse(JSON.stringify(c.singlePieces)):[{desc:"",pcs:1,w:"",d:"",h:"",gw:""}];
+    renderSinglePiecesTable();
+  }else{
+    hawbRows=(c.hawbs&&c.hawbs.length)?JSON.parse(JSON.stringify(c.hawbs)):[{hawb:"",cargoType:"일반화물",commodity:"",shipperId:"",pieces:[{desc:"",pcs:1,w:"",d:"",h:"",gw:""}]}];
+    renderHawbList();
+  }
+  document.getElementById("form-title").textContent="화물 수정";
+  document.getElementById("form-panel").scrollIntoView({behavior:"smooth"});
+}
+
+window.showForm=function(id){resetForm();if(id)window.editRow(id);else document.getElementById("form-panel").scrollIntoView({behavior:"smooth"});}
+
+window.resetForm=function(){
+  document.getElementById("edit-id").value="";
+  ["f-awb","f-fltno","f-etd","f-org","f-dst","f-drv-name","f-drv-tel","f-drv-car","f-drv-co","f-drv-eta"].forEach(i=>{const el=document.getElementById(i);if(el)el.value="";});
+  document.getElementById("f-airline").value="";
+  setBLType("single");
+  singlePieces=[{desc:"",pcs:1,w:"",d:"",h:"",gw:""}];
+  renderSinglePiecesTable();
+  hawbRows=[{hawb:"",cargoType:"일반화물",commodity:"",shipperId:"",pieces:[{desc:"",pcs:1,w:"",d:"",h:"",gw:""}]}];
+  renderHawbList();
+  document.getElementById("form-title").textContent="신규 화물 등록";
+}
+
+window.saveForm=function(){
+  const mawb=document.getElementById("f-awb").value.trim();
+  if(!mawb){toast("MAWB 번호를 입력해 주세요.");return;}
+  const airline=document.getElementById("f-airline").value;
+  const isSingle=blType==="single";
+
+  if(!isSingle&&hawbRows.some(h=>!h.hawb)){toast("모든 HAWB 번호를 입력해 주세요.");return;}
+
+  const item={
+    id:document.getElementById("edit-id").value||String(Date.now()),
+    mawb:normMAWB(mawb), // 저장 시 공백 제거하여 정규화
+    blType:isSingle?"single":"hawb",
+    airline,
+    flightNo:airline+(document.getElementById("f-fltno").value.trim()||""),
+    etd:document.getElementById("f-etd").value,
+    origin:document.getElementById("f-org").value,
+    dest:document.getElementById("f-dst").value,
+    singleInfo:isSingle?{
+      cargoType:(document.getElementById("f-single-type")?.value||"일반화물"),
+      shipperId:(document.getElementById("f-single-shipper")?.value.trim()||""),
+      commodity:(document.getElementById("f-single-comm")?.value.trim()||"")
+    }:null,
+    singlePieces:isSingle?singlePieces.map(p=>({desc:p.desc||"",pcs:Number(p.pcs)||1,w:Number(p.w)||0,d:Number(p.d)||0,h:Number(p.h)||0,gw:Number(p.gw)||0})):[],
+    hawbs:isSingle?[]:hawbRows.map(h=>({hawb:h.hawb,cargoType:h.cargoType||"일반화물",commodity:h.commodity,shipperId:h.shipperId,pieces:(h.pieces||[]).map(p=>({desc:p.desc||"",pcs:Number(p.pcs)||1,w:Number(p.w)||0,d:Number(p.d)||0,h:Number(p.h)||0,gw:Number(p.gw)||0}))})),
+    driver:{name:document.getElementById("f-drv-name").value.trim(),tel:document.getElementById("f-drv-tel").value.trim(),car:document.getElementById("f-drv-car").value.trim(),company:document.getElementById("f-drv-co").value.trim(),eta:document.getElementById("f-drv-eta").value},
+    status:"pending_field",loadType:null,note:""
+  };
+  upsert(item);render();resetForm();toast("저장 완료! 현장 앱에 즉시 반영됩니다.");
+}
+
+window.loadSheets=function(){const url=document.getElementById("sheets-url").value.trim();if(!url){toast("Sheets URL을 입력해 주세요.");render();return;}setTimeout(()=>{document.getElementById("sync-label").textContent="Google Sheets 연결됨";toast("Sheets에서 데이터를 불러왔습니다.");render();},1200);}
+
+window.exportCSV=function(){
+  const l=getAll();
+  const rows=[["MAWB","BL유형","항공사","편명","출발지","목적지","출발일시","HAWB","화물구분","품목","화주","피스#","품목설명","수량","가로","세로","높이","실중량","CBM","기사명","연락처","차량번호","운송사"]];
+  l.forEach(c=>{
+    const drv=c.driver||{};
+    const isSingle=c.blType==="single"||(!c.blType&&(!c.hawbs||!c.hawbs.length));
+    if(isSingle){
+      (c.singlePieces||[]).forEach((p,pi)=>{
+        const cbm=(Number(p.w)||0)*(Number(p.d)||0)*(Number(p.h)||0)/1000000*(Number(p.pcs)||1);
+        rows.push([c.mawb,"Single",c.airline,c.flightNo,c.origin,c.dest,c.etd,"—",c.singleInfo?.cargoType||"",c.singleInfo?.commodity||"",c.singleInfo?.shipperId||"",pi+1,p.desc||"",p.pcs||"",p.w||"",p.d||"",p.h||"",p.gw||"",cbm?cbm.toFixed(3):"",drv.name||"",drv.tel||"",drv.car||"",drv.company||""]);
+      });
+    }else{
+      (c.hawbs||[]).forEach(h=>{
+        (h.pieces||[]).forEach((p,pi)=>{
+          const cbm=(Number(p.w)||0)*(Number(p.d)||0)*(Number(p.h)||0)/1000000*(Number(p.pcs)||1);
+          rows.push([c.mawb,"HAWB",c.airline,c.flightNo,c.origin,c.dest,c.etd,h.hawb,h.cargoType,h.commodity,h.shipperId,pi+1,p.desc||"",p.pcs||"",p.w||"",p.d||"",p.h||"",p.gw||"",cbm?cbm.toFixed(3):"",drv.name||"",drv.tel||"",drv.car||"",drv.company||""]);
+        });
+      });
+    }
+  });
+  const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(",")).join("\n");
+  const a=document.createElement("a");a.href="data:text/csv;charset=utf-8,\uFEFF"+encodeURIComponent(csv);a.download="cargoin_export.csv";a.click();toast("CSV 내보내기 완료");
+}
+window.openFieldApp=function(){window.open("../field/cargoin-field-app.html","_blank");}
+window.copyFieldLink=function(){navigator.clipboard?.writeText(location.href.replace("web/cargoin-web-dashboard.html","field/cargoin-field-app.html")).then(()=>toast("현장 앱 링크가 복사되었습니다.")).catch(()=>toast("링크: field/cargoin-field-app.html"));}
+
+// ── init ──
+if(!localStorage.getItem("cargoin_v1"))saveAll(DEMO);
+blType="single";
+singlePieces=[{desc:"",pcs:1,w:"",d:"",h:"",gw:""}];
+hawbRows=[{hawb:"",cargoType:"일반화물",commodity:"",shipperId:"",pieces:[{desc:"",pcs:1,w:"",d:"",h:"",gw:""}]}];
+renderSinglePiecesTable();
+renderHawbList();
+render();
+setInterval(()=>{renderList();renderStats();},5000);
+</script>
+</body>
+</html>
