@@ -822,8 +822,13 @@ async function apiPost(body){
 window.onload=function(){
   document.getElementById("l-sheet-url").value=SHEET_URL;
   const saved=localStorage.getItem(SESS_KEY);
-  if(saved){session=JSON.parse(saved);enterApp();}
-  else hideLoading();
+  if(saved){
+    try{session=JSON.parse(saved);enterApp();}
+    catch{localStorage.removeItem(SESS_KEY);hideLoading();showScr("login");}
+  }else{
+    hideLoading();
+    showScr("login");
+  }
 };
 
 window.doLogin=async function(){
