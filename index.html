@@ -1,0 +1,1419 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<title>CargoIN</title>
+<link rel="manifest" href="field/manifest.json"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="CargoIN"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Pretendard:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════
+   DESIGN TOKENS
+═══════════════════════════════════════ */
+:root{
+  /* 브랜드 컬러 */
+  --green:#0B6E4F;  --green2:#0E9A6F; --gl:#E3F5EC; --green-dark:#084D38;
+  --blue:#0D3F7A;   --blue2:#1560BD;  --bl:#E5EFFF; --blue-dark:#092B55;
+  --amber:#A85B00;  --al:#FEF0DC;     --amber-dark:#7A4200;
+  --red:#B91C1C;    --rl:#FEE2E2;     --red-dark:#7F1D1D;
+  --purple:#5B21B6; --pl:#EDE9FE;
+
+  /* 중립 */
+  --g0:#F4F6FA;--g1:#E6E9EF;--g2:#C8CDD8;--g3:#7A8494;--g4:#363D4A;--g5:#181D26;
+
+  /* 상태 — 진하게 눈에 띄도록 */
+  --status-wait-bg:#FEF0DC; --status-wait-text:#A85B00; --status-wait-border:#F5C97A;
+  --status-field-bg:#E5EFFF; --status-field-text:#0D3F7A; --status-field-border:#8BB3F5;
+  --status-done-bg:#E3F5EC;  --status-done-text:#0B6E4F;  --status-done-border:#72D4A8;
+  --status-urgent-bg:#FEE2E2;--status-urgent-text:#B91C1C; --status-urgent-border:#FCA5A5;
+
+  --r:14px;--rs:9px;
+  --mono:'IBM Plex Mono',monospace;
+  --sans:'Pretendard',sans-serif;
+  --shadow:0 2px 12px rgba(0,0,0,.10),0 1px 3px rgba(0,0,0,.06);
+}
+
+/* ── 기본 ── */
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{background:var(--g0);font-family:var(--sans)}
+body{min-height:100vh;max-width:480px;margin:0 auto;background:var(--g0);color:var(--g5);font-size:14px;padding-bottom:env(safe-area-inset-bottom,0)}
+
+/* ═══════════════════════════════════════
+   SCREEN SYSTEM
+═══════════════════════════════════════ */
+.screen{display:none;flex-direction:column;min-height:100vh}
+.screen.on{display:flex}
+
+/* ═══════════════════════════════════════
+   LOGIN
+═══════════════════════════════════════ */
+#scr-login{background:linear-gradient(155deg,var(--green-dark) 0%,var(--blue-dark) 100%);align-items:center;justify-content:center;padding:24px 20px 40px}
+.login-brand{text-align:center;margin-bottom:32px}
+.login-logo{font-family:var(--mono);font-size:34px;font-weight:500;color:#fff;letter-spacing:-1px}
+.login-tagline{font-size:12px;color:rgba(255,255,255,.55);margin-top:5px;letter-spacing:.5px}
+.login-box{background:#fff;border-radius:20px;padding:26px 22px;width:100%;max-width:380px;box-shadow:0 12px 48px rgba(0,0,0,.22)}
+.login-box-title{font-size:16px;font-weight:600;color:var(--g5);margin-bottom:18px;display:flex;align-items:center;gap:7px}
+.lf{display:flex;flex-direction:column;gap:4px;margin-bottom:13px}
+.lf label{font-size:11px;font-weight:600;color:var(--g3);text-transform:uppercase;letter-spacing:.4px}
+.lf input{height:44px;border-radius:var(--rs);border:1.5px solid var(--g1);background:var(--g0);color:var(--g5);font-size:15px;padding:0 13px;outline:none;font-family:var(--sans);transition:border-color .15s}
+.lf input:focus{border-color:var(--blue2);background:#fff;box-shadow:0 0 0 3px rgba(21,96,189,.12)}
+.login-btn{width:100%;height:48px;background:linear-gradient(135deg,var(--green),var(--blue2));color:#fff;border:none;border-radius:var(--rs);font-size:15px;font-weight:600;cursor:pointer;font-family:var(--sans);display:flex;align-items:center;justify-content:center;gap:8px;margin-top:4px;box-shadow:0 4px 14px rgba(13,63,122,.25);transition:opacity .15s}
+.login-btn:active{opacity:.85}
+.login-btn:disabled{opacity:.5}
+.login-err{font-size:12px;color:var(--red);background:var(--rl);border:1px solid var(--status-urgent-border);border-radius:var(--rs);padding:9px 12px;margin-top:8px;display:none;text-align:center}
+.login-err.on{display:block}
+.login-forgot{font-size:11px;color:var(--g3);text-align:center;margin-top:12px;line-height:1.6}
+.login-url-wrap{width:100%;max-width:380px;margin-top:14px}
+.login-url-label{font-size:11px;color:rgba(255,255,255,.5);margin-bottom:5px}
+.login-url-row{display:flex;gap:6px}
+.login-url-input{flex:1;height:34px;border-radius:var(--rs);border:none;background:rgba(255,255,255,.12);color:#fff;font-size:11px;padding:0 10px;outline:none;font-family:var(--mono)}
+.login-url-input::placeholder{color:rgba(255,255,255,.35)}
+.login-url-btn{height:34px;padding:0 12px;border-radius:var(--rs);background:rgba(255,255,255,.18);color:#fff;border:none;font-size:11px;cursor:pointer;font-family:var(--sans)}
+.demo-hint{width:100%;max-width:380px;margin-top:12px;font-size:11px;color:rgba(255,255,255,.42);text-align:center;line-height:1.8}
+
+/* ═══════════════════════════════════════
+   TOPBAR (공통)
+═══════════════════════════════════════ */
+.topbar{display:flex;align-items:center;height:54px;padding:env(safe-area-inset-top,0) 15px 0;gap:9px;position:sticky;top:0;z-index:60}
+.topbar.green{background:linear-gradient(90deg,var(--green-dark),var(--green))}
+.topbar.blue{background:linear-gradient(90deg,var(--blue-dark),var(--blue2))}
+.topbar.admin{background:linear-gradient(90deg,#1E1B4B,#4338CA)}
+.tb-logo{font-family:var(--mono);font-size:13px;font-weight:500;color:#fff;letter-spacing:-.5px}
+.tb-role-pill{font-size:10px;font-weight:700;border-radius:20px;padding:3px 9px;letter-spacing:.3px}
+.tb-role-pill.field{background:rgba(255,255,255,.22);color:#fff}
+.tb-role-pill.shipper{background:rgba(255,255,255,.22);color:#fff}
+.tb-role-pill.admin{background:rgba(255,255,255,.22);color:#fff}
+.tb-user{font-size:12px;color:rgba(255,255,255,.75);max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:7px}
+.tb-logout{background:rgba(255,255,255,.15);border:none;color:#fff;font-size:11px;font-weight:500;padding:4px 11px;border-radius:20px;cursor:pointer;font-family:var(--sans)}
+.sync-chip{background:rgba(255,255,255,.18);border-radius:20px;padding:3px 10px;font-size:11px;color:#fff;display:flex;align-items:center;gap:5px}
+.sdot{width:6px;height:6px;border-radius:50%;background:#4DF0A0;animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ═══════════════════════════════════════
+   BADGE / STATUS
+═══════════════════════════════════════ */
+.badge{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;border:1px solid transparent;letter-spacing:.2px}
+.b-wait{background:var(--status-wait-bg);color:var(--status-wait-text);border-color:var(--status-wait-border)}
+.b-field{background:var(--status-field-bg);color:var(--status-field-text);border-color:var(--status-field-border)}
+.b-done{background:var(--status-done-bg);color:var(--status-done-text);border-color:var(--status-done-border)}
+.b-urgent{background:var(--status-urgent-bg);color:var(--status-urgent-text);border-color:var(--status-urgent-border)}
+
+/* ═══════════════════════════════════════
+   TOAST / LOADING
+═══════════════════════════════════════ */
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(8px);background:var(--g5);color:#fff;font-size:13px;padding:10px 20px;border-radius:24px;z-index:999;opacity:0;transition:all .25s;pointer-events:none;white-space:nowrap;max-width:90vw;text-align:center}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+.loading-ov{position:fixed;inset:0;background:rgba(255,255,255,.88);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:13px;z-index:200}
+.loading-ov.hide{display:none}
+.spinner{width:34px;height:34px;border:3px solid var(--g1);border-top-color:var(--green);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-ov p{font-size:13px;color:var(--g3)}
+
+/* ═══════════════════════════════════════
+   CARGO CARD (공통)
+═══════════════════════════════════════ */
+.cargo-card{background:#fff;border-radius:var(--r);border:1.5px solid var(--g1);padding:12px 14px;margin-bottom:8px;cursor:pointer;transition:border-color .15s,transform .1s,box-shadow .15s;box-shadow:var(--shadow)}
+.cargo-card:active{transform:scale(.985);box-shadow:none}
+.cargo-card.urgent{border-color:var(--status-urgent-border);background:#FFFBFB}
+.cargo-card.dg{border-left:4px solid var(--red)}
+.cc-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:5px}
+.cc-awb{font-family:var(--mono);font-size:13px;font-weight:500;color:var(--g5)}
+.cc-mawb-label{font-size:9px;font-weight:700;color:var(--g3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:1px}
+.cc-sub{font-size:12px;color:var(--g3);margin-top:2px;line-height:1.5}
+.cc-drv{font-size:11px;color:var(--amber);margin-top:4px;display:flex;align-items:center;gap:4px;font-weight:500}
+.cc-cut{font-size:11px;font-weight:700;margin-top:5px;padding:3px 8px;border-radius:6px;display:inline-flex;align-items:center;gap:4px}
+.cc-cut.danger{background:var(--rl);color:var(--red-dark)}
+.cc-cut.warn{background:var(--al);color:var(--amber-dark)}
+.cc-cut.ok{background:var(--gl);color:var(--green-dark)}
+
+/* ═══════════════════════════════════════
+   FIELD SCREEN
+═══════════════════════════════════════ */
+.search-bar{background:#fff;padding:10px 14px;border-bottom:1px solid var(--g1);display:flex;gap:8px}
+.search-input{flex:1;height:36px;border-radius:20px;border:1.5px solid var(--g1);background:var(--g0);color:var(--g5);font-size:13px;padding:0 14px;outline:none;font-family:var(--sans)}
+.search-input:focus{border-color:var(--green2);background:#fff}
+.list-sec{padding:12px 14px;flex:1}
+.sec-lbl{font-size:10px;font-weight:700;color:var(--g3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:9px;display:flex;justify-content:space-between;align-items:center}
+.refresh-btn{background:none;border:none;cursor:pointer;color:var(--green);font-size:12px;font-weight:600;font-family:var(--sans);display:flex;align-items:center;gap:4px}
+.empty-state{text-align:center;padding:56px 24px;color:var(--g3);font-size:13px;line-height:1.7}
+
+/* ── Detail ── */
+.det-panel{display:none;flex-direction:column;background:var(--g0);flex:1}
+.det-panel.on{display:flex}
+.det-hd{padding:10px 14px 14px;color:#fff}
+.det-hd.green{background:linear-gradient(135deg,var(--green-dark),var(--green))}
+.det-back{display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;opacity:.8;margin-bottom:9px;width:fit-content}
+.det-awb{font-family:var(--mono);font-size:18px;font-weight:500;letter-spacing:.3px}
+.det-meta{font-size:12px;opacity:.75;margin-top:2px}
+
+/* ── Info cards ── */
+.ro-card{margin:11px 14px 0;border-radius:var(--r);padding:12px 14px}
+.ro-blue{background:var(--bl);border:1.5px solid var(--status-field-border)}
+.ro-amber{background:var(--al);border:1.5px solid var(--status-wait-border)}
+.ro-gray{background:var(--g0);border:1.5px solid var(--g1)}
+.ro-red{background:var(--rl);border:1.5px solid var(--status-urgent-border)}
+.ro-title{font-size:11px;font-weight:700;margin-bottom:9px;display:flex;align-items:center;gap:5px;text-transform:uppercase;letter-spacing:.4px}
+.ro-title.blue{color:var(--blue-dark)}.ro-title.amber{color:var(--amber-dark)}.ro-title.gray{color:var(--g3)}.ro-title.red{color:var(--red-dark)}
+.ro-badge{font-size:9px;background:rgba(255,255,255,.65);border-radius:10px;padding:1px 7px;margin-left:4px;font-weight:500;text-transform:none;letter-spacing:0}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.info-item{display:flex;flex-direction:column;gap:2px;background:rgba(255,255,255,.55);border-radius:8px;padding:7px 9px}
+.info-lbl{font-size:10px;color:var(--blue);font-weight:600;text-transform:uppercase;letter-spacing:.3px}
+.info-val{font-size:12px;font-weight:600;color:var(--blue-dark)}
+.info-val.danger{color:var(--red-dark)}.info-val.warn{color:var(--amber-dark)}
+
+/* ── Driver card ── */
+.drv-layout{display:flex;gap:12px}
+.drv-left{display:flex;flex-direction:column;align-items:center;gap:6px;flex-shrink:0}
+.drv-avatar{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,#F5C97A,#E8A020);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#fff;box-shadow:0 2px 8px rgba(168,91,0,.3)}
+.drv-tel{display:flex;align-items:center;gap:4px;background:#fff;border:1.5px solid var(--status-wait-border);border-radius:20px;padding:4px 10px;font-size:11px;font-weight:700;color:var(--amber-dark);cursor:pointer;text-decoration:none}
+.drv-right{flex:1}
+.drv-name{font-size:16px;font-weight:700;color:var(--g5);margin-bottom:1px}
+.drv-co{font-size:11px;color:var(--g3);margin-bottom:8px}
+.drv-big-row{display:flex;gap:7px}
+.drv-big{flex:1;background:#fff;border:1.5px solid var(--status-wait-border);border-radius:var(--rs);padding:8px 10px}
+.drv-big-lbl{font-size:9px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.5px}
+.drv-big-val{font-size:16px;font-weight:700;color:var(--g5);font-family:var(--mono);line-height:1.3}
+.drv-big-sub{font-size:10px;color:var(--g3);margin-top:1px}
+
+/* ── Pieces table ── */
+.pieces-ro{overflow-x:auto;margin-top:5px;border-radius:var(--rs);border:1.5px solid rgba(0,0,0,.08);overflow:hidden}
+.pieces-ro table{width:100%;border-collapse:collapse;font-size:11px;min-width:300px}
+.pieces-ro th{background:rgba(255,255,255,.6);color:var(--g3);font-weight:700;padding:6px 7px;text-align:center;border-bottom:1.5px solid rgba(0,0,0,.07);font-size:10px;text-transform:uppercase;letter-spacing:.3px}
+.pieces-ro td{padding:6px 7px;text-align:center;border-bottom:1px solid rgba(0,0,0,.04);color:var(--g4)}
+.pieces-ro td.dn{text-align:left;color:var(--g5);font-weight:600}
+.pieces-ro td.cv{color:var(--green);font-family:var(--mono);font-weight:600}
+.pieces-ro tfoot td{background:rgba(255,255,255,.75);font-weight:700;color:var(--g4)}
+.pieces-ro tfoot td.hl{color:var(--blue-dark)}
+.pcl{display:flex;flex-direction:column;gap:5px;margin-top:8px}
+.pcr{display:flex;align-items:center;gap:10px;padding:9px 11px;background:#fff;border-radius:var(--rs);border:1.5px solid var(--g1);transition:all .15s}
+.pcr.confirmed{background:var(--gl);border-color:var(--status-done-border)}
+.pcr-num{font-family:var(--mono);font-size:11px;color:var(--g3);min-width:18px;text-align:center;font-weight:600}
+.pcr-info{flex:1}
+.pcr-desc{font-size:12px;font-weight:600;color:var(--g5)}
+.pcr-dim{font-size:10px;color:var(--g3);margin-top:1px;font-family:var(--mono)}
+.pcr-btn{width:30px;height:30px;border-radius:50%;border:2px solid var(--g2);background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
+.pcr-btn:active{transform:scale(.88)}
+.pcr-btn.checked{background:var(--green);border-color:var(--green-dark)}
+.pcr-btn svg{stroke:var(--g3)}.pcr-btn.checked svg{stroke:#fff}
+
+/* ── Field input ── */
+.fi-body{padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.fi-card{background:#fff;border-radius:var(--r);border:1.5px solid var(--g1);padding:13px 14px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.fi-title{font-size:11px;font-weight:700;color:var(--green-dark);margin-bottom:10px;display:flex;align-items:center;gap:6px;text-transform:uppercase;letter-spacing:.5px}
+.fi-badge{font-size:9px;background:var(--gl);color:var(--green-dark);border-radius:10px;padding:2px 8px;font-weight:700;margin-left:auto;text-transform:none;letter-spacing:0}
+.tgl-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tgl{height:46px;border-radius:var(--rs);border:2px solid var(--g1);background:var(--g0);color:var(--g4);font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .15s}
+.tgl.on.load{background:var(--bl);border-color:var(--blue2);color:var(--blue-dark);box-shadow:0 0 0 3px rgba(21,96,189,.15)}
+.tgl.on.unload{background:var(--gl);border-color:var(--green2);color:var(--green-dark);box-shadow:0 0 0 3px rgba(14,154,111,.15)}
+.sz-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px}
+.sz-grid.r2{grid-template-columns:1fr 1fr}
+.fi-fld{display:flex;flex-direction:column;gap:3px}
+.fi-fld label{font-size:10px;color:var(--g3);font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+.fi-fld input{height:42px;border-radius:var(--rs);border:1.5px solid var(--g1);background:var(--g0);color:var(--g5);font-size:16px;padding:0 10px;outline:none;text-align:center;font-family:var(--mono);transition:border-color .15s;width:100%;font-weight:600}
+.fi-fld input:focus{border-color:var(--green2);background:#fff;box-shadow:0 0 0 3px rgba(14,154,111,.12)}
+.pcs-row{display:flex;align-items:center;justify-content:center;gap:16px;padding:2px 0}
+.pcs-btn{width:40px;height:40px;border-radius:50%;border:2px solid var(--g1);background:#fff;color:var(--g5);font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:300;transition:all .15s}
+.pcs-btn:active{transform:scale(.9);background:var(--gl);border-color:var(--green2)}
+.pcs-num{font-size:32px;font-weight:700;font-family:var(--mono);color:var(--g5);min-width:56px;text-align:center}
+.pcs-unit{font-size:12px;color:var(--g3)}
+.cbm-result{background:linear-gradient(135deg,var(--gl),#D4F0E3);border-radius:var(--rs);padding:11px 12px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px;border:1px solid var(--status-done-border)}
+.cbm-col{display:flex;flex-direction:column;align-items:center;gap:2px}
+.cbm-lbl{font-size:10px;color:var(--green-dark);font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+.cbm-val{font-size:15px;font-weight:700;font-family:var(--mono);color:var(--green-dark)}
+.photo-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.ph-slot{aspect-ratio:1;border-radius:var(--rs);border:2px dashed var(--g2);background:var(--g0);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;position:relative;overflow:hidden;transition:all .15s}
+.ph-slot.filled{border-style:solid;border-color:var(--status-done-border);background:var(--gl)}
+.ph-slot input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;font-size:0}
+.ph-slot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.ph-lbl{font-size:9px;color:var(--g3);margin-top:3px;z-index:1;font-weight:600}
+.ph-tag{position:absolute;bottom:0;left:0;right:0;background:rgba(11,110,79,.85);color:#fff;font-size:8px;text-align:center;padding:2px 0;z-index:2;font-weight:700}
+.memo-input{width:100%;min-height:62px;border-radius:var(--rs);border:1.5px solid var(--g1);background:var(--g0);color:var(--g5);font-size:13px;padding:10px 12px;outline:none;font-family:var(--sans);resize:none;transition:border-color .15s}
+.memo-input:focus{border-color:var(--green2);background:#fff}
+.submit-wrap{padding:4px 14px 28px}
+.submit-btn{width:100%;height:54px;background:linear-gradient(135deg,var(--green-dark),var(--green));color:#fff;border:none;border-radius:var(--r);font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;font-family:var(--sans);box-shadow:0 4px 16px rgba(11,110,79,.3);letter-spacing:.2px;transition:opacity .15s}
+.submit-btn:disabled{opacity:.5}
+.submit-btn:active{opacity:.88}
+.done-screen{display:none;flex-direction:column;align-items:center;padding:48px 24px;text-align:center;gap:14px}
+.done-screen.on{display:flex}
+.done-icon{width:68px;height:68px;border-radius:50%;background:linear-gradient(135deg,var(--gl),#C8EDD9);border:2.5px solid var(--green);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(11,110,79,.2)}
+.done-title{font-size:19px;font-weight:700;color:var(--g5)}
+.done-sub{font-size:13px;color:var(--g3);line-height:1.8;white-space:pre-line}
+.done-actions{display:flex;gap:8px;width:100%;max-width:280px}
+.btn-back{flex:1;height:46px;border-radius:var(--r);border:2px solid var(--g1);background:#fff;color:var(--g5);font-size:14px;font-weight:600;cursor:pointer;font-family:var(--sans)}
+.btn-edit{flex:1;height:46px;border-radius:var(--r);border:none;background:linear-gradient(135deg,var(--amber-dark),var(--amber));color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--sans);display:flex;align-items:center;justify-content:center;gap:5px;box-shadow:0 3px 10px rgba(168,91,0,.25)}
+
+/* ═══════════════════════════════════════
+   SHIPPER SCREEN
+═══════════════════════════════════════ */
+.tab-bar{background:#fff;border-bottom:1.5px solid var(--g1);display:flex;padding:0 14px}
+.tab{flex:1;height:44px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--g3);cursor:pointer;border-bottom:3px solid transparent;transition:all .15s;gap:5px}
+.tab.active{color:var(--blue-dark);border-bottom-color:var(--blue2)}
+.tab-count{font-size:10px;background:var(--g1);color:var(--g3);border-radius:10px;padding:1px 6px;font-weight:700}
+.tab.active .tab-count{background:var(--bl);color:var(--blue-dark)}
+.shipper-card{background:#fff;border-radius:var(--r);border:1.5px solid var(--g1);margin-bottom:10px;overflow:hidden;cursor:pointer;box-shadow:var(--shadow);transition:border-color .15s,transform .1s}
+.shipper-card:active{transform:scale(.985)}
+.sc-head{padding:12px 14px 10px;border-bottom:1px solid var(--g0)}
+.sc-awb-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.sc-awb{font-family:var(--mono);font-size:14px;font-weight:700;color:var(--g5)}
+.sc-route{font-size:12px;color:var(--g3)}
+.timeline{padding:10px 14px;display:flex;align-items:center}
+.tl-step{display:flex;flex-direction:column;align-items:center;flex:1}
+.tl-dot{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700}
+.tl-dot.done{background:var(--green);color:#fff;box-shadow:0 2px 6px rgba(11,110,79,.35)}
+.tl-dot.active{background:var(--blue2);color:#fff;box-shadow:0 2px 6px rgba(21,96,189,.35)}
+.tl-dot.pend{background:var(--g1);color:var(--g3);border:1.5px solid var(--g2)}
+.tl-label{font-size:9px;color:var(--g3);margin-top:3px;text-align:center;white-space:nowrap;font-weight:600}
+.tl-label.active{color:var(--blue-dark)}
+.tl-line{height:2.5px;flex:1;background:var(--g1)}
+.tl-line.done{background:var(--green)}
+.sc-metrics{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--g0)}
+.cm-item{padding:8px 10px;text-align:center;border-right:1px solid var(--g0)}
+.cm-item:last-child{border-right:none}
+.cm-label{font-size:9px;color:var(--g3);margin-bottom:2px;text-transform:uppercase;letter-spacing:.3px;font-weight:700}
+.cm-value{font-size:12px;font-weight:700;color:var(--g5);font-family:var(--mono)}
+.cm-value.updated{color:var(--green-dark)}
+/* modal */
+.modal-ov{display:none;position:fixed;inset:0;background:#fff;z-index:100;flex-direction:column;overflow-y:auto}
+.modal-ov.on{display:flex}
+.modal-hd{color:#fff;padding:10px 14px 14px;position:sticky;top:0}
+.modal-hd.blue{background:linear-gradient(135deg,var(--blue-dark),var(--blue2))}
+.modal-back{display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;opacity:.8;margin-bottom:8px}
+.modal-awb{font-family:var(--mono);font-size:17px;font-weight:700;letter-spacing:.3px}
+.modal-route{font-size:12px;opacity:.75;margin-top:2px}
+.modal-sec{padding:12px 14px 0}
+.modal-stitle{font-size:10px;font-weight:700;color:var(--g3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.mi-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.mi-item{background:var(--g0);border-radius:var(--rs);padding:8px 10px}
+.mi-lbl{font-size:10px;color:var(--g3);margin-bottom:2px;font-weight:600}
+.mi-val{font-size:12px;font-weight:600;color:var(--g5)}
+.mi-val.green{color:var(--green-dark)}.mi-val.blue{color:var(--blue-dark)}
+.fub{background:linear-gradient(135deg,var(--gl),#D4F0E3);border:1.5px solid var(--status-done-border);border-radius:var(--rs);padding:11px 12px;margin-top:8px}
+.fub-title{font-size:11px;font-weight:700;color:var(--green-dark);margin-bottom:7px;display:flex;align-items:center;gap:5px;text-transform:uppercase;letter-spacing:.4px}
+.fub-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.fub-item{display:flex;flex-direction:column;gap:1px}
+.fub-lbl{font-size:10px;color:#2D6A4F;font-weight:600}
+.fub-val{font-size:14px;font-weight:700;color:var(--green-dark)}
+.td-row{display:flex;gap:9px;align-items:flex-start;padding:7px 0;position:relative}
+.td-icon{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.td-icon.done{background:var(--gl);color:var(--green-dark)}
+.td-icon.active{background:var(--bl);color:var(--blue-dark)}
+.td-icon.pend{background:var(--g1);color:var(--g3)}
+.td-line{position:absolute;left:12px;top:30px;width:2px;height:calc(100% - 4px);background:var(--g1)}
+.td-line.done{background:var(--green)}
+.td-content{flex:1;padding-top:3px}
+.td-title{font-size:13px;font-weight:600;color:var(--g5)}
+.td-title.active{color:var(--blue-dark)}
+.td-time{font-size:11px;color:var(--g3);margin-top:2px}
+
+/* ═══════════════════════════════════════
+   ADMIN SCREEN
+═══════════════════════════════════════ */
+#scr-admin{background:var(--g0)}
+.admin-tabs{background:#fff;border-bottom:1.5px solid var(--g1);display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.admin-tab{flex-shrink:0;height:42px;padding:0 14px;font-size:12px;font-weight:700;color:var(--g3);cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap;display:flex;align-items:center;transition:all .15s;text-transform:uppercase;letter-spacing:.3px}
+.admin-tab.active{color:#4338CA;border-bottom-color:#4338CA}
+.a-panel{display:none;padding:14px;flex-direction:column;gap:12px;flex:1}
+.a-panel.on{display:flex}
+/* stat cards */
+.stat-row{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.stat-card{background:#fff;border-radius:var(--r);border:1.5px solid var(--g1);padding:13px 14px;box-shadow:var(--shadow)}
+.stat-n{font-size:30px;font-weight:700;font-family:var(--mono)}
+.stat-n.amber{color:var(--amber-dark)}.stat-n.blue{color:var(--blue-dark)}.stat-n.green{color:var(--green-dark)}.stat-n.red{color:var(--red-dark)}
+.stat-lbl{font-size:11px;color:var(--g3);margin-top:3px;font-weight:600}
+/* admin cargo card */
+.a-cargo-card{background:#fff;border-radius:var(--r);border:1.5px solid var(--g1);padding:13px 14px;margin-bottom:8px;box-shadow:var(--shadow)}
+.a-cargo-card.dg{border-left:4px solid var(--red)}
+.a-card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px}
+.a-awb{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--g5)}
+.a-meta{font-size:11px;color:var(--g3);line-height:1.6;margin-top:2px}
+.a-actions{display:flex;gap:6px;margin-top:9px;flex-wrap:wrap}
+.a-btn{height:30px;padding:0 12px;border-radius:20px;border:1.5px solid var(--g1);background:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--sans);display:flex;align-items:center;gap:4px;transition:all .15s;text-transform:uppercase;letter-spacing:.2px}
+.a-btn:active{transform:scale(.95)}
+.a-btn.blue{background:var(--bl);border-color:var(--status-field-border);color:var(--blue-dark)}
+.a-btn.green{background:var(--gl);border-color:var(--status-done-border);color:var(--green-dark)}
+.a-btn.red{background:var(--rl);border-color:var(--status-urgent-border);color:var(--red-dark)}
+.a-btn.amber{background:var(--al);border-color:var(--status-wait-border);color:var(--amber-dark)}
+/* account card */
+.acc-card{background:#fff;border-radius:var(--r);border:1.5px solid var(--g1);padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;box-shadow:var(--shadow)}
+.acc-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0}
+.acc-avatar.admin{background:#EDE9FE;color:#5B21B6}
+.acc-avatar.field{background:var(--gl);color:var(--green-dark)}
+.acc-avatar.shipper{background:var(--al);color:var(--amber-dark)}
+.acc-info{flex:1;min-width:0}
+.acc-name{font-size:13px;font-weight:700;color:var(--g5)}
+.acc-email{font-size:11px;color:var(--g3);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.acc-role{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:700;margin-top:3px;display:inline-block;text-transform:uppercase;letter-spacing:.3px}
+.acc-role.admin{background:#EDE9FE;color:#5B21B6}
+.acc-role.field{background:var(--gl);color:var(--green-dark)}
+.acc-role.shipper{background:var(--al);color:var(--amber-dark)}
+.acc-btns{display:flex;flex-direction:column;gap:4px}
+.acc-small-btn{height:26px;padding:0 10px;border-radius:20px;border:1.5px solid var(--g1);background:#fff;font-size:10px;cursor:pointer;font-family:var(--sans);color:var(--g4);font-weight:600;white-space:nowrap}
+/* admin form */
+.a-form{background:#fff;border-radius:var(--r);border:1.5px solid var(--g1);padding:15px;box-shadow:var(--shadow)}
+.a-form-title{font-size:12px;font-weight:700;color:var(--g5);margin-bottom:13px;display:flex;align-items:center;gap:6px;text-transform:uppercase;letter-spacing:.4px}
+.af-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.af-full{grid-column:1/-1}
+.af-fld{display:flex;flex-direction:column;gap:3px}
+.af-fld label{font-size:10px;color:var(--g3);font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+.af-fld input,.af-fld select{height:36px;border:1.5px solid var(--g1);border-radius:var(--rs);background:var(--g0);color:var(--g5);font-size:13px;padding:0 10px;outline:none;font-family:var(--sans);transition:border-color .15s}
+.af-fld input:focus,.af-fld select:focus{border-color:var(--blue2);background:#fff}
+.af-save{height:44px;background:linear-gradient(135deg,var(--blue-dark),var(--blue2));color:#fff;border:none;border-radius:var(--rs);font-size:14px;font-weight:700;cursor:pointer;font-family:var(--sans);width:100%;margin-top:4px;box-shadow:0 3px 10px rgba(13,63,122,.25);letter-spacing:.2px}
+/* pw modal */
+.pw-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:300;align-items:center;justify-content:center;padding:20px}
+.pw-modal.on{display:flex}
+.pw-box{background:#fff;border-radius:var(--r);padding:24px;width:100%;max-width:320px;box-shadow:0 8px 32px rgba(0,0,0,.2)}
+.pw-title{font-size:15px;font-weight:700;margin-bottom:8px}
+.pw-sub{font-size:12px;color:var(--g3);margin-bottom:14px}
+.pw-fld{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.pw-fld label{font-size:11px;color:var(--g3);font-weight:700}
+.pw-fld input{height:42px;border:1.5px solid var(--g1);border-radius:var(--rs);padding:0 12px;font-size:14px;outline:none;transition:border-color .15s}
+.pw-fld input:focus{border-color:var(--blue2)}
+.pw-btns{display:flex;gap:8px}
+.pw-cancel{flex:1;height:42px;border:1.5px solid var(--g1);border-radius:var(--rs);background:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans)}
+.pw-save{flex:1;height:42px;border:none;border-radius:var(--rs);background:linear-gradient(135deg,var(--blue-dark),var(--blue2));color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--sans)}
+
+/* ── 화물 등록 BL type buttons ── */
+.bl-type-row{display:flex;gap:7px;margin-bottom:10px}
+.bl-type-btn{flex:1;height:42px;border-radius:var(--rs);border:2px solid var(--g1);background:#fff;color:var(--g4);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--sans);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.3;transition:all .15s;padding:4px}
+.bl-type-btn.active{border-color:var(--blue2);background:var(--bl);color:var(--blue-dark);box-shadow:0 0 0 3px rgba(21,96,189,.12)}
+.bl-type-btn small{font-size:9px;font-weight:500;opacity:.7}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div class="loading-ov" id="loading">
+  <div class="spinner"></div>
+  <p id="loading-msg">잠시만 기다려 주세요...</p>
+</div>
+
+<!-- ════════════════════════════════════════
+     LOGIN
+════════════════════════════════════════ -->
+<div class="screen" id="scr-login">
+  <div class="login-brand">
+    <div class="login-logo">CargoIN</div>
+    <div class="login-tagline">CARGO INBOUND MANAGEMENT</div>
+  </div>
+  <div class="login-box">
+    <div class="login-box-title">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      로그인
+    </div>
+    <div class="lf"><label>이메일</label><input type="email" id="l-email" placeholder="your@email.com" autocomplete="email"/></div>
+    <div class="lf"><label>비밀번호</label><input type="password" id="l-pw" placeholder="비밀번호" onkeydown="if(event.key==='Enter')doLogin()"/></div>
+    <div class="login-err" id="l-err"></div>
+    <button class="login-btn" id="l-btn" onclick="doLogin()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+      로그인
+    </button>
+    <div class="login-forgot">비밀번호 분실 시 관리자에게 문의하세요</div>
+  </div>
+  <div class="login-url-wrap">
+    <div class="login-url-label">Google Apps Script URL (관리자 설정)</div>
+    <div class="login-url-row">
+      <input class="login-url-input" id="l-sheet-url" placeholder="https://script.google.com/macros/s/.../exec"/>
+      <button class="login-url-btn" onclick="saveSheetUrl()">저장</button>
+    </div>
+  </div>
+  <div class="demo-hint">
+    데모 — 관리자: admin@cargoin.com / admin123<br>
+    현장: field@cargoin.com / field123<br>
+    화주: samsung@test.com / 1234 &nbsp;|&nbsp; lg@test.com / 5678
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     FIELD SCREEN
+════════════════════════════════════════ -->
+<div class="screen" id="scr-field">
+  <div class="topbar green">
+    <div class="tb-logo">CargoIN</div>
+    <div class="tb-role-pill field">현장</div>
+    <div class="tb-right">
+      <div class="sync-chip"><div class="sdot"></div><span id="f-sync">동기화 중...</span></div>
+      <button class="tb-logout" onclick="doLogout()">로그아웃</button>
+    </div>
+  </div>
+
+  <!-- 목록 -->
+  <div id="f-list">
+    <div class="search-bar">
+      <input class="search-input" id="f-search" placeholder="MAWB · 목적지 · 기사명 검색..." oninput="filterField()"/>
+    </div>
+    <div class="list-sec">
+      <div class="sec-lbl">
+        <span id="f-lbl">오늘 화물</span>
+        <button class="refresh-btn" onclick="loadField()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>새로고침
+        </button>
+      </div>
+      <div id="f-list-body"></div>
+    </div>
+  </div>
+
+  <!-- 상세 -->
+  <div class="det-panel" id="f-detail">
+    <div class="det-hd green">
+      <div class="det-back" onclick="backField()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>목록으로
+      </div>
+      <div class="det-awb" id="f-det-awb"></div>
+      <div class="det-meta" id="f-det-meta"></div>
+    </div>
+
+    <!-- 기본 정보 -->
+    <div class="ro-card ro-blue">
+      <div class="ro-title blue">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+        기본 정보 <span class="ro-badge">시트 등록 정보</span>
+      </div>
+      <div class="info-grid">
+        <div class="info-item"><div class="info-lbl">항공사·편명</div><div class="info-val" id="fd-flt"></div></div>
+        <div class="info-item"><div class="info-lbl">노선</div><div class="info-val" id="fd-route"></div></div>
+        <div class="info-item"><div class="info-lbl">출발 예정</div><div class="info-val" id="fd-etd"></div></div>
+        <div class="info-item"><div class="info-lbl">반입 마감</div><div class="info-val" id="fd-cutoff"></div></div>
+        <div class="info-item"><div class="info-lbl">등록 수량</div><div class="info-val" id="fd-pcs"></div></div>
+        <div class="info-item"><div class="info-lbl">등록 중량</div><div class="info-val" id="fd-gw"></div></div>
+        <div class="info-item" style="grid-column:1/-1"><div class="info-lbl">품목 (ITEM)</div><div class="info-val" id="fd-item"></div></div>
+        <div class="info-item" style="grid-column:1/-1"><div class="info-lbl">화주 (SHIPPER)</div><div class="info-val" id="fd-shipper"></div></div>
+        <div class="info-item" style="grid-column:1/-1"><div class="info-lbl">MAWB</div><div class="info-val" id="fd-mawb" style="font-family:var(--mono)"></div></div>
+        <div class="info-item" id="fd-hawb-wrap" style="grid-column:1/-1;display:none"><div class="info-lbl">HAWB</div><div class="info-val" id="fd-hawb" style="font-family:var(--mono)"></div></div>
+      </div>
+    </div>
+
+    <!-- DG 경고 -->
+    <div class="ro-card ro-red" id="fd-dg-warn" style="display:none">
+      <div class="ro-title red">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        위험물 (DG) — 반입 마감 6시간 전
+      </div>
+      <div style="font-size:12px;color:var(--red-dark);font-weight:600">DGD 서류 및 포장 기준을 반드시 확인하세요.</div>
+    </div>
+
+    <!-- 피스 체크리스트 -->
+    <div class="ro-card ro-gray" id="fd-pieces-card" style="display:none">
+      <div class="ro-title gray">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+        피스 확인 <span id="fd-ck-cnt" style="font-size:10px;color:var(--green-dark);margin-left:4px;font-weight:700"></span>
+      </div>
+      <div class="pieces-ro" id="fd-pieces-table"></div>
+      <div style="font-size:11px;color:var(--g3);margin:8px 0 4px;font-weight:600">각 피스 확인 후 체크</div>
+      <div class="pcl" id="fd-pcl"></div>
+    </div>
+
+    <!-- 현장 입력 폼 -->
+    <div class="fi-body" id="fd-fi-body">
+      <!-- 상하차 -->
+      <div class="fi-card">
+        <div class="fi-title">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 11 12 6 7 11"/><line x1="12" y1="6" x2="12" y2="18"/></svg>
+          상하차 구분 <span class="fi-badge">현장 입력</span>
+        </div>
+        <div class="tgl-row">
+          <button class="tgl load" id="fd-tgl-load" onclick="setLoad('load')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 11 12 6 7 11"/><line x1="12" y1="6" x2="12" y2="18"/></svg>입고 (반입)
+          </button>
+          <button class="tgl unload" id="fd-tgl-unload" onclick="setLoad('unload')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="7 13 12 18 17 13"/><line x1="12" y1="18" x2="12" y2="6"/></svg>출고 (인도)
+          </button>
+        </div>
+      </div>
+      <!-- 실측 -->
+      <div class="fi-card">
+        <div class="fi-title">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+          실측 사이즈 · 중량 <span class="fi-badge">현장 입력</span>
+        </div>
+        <div style="font-size:11px;color:var(--g3);margin-bottom:9px;font-weight:500">실측값이 다를 경우 입력 (언제든 수정 가능)</div>
+        <div class="sz-grid">
+          <div class="fi-fld"><label>가로 (cm)</label><input type="number" id="fd-w" inputmode="decimal" placeholder="0" oninput="calcFCBM()"/></div>
+          <div class="fi-fld"><label>세로 (cm)</label><input type="number" id="fd-d" inputmode="decimal" placeholder="0" oninput="calcFCBM()"/></div>
+          <div class="fi-fld"><label>높이 (cm)</label><input type="number" id="fd-h" inputmode="decimal" placeholder="0" oninput="calcFCBM()"/></div>
+        </div>
+        <div class="sz-grid r2">
+          <div class="fi-fld"><label>실중량 (kg)</label><input type="number" id="fd-gw" inputmode="decimal" placeholder="0.0" step="0.1" oninput="calcFCBM()"/></div>
+          <div class="fi-fld">
+            <label>총 개수 (pcs)</label>
+            <div class="pcs-row">
+              <button class="pcs-btn" onclick="chgPcs(-1)">−</button>
+              <span class="pcs-num" id="fd-pcs-n">1</span>
+              <span class="pcs-unit">pcs</span>
+              <button class="pcs-btn" onclick="chgPcs(1)">+</button>
+            </div>
+          </div>
+        </div>
+        <div class="cbm-result" id="fd-cbm-res" style="display:none">
+          <div class="cbm-col"><div class="cbm-lbl">총 CBM</div><div class="cbm-val" id="fd-cbm"></div></div>
+          <div class="cbm-col"><div class="cbm-lbl">볼륨중량</div><div class="cbm-val" id="fd-vw"></div><div style="font-size:8px;color:var(--green-dark);margin-top:1px">W×D×H×pcs÷6000</div></div>
+          <div class="cbm-col"><div class="cbm-lbl">운임중량</div><div class="cbm-val" id="fd-cw"></div></div>
+        </div>
+      </div>
+      <!-- 사진 -->
+      <div class="fi-card">
+        <div class="fi-title">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          화물 사진 <span style="font-size:10px;color:var(--g3);font-weight:600;margin-left:3px" id="fd-photo-cnt">0/8</span>
+          <span class="fi-badge">현장 입력</span>
+        </div>
+        <div class="photo-grid">
+          <div class="ph-slot" id="ph0"><input type="file" accept="image/*" capture="environment" onchange="loadPh(this,0,'전면')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><div class="ph-lbl">전면</div></div>
+          <div class="ph-slot" id="ph1"><input type="file" accept="image/*" capture="environment" onchange="loadPh(this,1,'측면')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><div class="ph-lbl">측면</div></div>
+          <div class="ph-slot" id="ph2"><input type="file" accept="image/*" capture="environment" onchange="loadPh(this,2,'라벨')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><div class="ph-lbl">라벨</div></div>
+          <div class="ph-slot" id="ph3"><input type="file" accept="image/*" capture="environment" onchange="loadPh(this,3,'손상')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><div class="ph-lbl">손상</div></div>
+          <div class="ph-slot" id="ph4"><input type="file" accept="image/*" capture="environment" onchange="loadPh(this,4,'추가')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><div class="ph-lbl">추가</div></div>
+          <div class="ph-slot" id="ph5"><input type="file" accept="image/*" capture="environment" onchange="loadPh(this,5,'추가')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><div class="ph-lbl">추가</div></div>
+          <div class="ph-slot" id="ph6"><input type="file" accept="image/*" capture="environment" onchange="loadPh(this,6,'추가')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><div class="ph-lbl">추가</div></div>
+          <div class="ph-slot" id="ph7"><input type="file" accept="image/*" capture="environment" onchange="loadPh(this,7,'추가')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><div class="ph-lbl">추가</div></div>
+        </div>
+      </div>
+      <!-- 메모 -->
+      <div class="fi-card">
+        <div class="fi-title">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          현장 메모 <span class="fi-badge">현장 입력</span>
+        </div>
+        <textarea class="memo-input" id="fd-note" placeholder="손상 여부, 특이사항, DGD 첨부 여부..."></textarea>
+      </div>
+    </div>
+
+    <!-- 완료 화면 -->
+    <div class="done-screen" id="fd-done">
+      <div class="done-icon"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--green-dark)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <div class="done-title">현장 입력 완료! ✅</div>
+      <div class="done-sub" id="fd-done-sub"></div>
+      <div class="done-actions">
+        <button class="btn-back" onclick="backField()">목록으로</button>
+        <button class="btn-edit" onclick="enableEdit()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>수정하기
+        </button>
+      </div>
+    </div>
+    <div class="submit-wrap" id="fd-submit-wrap">
+      <button class="submit-btn" id="fd-submit-btn" onclick="submitField()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        구글 시트 저장 · 화주 즉시 공유
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     SHIPPER SCREEN
+════════════════════════════════════════ -->
+<div class="screen" id="scr-shipper">
+  <div class="topbar blue">
+    <div class="tb-logo">CargoIN</div>
+    <div class="tb-role-pill shipper">화주</div>
+    <span class="tb-user" id="s-company"></span>
+    <div class="tb-right"><button class="tb-logout" onclick="doLogout()">로그아웃</button></div>
+  </div>
+  <div class="tab-bar">
+    <div class="tab active" id="s-tab-all" onclick="setStab('all')">전체 <span class="tab-count" id="s-cnt-all">0</span></div>
+    <div class="tab" id="s-tab-wait" onclick="setStab('wait')">대기 <span class="tab-count" id="s-cnt-wait">0</span></div>
+    <div class="tab" id="s-tab-prog" onclick="setStab('prog')">진행 <span class="tab-count" id="s-cnt-prog">0</span></div>
+    <div class="tab" id="s-tab-done" onclick="setStab('done')">완료 <span class="tab-count" id="s-cnt-done">0</span></div>
+  </div>
+  <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 14px;font-size:11px;color:var(--g3)">
+    <span id="s-updated">로딩 중...</span>
+    <button class="refresh-btn" onclick="loadShipper()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>새로고침
+    </button>
+  </div>
+  <div class="list-sec" id="s-list" style="padding-top:0"></div>
+  <!-- 화주 상세 모달 -->
+  <div class="modal-ov" id="s-modal">
+    <div class="modal-hd blue">
+      <div class="modal-back" onclick="closeSModal()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>내 화물 목록
+      </div>
+      <div class="modal-awb" id="s-m-awb"></div>
+      <div class="modal-route" id="s-m-route"></div>
+    </div>
+    <div id="s-m-body" style="padding-bottom:40px"></div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     ADMIN SCREEN
+════════════════════════════════════════ -->
+<div class="screen" id="scr-admin">
+  <div class="topbar admin">
+    <div class="tb-logo">CargoIN</div>
+    <div class="tb-role-pill admin">관리자</div>
+    <div class="tb-right"><button class="tb-logout" onclick="doLogout()">로그아웃</button></div>
+  </div>
+  <div class="admin-tabs">
+    <div class="admin-tab active" onclick="setAtab('dash',this)">대시보드</div>
+    <div class="admin-tab" onclick="setAtab('cargos',this)">화물 목록</div>
+    <div class="admin-tab" onclick="setAtab('register',this)">화물 등록</div>
+    <div class="admin-tab" onclick="setAtab('accounts',this)">계정 관리</div>
+  </div>
+
+  <!-- 대시보드 -->
+  <div class="a-panel on" id="ap-dash">
+    <div class="stat-row">
+      <div class="stat-card"><div class="stat-n" id="a-tot">0</div><div class="stat-lbl">전체 화물</div></div>
+      <div class="stat-card"><div class="stat-n amber" id="a-wait">0</div><div class="stat-lbl">⏳ 입력 대기</div></div>
+      <div class="stat-card"><div class="stat-n blue" id="a-field">0</div><div class="stat-lbl">🔵 현장 완료</div></div>
+      <div class="stat-card"><div class="stat-n green" id="a-done">0</div><div class="stat-lbl">✅ 반입 완료</div></div>
+    </div>
+    <div style="font-size:10px;font-weight:700;color:var(--g3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">최근 화물</div>
+    <div id="a-recent"></div>
+  </div>
+
+  <!-- 화물 목록 -->
+  <div class="a-panel" id="ap-cargos">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <span style="font-size:11px;color:var(--g3);font-weight:600" id="a-cargo-cnt">0건</span>
+      <button class="refresh-btn" onclick="loadAdmin()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>새로고침
+      </button>
+    </div>
+    <div id="a-cargo-list"></div>
+  </div>
+
+  <!-- 화물 등록 -->
+  <div class="a-panel" id="ap-register">
+    <div class="a-form">
+      <div class="a-form-title">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        신규 화물 등록
+      </div>
+      <div class="af-grid">
+        <div class="af-fld af-full"><label>DATE (접수일시)</label><input type="datetime-local" id="r-date" step="300"/></div>
+        <div class="af-fld"><label>CONSOL</label><input id="r-consol" placeholder="예) ICN CFS"/></div>
+        <div class="af-fld"><label>SHIPPER (화주명)</label><input id="r-shipper" placeholder="삼성전자"/></div>
+        <div class="af-fld"><label>항공사</label><input id="r-airline" placeholder="KE, OZ..." maxlength="4" oninput="this.value=this.value.toUpperCase()"/></div>
+        <div class="af-fld"><label>DEST</label><input id="r-dest" placeholder="LAX" maxlength="3" oninput="this.value=this.value.toUpperCase()"/></div>
+        <div class="af-fld"><label>수량 (PCS)</label><input type="number" id="r-pcs" placeholder="0"/></div>
+        <div class="af-fld"><label>중량 (kg)</label><input type="number" id="r-gw" placeholder="0.0" step="0.1"/></div>
+        <div class="af-fld af-full"><label>ITEM (품목)</label><input id="r-item" placeholder="Electronic parts"/></div>
+        <div class="af-fld"><label>CONDI</label><input id="r-condi" placeholder="일반 / DG / 냉장"/></div>
+        <div class="af-fld"><label>화주ID</label><input id="r-sid" placeholder="SHIPPER001"/></div>
+        <div class="af-fld"><label>MAWB</label><input id="r-mawb" placeholder="180-12345678" style="font-family:var(--mono)"/></div>
+        <div class="af-fld"><label>HAWB</label><input id="r-hawb" placeholder="선택 입력" style="font-family:var(--mono)"/></div>
+        <div class="af-fld af-full"><label>편명/일자</label><input id="r-flight" placeholder="KE901 / 2026-04-18"/></div>
+        <div class="af-fld"><label>SKD (출발예정)</label><input type="datetime-local" id="r-skd" step="300"/></div>
+        <div class="af-fld"><label>입고예정시간</label><input type="datetime-local" id="r-eta" step="300"/></div>
+      </div>
+      <button class="af-save" onclick="registerCargo()">화물 등록</button>
+    </div>
+  </div>
+
+  <!-- 계정 관리 -->
+  <div class="a-panel" id="ap-accounts">
+    <div class="a-form">
+      <div class="a-form-title">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="7" r="4"/><path d="M5.5 21a8.38 8.38 0 0 1 13 0"/></svg>
+        신규 계정 추가
+      </div>
+      <div class="af-grid">
+        <div class="af-fld af-full"><label>이름</label><input id="ac-name" placeholder="홍길동"/></div>
+        <div class="af-fld af-full"><label>이메일</label><input type="email" id="ac-email" placeholder="user@email.com"/></div>
+        <div class="af-fld"><label>비밀번호</label><input type="text" id="ac-pw" placeholder="초기 비밀번호"/></div>
+        <div class="af-fld"><label>역할</label>
+          <select id="ac-role">
+            <option value="shipper">화주</option>
+            <option value="field">현장 직원</option>
+            <option value="admin">관리자</option>
+          </select>
+        </div>
+        <div class="af-fld af-full"><label>화주 ID (화주 역할만)</label><input id="ac-shid" placeholder="예) SHIPPER001"/></div>
+      </div>
+      <button class="af-save" onclick="addAccount()">계정 추가</button>
+    </div>
+    <div style="font-size:10px;font-weight:700;color:var(--g3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">등록된 계정</div>
+    <div id="a-acc-list"></div>
+  </div>
+</div>
+
+<!-- 비밀번호 변경 모달 -->
+<div class="pw-modal" id="pw-modal">
+  <div class="pw-box">
+    <div class="pw-title">비밀번호 변경</div>
+    <div class="pw-sub" id="pw-target-lbl"></div>
+    <div class="pw-fld"><label>새 비밀번호</label><input type="text" id="pw-new" placeholder="새 비밀번호 입력"/></div>
+    <div class="pw-btns">
+      <button class="pw-cancel" onclick="closePw()">취소</button>
+      <button class="pw-save" onclick="savePw()">변경</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ═══════════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════════ */
+const SURL_KEY="cargoin_sheet_url", SESS_KEY="cargoin_session", ACCS_KEY="cargoin_accounts";
+let SHEET_URL=localStorage.getItem(SURL_KEY)||"";
+let session=null;
+let allCargos=[], shipperCargos=[], accounts=[];
+let currentCargo=null, fieldPcs=1, fieldLoad=null, fieldPhotos=[], fieldChecks=[];
+let sTab="all", pwTargetEmail=null;
+
+/* ═══════════════════════════════════════════════════
+   DEMO DATA
+═══════════════════════════════════════════════════ */
+const DEMO_ACCOUNTS=[
+  {email:"admin@cargoin.com",password:"admin123",name:"관리자",role:"admin",shipperId:"",status:"활성"},
+  {email:"field@cargoin.com",password:"field123",name:"김현장",role:"field",shipperId:"",status:"활성"},
+  {email:"samsung@test.com", password:"1234",    name:"삼성전자",role:"shipper",shipperId:"SHIPPER001",status:"활성"},
+  {email:"lg@test.com",      password:"5678",    name:"LG전자",  role:"shipper",shipperId:"SHIPPER002",status:"활성"}
+];
+
+const DEMO_CARGOS=[
+  {"AWB":"180-12345678","MAWB":"180-12345678","HAWB":"","항공사":"KE","편명":"KE901","편명/일자":"KE901 / 2025-04-19","출발지":"ICN","목적지":"LAX","DEST":"LAX","출발일시":"2025-04-19T22:10","SKD":"2025-04-19T22:10","CONDI":"일반화물","ITEM":"Electronic parts","SHIPPER":"삼성전자","총수량":"5","총중량":"114","볼륨중량":"","운임중량":"","기사명":"김철수","기사연락처":"010-1234-5678","차량번호":"12가 3456","운송사":"한진운송","도착예정":"2025-04-19T18:00","상태":"입력대기","현장수량":"","현장중량":"","현장메모":"","반입시간":"","화주ID":"SHIPPER001","사진URL":""},
+  {"AWB":"020-98765432","MAWB":"020-98765432","HAWB":"HB-001","항공사":"OZ","편명":"OZ222","편명/일자":"OZ222 / 2025-04-20","출발지":"ICN","목적지":"FRA","DEST":"FRA","출발일시":"2025-04-20T14:30","SKD":"2025-04-20T14:30","CONDI":"일반화물","ITEM":"Automotive parts","SHIPPER":"LG전자","총수량":"3","총중량":"205","볼륨중량":"","운임중량":"","기사명":"","기사연락처":"","차량번호":"","운송사":"","도착예정":"","상태":"입력대기","현장수량":"","현장중량":"","현장메모":"","반입시간":"","화주ID":"SHIPPER002","사진URL":""},
+  {"AWB":"172-11223344","MAWB":"172-11223344","HAWB":"","항공사":"KE","편명":"KE085","편명/일자":"KE085 / 2025-04-19","출발지":"ICN","목적지":"NRT","DEST":"NRT","출발일시":"2025-04-19T09:55","SKD":"2025-04-19T09:55","CONDI":"위험물 (DG)","ITEM":"Lithium battery (UN3480)","SHIPPER":"삼성SDI","총수량":"3","총중량":"84","볼륨중량":"72","운임중량":"84","기사명":"이영희","기사연락처":"010-9876-5432","차량번호":"34나 5678","운송사":"자가운송","도착예정":"2025-04-19T05:30","상태":"현장완료","현장수량":"3","현장중량":"84","현장메모":"DGD 첨부 완료","반입시간":"2025-04-19 05:45","화주ID":"SHIPPER001","사진URL":"3장 촬영"}
+];
+
+function getAccounts(){try{const r=localStorage.getItem(ACCS_KEY);return r?JSON.parse(r):DEMO_ACCOUNTS;}catch{return DEMO_ACCOUNTS;}}
+function saveAccounts(a){localStorage.setItem(ACCS_KEY,JSON.stringify(a));}
+function getCargosLocal(){try{const r=localStorage.getItem("cargoin_v2");return r?JSON.parse(r):DEMO_CARGOS;}catch{return DEMO_CARGOS;}}
+function saveCargosLocal(c){localStorage.setItem("cargoin_v2",JSON.stringify(c));}
+
+/* ═══════════════════════════════════════════════════
+   UTILS
+═══════════════════════════════════════════════════ */
+function toast(msg,dur=3000){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("on");setTimeout(()=>t.classList.remove("on"),dur);}
+function nowStr(){return new Date().toLocaleTimeString("ko",{hour:"2-digit",minute:"2-digit"});}
+function showLoading(m="잠시만..."){document.getElementById("loading-msg").textContent=m;document.getElementById("loading").classList.remove("hide");}
+function hideLoading(){document.getElementById("loading").classList.add("hide");}
+function showScr(id){document.querySelectorAll(".screen").forEach(s=>s.classList.remove("on"));document.getElementById("scr-"+id).classList.add("on");}
+function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+function sBadge(s){const m={pending_field:"입력대기","입력대기":"입력대기","현장완료":"현장완료","반입완료":"반입완료"};const label=m[s]||s;const cls=label==="반입완료"?"b-done":label==="현장완료"?"b-field":"b-wait";return`<span class="badge ${cls}">${esc(label)}</span>`;}
+
+function cutoff(cargo){
+  const etd=cargo["출발일시"]||cargo["SKD"]||"";
+  if(!etd)return null;
+  const dep=new Date(etd);const isDG=(cargo["CONDI"]||cargo["화물구분"]||"").includes("DG");
+  return new Date(dep.getTime()-(isDG?6:4)*3600000);
+}
+function isDG(c){return (c["CONDI"]||c["화물구분"]||"").includes("DG")||"".includes("위험물");}
+
+/* ═══════════════════════════════════════════════════
+   SHEET URL
+═══════════════════════════════════════════════════ */
+window.saveSheetUrl=function(){
+  const u=document.getElementById("l-sheet-url").value.trim();
+  SHEET_URL=u;localStorage.setItem(SURL_KEY,u);
+  toast(u?"URL 저장됨":"URL 초기화됨");
+};
+async function apiGet(action,params={}){
+  const url=new URL(SHEET_URL);url.searchParams.set("action",action);
+  Object.entries(params).forEach(([k,v])=>url.searchParams.set(k,v));
+  const r=await fetch(url.toString());return r.json();
+}
+async function apiPost(body){
+  const r=await fetch(SHEET_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});return r.json();
+}
+
+/* ═══════════════════════════════════════════════════
+   LOGIN / LOGOUT
+═══════════════════════════════════════════════════ */
+window.onload=function(){
+  document.getElementById("l-sheet-url").value=SHEET_URL;
+  const saved=localStorage.getItem(SESS_KEY);
+  if(saved){session=JSON.parse(saved);enterApp();}
+  else hideLoading();
+};
+
+window.doLogin=async function(){
+  const email=document.getElementById("l-email").value.trim();
+  const pw=document.getElementById("l-pw").value.trim();
+  if(!email||!pw){showErr("이메일과 비밀번호를 입력해 주세요.");return;}
+  const btn=document.getElementById("l-btn");btn.disabled=true;
+  showLoading("로그인 중...");
+
+  // 1. 로컬 계정 확인
+  const accs=getAccounts();
+  const local=accs.find(a=>a.email.toLowerCase()===email.toLowerCase()&&a.password===pw&&a.status!=="비활성");
+  if(local){
+    session={email,role:local.role,name:local.name,shipperId:local.shipperId||""};
+    localStorage.setItem(SESS_KEY,JSON.stringify(session));
+    hideLoading();btn.disabled=false;
+    enterApp();return;
+  }
+  // 2. Sheets 계정 확인
+  if(SHEET_URL){
+    try{
+      const res=await apiPost({action:"shipperLogin",email,password:pw});
+      if(res.ok){
+        session={email,role:"shipper",name:res.companyName||email,shipperId:res.shipperId||""};
+        localStorage.setItem(SESS_KEY,JSON.stringify(session));
+        hideLoading();btn.disabled=false;enterApp();return;
+      }
+    }catch{}
+  }
+  hideLoading();btn.disabled=false;
+  showErr("이메일 또는 비밀번호가 올바르지 않습니다.");
+};
+
+function showErr(m){const e=document.getElementById("l-err");e.textContent=m;e.classList.add("on");setTimeout(()=>e.classList.remove("on"),4000);}
+
+window.doLogout=function(){
+  session=null;localStorage.removeItem(SESS_KEY);
+  document.getElementById("l-email").value="";document.getElementById("l-pw").value="";
+  showScr("login");
+};
+
+function enterApp(){
+  if(!session){hideLoading();showScr("login");return;}
+  if(session.role==="admin"){showScr("admin");loadAdmin();}
+  else if(session.role==="field"){showScr("field");loadField();}
+  else{showScr("shipper");document.getElementById("s-company").textContent=session.name||"";loadShipper();}
+}
+
+/* ═══════════════════════════════════════════════════
+   FIELD APP
+═══════════════════════════════════════════════════ */
+async function loadField(){
+  showLoading("화물 불러오는 중...");
+  try{
+    if(SHEET_URL){
+      const data=await apiGet("getCargos");
+      allCargos=Array.isArray(data)?data:getCargosLocal();
+    }else throw new Error();
+  }catch{allCargos=getCargosLocal();}
+  hideLoading();
+  document.getElementById("f-sync").textContent="동기화 "+nowStr();
+  renderFieldList(allCargos);
+}
+
+function renderFieldList(list){
+  document.getElementById("f-lbl").textContent=`오늘 화물 (${list.length}건)`;
+  const el=document.getElementById("f-list-body");
+  if(!list.length){el.innerHTML='<div class="empty-state">화물이 없습니다.<br>구글 시트에 화물을 등록해 주세요.</div>';return;}
+  el.innerHTML=list.map(c=>{
+    const cut=cutoff(c);
+    const remain=cut?(cut-new Date())/3600000:null;
+    const ccls=remain===null?"ok":remain<0?"danger":remain<2?"warn":"ok";
+    const remainTxt=remain===null?"":remain<0?"⚠ 마감 초과!":remain<1?`${Math.round(remain*60)}분 남음`:remain.toFixed(1)+"h 남음";
+    const isDg=isDG(c);
+    const condi=c["CONDI"]||c["화물구분"]||"";
+    return `<div class="cargo-card${isDg?" dg":""}" onclick="openFieldDetail('${esc(c["AWB"]||c["MAWB"]||"")}')">
+      <div class="cc-head">
+        <div>
+          <div class="cc-mawb-label">MAWB</div>
+          <div class="cc-awb">${esc(c["MAWB"]||c["AWB"]||"—")}</div>
+          ${c["HAWB"]?`<div style="font-size:10px;color:var(--g3);font-family:var(--mono)">HAWB: ${esc(c["HAWB"])}</div>`:""}
+        </div>
+        ${sBadge(c["상태"]||"입력대기")}
+      </div>
+      <div class="cc-sub">${esc(c["항공사"]||"")} ${esc(c["편명/일자"]||"")} · ${esc(c["출발지"]||"")}→${esc(c["DEST"]||c["목적지"]||"")}
+      ${c["총수량"]?` · ${esc(c["총수량"])}pcs / ${esc(c["총중량"])}kg`:""}
+      </div>
+      <div class="cc-sub" style="margin-top:3px;color:var(--g4)">${esc(c["SHIPPER"]||"")} · ${esc(condi)}</div>
+      ${cut?`<div class="cc-cut ${ccls}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>반입마감 ${cut.toLocaleTimeString("ko",{hour:"2-digit",minute:"2-digit"})} · ${remainTxt}</div>`:""}
+    </div>`;
+  }).join("");
+}
+
+function filterField(){
+  const q=document.getElementById("f-search").value.trim().toLowerCase();
+  if(!q){renderFieldList(allCargos);return;}
+  renderFieldList(allCargos.filter(c=>
+    (c["AWB"]||c["MAWB"]||"").toLowerCase().includes(q)||
+    (c["DEST"]||c["목적지"]||"").toLowerCase().includes(q)||
+    (c["SHIPPER"]||"").toLowerCase().includes(q)||
+    (c["ITEM"]||"").toLowerCase().includes(q)
+  ));
+}
+
+function openFieldDetail(awb){
+  const c=allCargos.find(x=>(x["AWB"]===awb||x["MAWB"]===awb));
+  if(!c)return;
+  currentCargo=c;
+  document.getElementById("f-list").style.display="none";
+  document.getElementById("f-detail").classList.add("on");
+
+  // 헤더
+  document.getElementById("f-det-awb").textContent=c["MAWB"]||c["AWB"];
+  document.getElementById("f-det-meta").textContent=`${c["항공사"]||""} ${c["편명/일자"]||""} · ${c["출발지"]||""} → ${c["DEST"]||c["목적지"]||""}`;
+
+  // 기본 정보
+  const etd=c["출발일시"]||c["SKD"]||"";
+  const dep=etd?new Date(etd):null;
+  const cut=cutoff(c);
+  const remain=cut?(cut-new Date())/3600000:null;
+  document.getElementById("fd-flt").textContent=`${c["항공사"]||""} ${c["편명/일자"]||""}`;
+  document.getElementById("fd-route").textContent=`${c["출발지"]||""} → ${c["DEST"]||c["목적지"]||""}`;
+  document.getElementById("fd-etd").textContent=dep?dep.toLocaleString("ko",{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"}):"—";
+  document.getElementById("fd-pcs").textContent=(c["총수량"]||"—")+"pcs";
+  document.getElementById("fd-gw").textContent=(c["총중량"]||"—")+"kg";
+  document.getElementById("fd-item").textContent=c["ITEM"]||c["품목"]||"—";
+  document.getElementById("fd-shipper").textContent=c["SHIPPER"]||"—";
+  document.getElementById("fd-mawb").textContent=c["MAWB"]||c["AWB"]||"—";
+
+  const hawbEl=document.getElementById("fd-hawb-wrap");
+  if(c["HAWB"]){hawbEl.style.display="flex";document.getElementById("fd-hawb").textContent=c["HAWB"];}
+  else hawbEl.style.display="none";
+
+  const cutEl=document.getElementById("fd-cutoff");
+  if(cut){
+    const rem=remain;
+    const cls=rem<0?"danger":rem<2?"warn":"";
+    cutEl.textContent=cut.toLocaleString("ko",{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"})+(rem<0?" ⚠":"");
+    cutEl.className="info-val"+(cls?" "+cls:"");
+  }else{cutEl.textContent="—";cutEl.className="info-val";}
+
+  // DG 경고
+  document.getElementById("fd-dg-warn").style.display=isDG(c)?"block":"none";
+
+  // 피스 (간단 표시)
+  const pcsCard=document.getElementById("fd-pieces-card");
+  const pcsN=Number(c["총수량"])||0;
+  if(pcsN>0){
+    pcsCard.style.display="block";
+    fieldChecks=[false];
+    document.getElementById("fd-pieces-table").innerHTML=`<table>
+      <thead><tr><th>품목</th><th>수량</th><th>중량</th><th>비고</th></tr></thead>
+      <tbody><tr>
+        <td class="dn">${esc(c["ITEM"]||c["품목"]||"—")}</td>
+        <td>${pcsN}</td>
+        <td class="cv">${c["총중량"]||"—"}kg</td>
+        <td>${c["CONDI"]||c["화물구분"]||"—"}</td>
+      </tr></tbody>
+    </table>`;
+    renderChecks(c);
+  }else pcsCard.style.display="none";
+
+  // 현장 입력 초기화
+  fieldPcs=Number(c["현장수량"])||pcsN||1;
+  document.getElementById("fd-pcs-n").textContent=fieldPcs;
+  document.getElementById("fd-gw").value=c["현장중량"]||"";
+  document.getElementById("fd-note").value=c["현장메모"]||"";
+  document.getElementById("fd-w").value="";document.getElementById("fd-d").value="";document.getElementById("fd-h").value="";
+  fieldLoad=null;
+  document.getElementById("fd-tgl-load").className="tgl load";
+  document.getElementById("fd-tgl-unload").className="tgl unload";
+  fieldPhotos=[];updatePhotoCnt();calcFCBM();
+  document.getElementById("fd-cbm-res").style.display="none";
+
+  const done=c["상태"]==="현장완료"||c["상태"]==="반입완료";
+  document.getElementById("fd-done").className="done-screen"+(done?" on":"");
+  document.getElementById("fd-fi-body").style.display=done?"none":"flex";
+  document.getElementById("fd-submit-wrap").style.display=done?"none":"block";
+  if(done){
+    document.getElementById("fd-done-sub").textContent=`AWB: ${c["AWB"]||c["MAWB"]}\n수량: ${c["현장수량"]||pcsN}pcs · 중량: ${c["현장중량"]||c["총중량"]}kg\n구글 시트 업데이트 완료\n화주가 즉시 확인 가능합니다.`;
+  }
+  window.scrollTo(0,0);
+}
+
+function renderChecks(c){
+  const n=fieldChecks.filter(Boolean).length;
+  document.getElementById("fd-ck-cnt").textContent=`${n}/${fieldChecks.length} 확인됨`;
+  document.getElementById("fd-pcl").innerHTML=fieldChecks.map((checked,i)=>`
+    <div class="pcr${checked?" confirmed":""}">
+      <div class="pcr-num">${i+1}</div>
+      <div class="pcr-info">
+        <div class="pcr-desc">${esc(c["ITEM"]||c["품목"]||"화물")} <span style="font-size:10px;color:var(--g3)">×${c["총수량"]||1}</span></div>
+        <div class="pcr-dim">${c["총중량"]||0}kg · ${c["CONDI"]||""}</div>
+      </div>
+      <button class="pcr-btn${checked?" checked":""}" onclick="toggleCheck(${i})">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      </button>
+    </div>`).join("");
+}
+
+window.toggleCheck=function(i){
+  fieldChecks[i]=!fieldChecks[i];
+  renderChecks(currentCargo);
+  if(fieldChecks.every(Boolean))toast("전체 피스 확인 완료! ✓");
+};
+
+function backField(){
+  document.getElementById("f-list").style.display="block";
+  document.getElementById("f-detail").classList.remove("on");
+  currentCargo=null;window.scrollTo(0,0);
+}
+
+window.setLoad=function(t){
+  fieldLoad=t;
+  document.getElementById("fd-tgl-load").className="tgl load"+(t==="load"?" on":"");
+  document.getElementById("fd-tgl-unload").className="tgl unload"+(t==="unload"?" on":"");
+};
+
+window.chgPcs=function(d){fieldPcs=Math.max(1,fieldPcs+d);document.getElementById("fd-pcs-n").textContent=fieldPcs;calcFCBM();};
+
+window.calcFCBM=function(){
+  const w=parseFloat(document.getElementById("fd-w").value)||0;
+  const d=parseFloat(document.getElementById("fd-d").value)||0;
+  const h=parseFloat(document.getElementById("fd-h").value)||0;
+  const gw=parseFloat(document.getElementById("fd-gw").value)||0;
+  const p=fieldPcs||1;
+  const res=document.getElementById("fd-cbm-res");
+  if((w&&d&&h)||gw){
+    res.style.display="grid";
+    const cbm=w&&d&&h?w*d*h/1000000:0;
+    const vw=w&&d&&h?w*d*h*p/6000:0;
+    const cw=Math.max(gw,vw);
+    document.getElementById("fd-cbm").textContent=cbm?(cbm*p).toFixed(3)+"m³":"—";
+    document.getElementById("fd-vw").textContent=vw?vw.toFixed(1)+"kg":"—";
+    document.getElementById("fd-cw").textContent=cw?cw.toFixed(1)+"kg":"—";
+  }else res.style.display="none";
+};
+
+window.loadPh=function(input,idx,tag){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    fieldPhotos[idx]=e.target.result;
+    const slot=document.getElementById("ph"+idx);
+    slot.querySelector("img")?.remove();
+    const sv=slot.querySelector("svg");if(sv)sv.style.display="none";
+    const lb=slot.querySelector(".ph-lbl");if(lb)lb.style.display="none";
+    const img=document.createElement("img");img.src=e.target.result;slot.appendChild(img);
+    slot.classList.add("filled");
+    let pt=slot.querySelector(".ph-tag");if(!pt){pt=document.createElement("div");pt.className="ph-tag";slot.appendChild(pt);}
+    pt.textContent=tag;updatePhotoCnt();
+  };reader.readAsDataURL(file);
+};
+function updatePhotoCnt(){document.getElementById("fd-photo-cnt").textContent=fieldPhotos.filter(Boolean).length+"/8";}
+
+async function submitField(){
+  const gw=parseFloat(document.getElementById("fd-gw").value);
+  if(!gw){toast("실중량을 입력해 주세요.");return;}
+  const btn=document.getElementById("fd-submit-btn");btn.disabled=true;btn.textContent="저장 중...";
+  const w=parseFloat(document.getElementById("fd-w").value)||0;
+  const d=parseFloat(document.getElementById("fd-d").value)||0;
+  const h=parseFloat(document.getElementById("fd-h").value)||0;
+  const vw=w&&d&&h?w*d*h*fieldPcs/6000:0;
+  const cw=Math.max(gw,vw);
+  const payload={
+    action:"updateField",
+    awb:currentCargo["AWB"]||currentCargo["MAWB"],
+    status:"현장완료",fieldPcs,fieldGw:gw,
+    fieldVw:vw?vw.toFixed(1):"",fieldCw:cw?cw.toFixed(1):"",
+    note:document.getElementById("fd-note").value,
+    checkedAt:new Date().toLocaleString("ko-KR"),
+    photoNote:fieldPhotos.filter(Boolean).length+"장 촬영"
+  };
+  try{
+    if(SHEET_URL){const r=await apiPost(payload);if(!r.ok)throw new Error(r.error);}
+    // 로컬 캐시 업데이트
+    const idx=allCargos.findIndex(x=>(x["AWB"]===currentCargo["AWB"]||x["MAWB"]===currentCargo["MAWB"]));
+    if(idx>=0){Object.assign(allCargos[idx],{상태:"현장완료",현장수량:fieldPcs,현장중량:gw,볼륨중량:vw?vw.toFixed(1):"",운임중량:cw?cw.toFixed(1):"",현장메모:payload.note});currentCargo=allCargos[idx];}
+    saveCargosLocal(allCargos);
+    document.getElementById("fd-fi-body").style.display="none";
+    document.getElementById("fd-submit-wrap").style.display="none";
+    document.getElementById("fd-done").className="done-screen on";
+    document.getElementById("fd-done-sub").textContent=`AWB: ${currentCargo["AWB"]||currentCargo["MAWB"]}\n${fieldPcs}pcs · ${gw}kg\n저장 완료! 화주가 즉시 확인 가능합니다.`;
+    document.getElementById("f-sync").textContent="방금 저장됨";
+    toast("저장 완료! 화주에게 즉시 공유됩니다. ✅");
+  }catch(e){toast("저장 오류: "+e.message);}
+  btn.disabled=false;btn.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> 구글 시트 저장 · 화주 즉시 공유';
+}
+
+window.enableEdit=function(){
+  document.getElementById("fd-done").className="done-screen";
+  document.getElementById("fd-fi-body").style.display="flex";
+  document.getElementById("fd-submit-wrap").style.display="block";
+  toast("수정 모드 전환됨");
+  document.getElementById("fd-fi-body").scrollIntoView({behavior:"smooth"});
+};
+
+/* ═══════════════════════════════════════════════════
+   SHIPPER APP
+═══════════════════════════════════════════════════ */
+async function loadShipper(){
+  document.getElementById("s-updated").textContent="불러오는 중...";
+  try{
+    if(SHEET_URL){
+      const data=await apiGet("getShipperCargos",{id:session.shipperId});
+      shipperCargos=Array.isArray(data)?data:[];
+    }else throw new Error();
+  }catch{
+    shipperCargos=getCargosLocal().filter(c=>c["화주ID"]===session.shipperId);
+  }
+  document.getElementById("s-updated").textContent="업데이트: "+nowStr();
+  renderSCounts();renderSCards(sTab);
+}
+
+function setStab(t){
+  sTab=t;["all","wait","prog","done"].forEach(id=>{
+    document.getElementById("s-tab-"+id).classList.toggle("active",id===t);
+  });renderSCards(t);
+}
+
+function renderSCounts(){
+  document.getElementById("s-cnt-all").textContent=shipperCargos.length;
+  document.getElementById("s-cnt-wait").textContent=shipperCargos.filter(c=>c["상태"]==="입력대기").length;
+  document.getElementById("s-cnt-prog").textContent=shipperCargos.filter(c=>c["상태"]==="현장완료").length;
+  document.getElementById("s-cnt-done").textContent=shipperCargos.filter(c=>c["상태"]==="반입완료").length;
+}
+
+function renderSCards(t){
+  let list=shipperCargos;
+  if(t==="wait")list=list.filter(c=>c["상태"]==="입력대기");
+  if(t==="prog")list=list.filter(c=>c["상태"]==="현장완료");
+  if(t==="done")list=list.filter(c=>c["상태"]==="반입완료");
+  const el=document.getElementById("s-list");
+  if(!list.length){el.innerHTML='<div class="empty-state">해당 화물이 없습니다.</div>';return;}
+  el.innerHTML=list.map(c=>{
+    const status=c["상태"]||"입력대기";
+    const dep=c["출발일시"]||c["SKD"]?new Date(c["출발일시"]||c["SKD"]):null;
+    const hasField=!!(c["현장중량"]||c["현장수량"]);
+    const steps=getSSteps(c);
+    return `<div class="shipper-card" onclick="openSModal('${esc(c["AWB"]||c["MAWB"]||"")}')">
+      <div class="sc-head">
+        <div class="sc-awb-row">
+          <div class="sc-awb">${esc(c["MAWB"]||c["AWB"]||"—")}</div>
+          ${sBadge(status)}
+        </div>
+        <div class="sc-route">${esc(c["항공사"]||"")} ${esc(c["편명/일자"]||"")} · ${esc(c["출발지"]||"")}→${esc(c["DEST"]||c["목적지"]||"")}${dep?" · "+dep.toLocaleDateString("ko",{month:"2-digit",day:"2-digit"})+" "+dep.toLocaleTimeString("ko",{hour:"2-digit",minute:"2-digit"}):""}</div>
+      </div>
+      <div class="timeline">${steps.map((s,i)=>`
+        <div class="tl-step">
+          <div class="tl-dot ${s.state}">${s.state==="done"?"✓":i+1}</div>
+          <div class="tl-label${s.state==="active"?" active":""}">${s.label}</div>
+        </div>${i<steps.length-1?`<div class="tl-line${s.state==="done"?" done":""}"></div>`:""}`).join("")}
+      </div>
+      <div class="sc-metrics">
+        <div class="cm-item"><div class="cm-label">수량</div><div class="cm-value${hasField?" updated":""}">${(hasField?c["현장수량"]:c["총수량"])||"—"}<span style="font-size:9px">pcs</span></div></div>
+        <div class="cm-item"><div class="cm-label">중량</div><div class="cm-value${hasField?" updated":""}">${(hasField?c["현장중량"]:c["총중량"])||"—"}<span style="font-size:9px">kg</span></div></div>
+        <div class="cm-item"><div class="cm-label">볼륨중량</div><div class="cm-value">${c["볼륨중량"]||"—"}<span style="font-size:9px">kg</span></div></div>
+        <div class="cm-item"><div class="cm-label">운임중량</div><div class="cm-value">${c["운임중량"]||"—"}<span style="font-size:9px">kg</span></div></div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function getSSteps(c){
+  const status=c["상태"]||"입력대기";
+  return[{label:"서류등록"},{label:"현장반입"},{label:"세관신고"},{label:"탑재완료"}].map((s,i)=>{
+    let state="pend";
+    if(status==="입력대기"&&i===0)state="active";
+    if(status==="현장완료"){if(i===0)state="done";else if(i===1)state="active";}
+    if(status==="반입완료"){state=i<=2?"done":i===3?"active":"pend";}
+    return{...s,state};
+  });
+}
+
+function openSModal(awb){
+  const c=shipperCargos.find(x=>(x["AWB"]===awb||x["MAWB"]===awb));if(!c)return;
+  document.getElementById("s-m-awb").textContent=c["MAWB"]||c["AWB"];
+  document.getElementById("s-m-route").textContent=`${c["항공사"]||""} ${c["편명/일자"]||""} · ${c["출발지"]||""} → ${c["DEST"]||c["목적지"]||""}`;
+  const dep=c["출발일시"]||c["SKD"]?new Date(c["출발일시"]||c["SKD"]):null;
+  const cut=cutoff(c);const steps=getSSteps(c);const hasField=!!(c["현장중량"]||c["현장수량"]);
+  document.getElementById("s-m-body").innerHTML=`
+    <div class="modal-sec">
+      <div class="modal-stitle">항공 정보</div>
+      <div class="mi-grid">
+        <div class="mi-item"><div class="mi-lbl">출발 예정</div><div class="mi-val">${dep?dep.toLocaleString("ko",{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"}):"—"}</div></div>
+        <div class="mi-item"><div class="mi-lbl">반입 마감</div><div class="mi-val ${cut&&(cut-new Date())<0?"blue":""}">${cut?cut.toLocaleString("ko",{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"}):"—"}</div></div>
+        <div class="mi-item"><div class="mi-lbl">ITEM</div><div class="mi-val">${esc(c["ITEM"]||c["품목"]||"—")}</div></div>
+        <div class="mi-item"><div class="mi-lbl">CONDI</div><div class="mi-val">${esc(c["CONDI"]||c["화물구분"]||"—")}</div></div>
+      </div>
+    </div>
+    <div class="modal-sec" style="margin-top:14px">
+      <div class="modal-stitle">진행 현황</div>
+      ${steps.map((s,i)=>`<div class="td-row">${i<steps.length-1?`<div class="td-line${s.state==="done"?" done":""}"></div>`:""}
+        <div class="td-icon ${s.state}">${s.state==="done"?'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>':`<span style="font-size:10px;font-weight:700">${i+1}</span>`}</div>
+        <div class="td-content"><div class="td-title${s.state==="active"?" active":""}">${s.label}${s.state==="active"?" — 진행 중":s.state==="done"?" — 완료":""}</div>
+        ${s.label==="현장반입"&&c["반입시간"]?`<div class="td-time">${esc(c["반입시간"])}</div>`:""}</div>
+      </div>`).join("")}
+    </div>
+    <div class="modal-sec" style="margin-top:14px">
+      <div class="modal-stitle">화물 정보</div>
+      <div class="mi-grid">
+        <div class="mi-item"><div class="mi-lbl">등록 수량</div><div class="mi-val">${esc(c["총수량"]||"—")}pcs</div></div>
+        <div class="mi-item"><div class="mi-lbl">등록 중량</div><div class="mi-val">${esc(c["총중량"]||"—")}kg</div></div>
+      </div>
+    </div>
+    <div class="modal-sec" style="margin-top:14px">
+      <div class="modal-stitle">현장 업데이트</div>
+      ${hasField?`<div class="fub">
+        <div class="fub-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>현장 실측 확인 정보</div>
+        <div class="fub-grid">
+          <div class="fub-item"><div class="fub-lbl">실측 수량</div><div class="fub-val">${esc(c["현장수량"]||"—")}pcs</div></div>
+          <div class="fub-item"><div class="fub-lbl">실측 중량</div><div class="fub-val">${esc(c["현장중량"]||"—")}kg</div></div>
+          <div class="fub-item"><div class="fub-lbl">볼륨중량</div><div class="fub-val">${esc(c["볼륨중량"]||"—")}kg</div></div>
+          <div class="fub-item"><div class="fub-lbl">운임중량</div><div class="fub-val">${esc(c["운임중량"]||"—")}kg</div></div>
+        </div>
+        ${c["반입시간"]?`<div style="font-size:10px;color:#2D6A4F;margin-top:7px;font-weight:600">반입시간: ${esc(c["반입시간"])}</div>`:""}
+        ${c["현장메모"]?`<div style="font-size:12px;color:var(--green-dark);margin-top:5px;padding:7px 9px;background:rgba(255,255,255,.65);border-radius:7px">메모: ${esc(c["현장메모"])}</div>`:""}
+        ${c["사진URL"]?`<div style="font-size:11px;color:var(--g3);margin-top:6px;display:flex;align-items:center;gap:5px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>현장 사진 ${esc(c["사진URL"])}</div>`:""}
+      </div>`:`<div style="font-size:12px;color:var(--g3);line-height:1.7;padding:10px 0">아직 현장에서 업데이트하지 않았습니다.<br>현장 담당자가 확인 후 업데이트하면 여기에 표시됩니다.</div>`}
+    </div>
+    <div style="height:24px"></div>`;
+  document.getElementById("s-modal").classList.add("on");window.scrollTo(0,0);
+}
+window.closeSModal=function(){document.getElementById("s-modal").classList.remove("on");};
+setInterval(()=>{if(session?.role==="shipper")loadShipper();},300000);
+
+/* ═══════════════════════════════════════════════════
+   ADMIN APP
+═══════════════════════════════════════════════════ */
+async function loadAdmin(){
+  showLoading("데이터 불러오는 중...");
+  try{
+    if(SHEET_URL){const data=await apiGet("getCargos");allCargos=Array.isArray(data)?data:getCargosLocal();}
+    else throw new Error();
+  }catch{allCargos=getCargosLocal();}
+  hideLoading();
+  accounts=getAccounts();
+  renderAdminDash();renderAdminCargos();renderAccounts();
+}
+
+function renderAdminDash(){
+  document.getElementById("a-tot").textContent=allCargos.length;
+  document.getElementById("a-wait").textContent=allCargos.filter(c=>!c["상태"]||c["상태"]==="입력대기").length;
+  document.getElementById("a-field").textContent=allCargos.filter(c=>c["상태"]==="현장완료").length;
+  document.getElementById("a-done").textContent=allCargos.filter(c=>c["상태"]==="반입완료").length;
+  document.getElementById("a-recent").innerHTML=allCargos.slice(-5).reverse().map(c=>renderACard(c)).join("");
+}
+
+function renderAdminCargos(){
+  document.getElementById("a-cargo-cnt").textContent=allCargos.length+"건";
+  document.getElementById("a-cargo-list").innerHTML=allCargos.slice().reverse().map(c=>renderACard(c)).join("");
+}
+
+function renderACard(c){
+  const isDg=isDG(c);
+  const cut=cutoff(c);const remain=cut?(cut-new Date())/3600000:null;
+  return `<div class="a-cargo-card${isDg?" dg":""}">
+    <div class="a-card-top">
+      <div>
+        <div style="font-size:9px;font-weight:700;color:var(--g3);text-transform:uppercase;letter-spacing:.4px">MAWB</div>
+        <div class="a-awb">${esc(c["MAWB"]||c["AWB"]||"—")}</div>
+        ${c["HAWB"]?`<div style="font-size:10px;color:var(--g3);font-family:var(--mono)">HAWB: ${esc(c["HAWB"])}</div>`:""}
+      </div>
+      ${sBadge(c["상태"]||"입력대기")}
+    </div>
+    <div class="a-meta">${esc(c["항공사"]||"")} ${esc(c["편명/일자"]||"")} · ${esc(c["출발지"]||"")}→${esc(c["DEST"]||c["목적지"]||"")} · ${esc(c["SHIPPER"]||"")} · ${esc(c["ITEM"]||"")}
+    ${remain!==null?`<br><span style="color:${remain<0?"var(--red-dark)":remain<2?"var(--amber-dark)":"var(--green-dark)"};font-weight:700">반입마감 ${cut.toLocaleTimeString("ko",{hour:"2-digit",minute:"2-digit"})} · ${remain<0?"⚠ 마감 초과":remain.toFixed(1)+"h 남음"}</span>`:""}
+    ${c["현장중량"]?`<br>현장실측: ${esc(c["현장수량"]||"")}pcs · ${esc(c["현장중량"]||"")}kg${c["현장메모"]?" · "+esc(c["현장메모"]):""}`:""}</div>
+    <div class="a-actions">
+      <button class="a-btn blue" onclick="setStatus('${esc(c["AWB"]||c["MAWB"]||"")}','현장완료')">현장완료</button>
+      <button class="a-btn green" onclick="setStatus('${esc(c["AWB"]||c["MAWB"]||"")}','반입완료')">반입완료</button>
+      <button class="a-btn amber" onclick="setStatus('${esc(c["AWB"]||c["MAWB"]||"")}','입력대기')">대기로</button>
+    </div>
+  </div>`;
+}
+
+window.setStatus=async function(awb,status){
+  const idx=allCargos.findIndex(c=>(c["AWB"]===awb||c["MAWB"]===awb));
+  if(idx<0)return;
+  allCargos[idx]["상태"]=status;
+  saveCargosLocal(allCargos);
+  if(SHEET_URL){try{await apiPost({action:"updateField",awb,status,fieldPcs:"",fieldGw:"",note:"관리자 상태 변경"});}catch{}}
+  renderAdminDash();renderAdminCargos();
+  toast(`상태 변경: ${status}`);
+};
+
+window.setAtab=function(id,el){
+  document.querySelectorAll(".admin-tab").forEach(t=>t.classList.remove("active"));el.classList.add("active");
+  document.querySelectorAll(".a-panel").forEach(p=>p.classList.remove("on"));
+  document.getElementById("ap-"+id).classList.add("on");
+};
+
+/* 화물 등록 */
+window.registerCargo=async function(){
+  const mawb=(document.getElementById("r-mawb").value||"").trim();
+  const shipper=(document.getElementById("r-shipper").value||"").trim();
+  const airline=(document.getElementById("r-airline").value||"").trim();
+  const dest=(document.getElementById("r-dest").value||"").trim();
+  if(!mawb||!shipper||!airline||!dest){toast("MAWB, SHIPPER, 항공사, DEST는 필수입니다.");return;}
+  const payload={
+    action:"addCargo",
+    date:document.getElementById("r-date").value,
+    consol:document.getElementById("r-consol").value,
+    shipper,airline,dest,
+    totalPcs:document.getElementById("r-pcs").value,
+    totalGw:document.getElementById("r-gw").value,
+    item:document.getElementById("r-item").value,
+    condi:document.getElementById("r-condi").value,
+    mawb,hawb:document.getElementById("r-hawb").value,
+    shipperId:document.getElementById("r-sid").value,
+    flightEtc:document.getElementById("r-flight").value,
+    skd:document.getElementById("r-skd").value,
+    inboundEta:document.getElementById("r-eta").value
+  };
+  if(SHEET_URL){
+    try{const r=await apiPost(payload);if(!r.ok){toast(r.error||"등록 실패");return;}}
+    catch(e){toast("연결 오류: "+e.message);return;}
+  }
+  // 로컬 저장
+  const newCargo={
+    "AWB":mawb,"MAWB":mawb,"HAWB":payload.hawb,
+    "항공사":airline,"편명/일자":payload.flightEtc,
+    "출발지":payload.consol,"DEST":dest,"목적지":dest,
+    "출발일시":payload.skd,"SKD":payload.skd,
+    "CONDI":payload.condi,"ITEM":payload.item,
+    "SHIPPER":shipper,"총수량":payload.totalPcs,"총중량":payload.totalGw,
+    "화주ID":payload.shipperId,"상태":"입력대기",
+    "현장수량":"","현장중량":"","볼륨중량":"","운임중량":"","현장메모":"","반입시간":"","사진URL":""
+  };
+  allCargos.unshift(newCargo);saveCargosLocal(allCargos);
+  toast("화물 등록 완료! ✅");
+  ["r-date","r-consol","r-shipper","r-airline","r-dest","r-pcs","r-gw","r-item","r-condi","r-sid","r-mawb","r-hawb","r-flight","r-skd","r-eta"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});
+  renderAdminDash();renderAdminCargos();
+};
+
+/* 계정 관리 */
+function renderAccounts(){
+  const el=document.getElementById("a-acc-list");
+  const accs=getAccounts();
+  if(!accs.length){el.innerHTML='<div class="empty-state">등록된 계정이 없습니다.</div>';return;}
+  el.innerHTML=accs.map(a=>`
+    <div class="acc-card">
+      <div class="acc-avatar ${a.role}">${(a.name||"?").charAt(0)}</div>
+      <div class="acc-info">
+        <div class="acc-name">${esc(a.name)}</div>
+        <div class="acc-email">${esc(a.email)}</div>
+        <div class="acc-role ${a.role}">${a.role==="admin"?"관리자":a.role==="field"?"현장 직원":"화주"}</div>
+      </div>
+      <div class="acc-btns">
+        <button class="acc-small-btn" onclick="openPw('${esc(a.email)}','${esc(a.name)}')">비번변경</button>
+        <button class="acc-small-btn" onclick="toggleAccStatus('${esc(a.email)}')">${a.status==="비활성"?"활성화":"비활성"}</button>
+      </div>
+    </div>`).join("");
+}
+
+window.addAccount=function(){
+  const name=(document.getElementById("ac-name").value||"").trim();
+  const email=(document.getElementById("ac-email").value||"").trim();
+  const pw=(document.getElementById("ac-pw").value||"").trim();
+  const role=document.getElementById("ac-role").value;
+  const shId=(document.getElementById("ac-shid").value||"").trim();
+  if(!name||!email||!pw){toast("이름, 이메일, 비밀번호는 필수입니다.");return;}
+  const accs=getAccounts();
+  if(accs.find(a=>a.email.toLowerCase()===email.toLowerCase())){toast("이미 존재하는 이메일입니다.");return;}
+  accs.push({email,password:pw,name,role,shipperId:shId,status:"활성"});
+  saveAccounts(accs);accounts=accs;renderAccounts();
+  toast("계정 추가 완료!");
+  ["ac-name","ac-email","ac-pw","ac-shid"].forEach(id=>document.getElementById(id).value="");
+};
+
+window.toggleAccStatus=function(email){
+  const accs=getAccounts();const i=accs.findIndex(a=>a.email===email);if(i<0)return;
+  accs[i].status=accs[i].status==="비활성"?"활성":"비활성";
+  saveAccounts(accs);renderAccounts();toast(`계정 ${accs[i].status}`);
+};
+
+/* 비밀번호 변경 */
+window.openPw=function(email,name){pwTargetEmail=email;document.getElementById("pw-target-lbl").textContent=name+" ("+email+")";document.getElementById("pw-new").value="";document.getElementById("pw-modal").classList.add("on");};
+window.closePw=function(){document.getElementById("pw-modal").classList.remove("on");};
+window.savePw=function(){
+  const nw=(document.getElementById("pw-new").value||"").trim();
+  if(!nw){toast("새 비밀번호를 입력하세요.");return;}
+  const accs=getAccounts();const i=accs.findIndex(a=>a.email===pwTargetEmail);if(i<0)return;
+  accs[i].password=nw;saveAccounts(accs);closePw();toast("비밀번호 변경 완료!");
+};
+
+/* ── init ── */
+if(!localStorage.getItem(ACCS_KEY))saveAccounts(DEMO_ACCOUNTS);
+if(!localStorage.getItem("cargoin_v2"))saveCargosLocal(DEMO_CARGOS);
+if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('./field/sw.js').catch(()=>{});});}
+</script>
+</body>
+</html>
