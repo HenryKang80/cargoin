@@ -872,6 +872,7 @@ window.doLogout=function(){
 
 function enterApp(){
   if(!session){hideLoading();showScr("login");return;}
+  hideLoading();
   if(session.role==="admin"){showScr("admin");loadAdmin();}
   else if(session.role==="field"){showScr("field");loadField();}
   else{showScr("shipper");document.getElementById("s-company").textContent=session.name||"";loadShipper();}
@@ -1130,15 +1131,17 @@ window.enableEdit=function(){
    SHIPPER APP
 ═══════════════════════════════════════════════════ */
 async function loadShipper(){
+  showLoading("화물 불러오는 중...");
   document.getElementById("s-updated").textContent="불러오는 중...";
   try{
     if(SHEET_URL){
       const data=await apiGet("getShipperCargos",{id:session.shipperId});
-      shipperCargos=Array.isArray(data)?data:[];
+      shipperCargos=Array.isArray(data)?data:getCargosLocal().filter(c=>c["화주ID"]===session.shipperId);
     }else throw new Error();
   }catch{
     shipperCargos=getCargosLocal().filter(c=>c["화주ID"]===session.shipperId);
   }
+  hideLoading();
   document.getElementById("s-updated").textContent="업데이트: "+nowStr();
   renderSCounts();renderSCards(sTab);
 }
