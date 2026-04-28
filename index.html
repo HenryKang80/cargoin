@@ -385,25 +385,9 @@ body{min-height:100vh;max-width:480px;margin:0 auto;background:var(--g0);color:v
 
 /* ── MAWB 포맷 표시 ── */
 .mawb-display{font-family:var(--mono);font-size:15px;font-weight:700;color:var(--g5);letter-spacing:.5px}
-.hawb-display{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--blue-dark);background:var(--bl);border:1.5px solid var(--status-field-border);border-radius:var(--rs);padding:4px 10px;display:inline-block;margin-top:3px}
+.hawb-display{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--g5)}
 
-/* ── 수량/화주 체크 ── */
-.hawb-check-list{display:flex;flex-direction:column;gap:6px;margin-top:6px}
-.hawb-check-row{display:flex;align-items:center;gap:10px;background:#fff;border-radius:var(--rs);border:1.5px solid var(--g1);padding:10px 12px;transition:all .15s}
-.hawb-check-row.verified{background:var(--gl);border-color:var(--status-done-border)}
-.hcr-info{flex:1}
-.hcr-hawb{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--blue-dark)}
-.hcr-detail{font-size:11px;color:var(--g3);margin-top:2px}
-.hcr-check-btn{width:34px;height:34px;border-radius:50%;border:2px solid var(--g2);background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;font-size:16px}
-.hcr-check-btn:active{transform:scale(.88)}
-.hcr-check-btn.on{background:var(--green);border-color:var(--green-dark)}
-
-/* ── 서류 접수 체크 ── */
-.doc-check-list{display:flex;flex-direction:column;gap:6px}
-.doc-check-row{display:flex;align-items:center;gap:10px;background:#fff;border-radius:var(--rs);border:1.5px solid var(--g1);padding:10px 12px;cursor:pointer;transition:all .15s}
-.doc-check-row.checked{background:var(--bl);border-color:var(--status-field-border)}
-.doc-check-row input[type=checkbox]{width:18px;height:18px;accent-color:var(--blue2);cursor:pointer;flex-shrink:0}
-.doc-check-label{font-size:13px;font-weight:500;color:var(--g5)}
+/* ── 반입/서류 체크 공통 ── */
 
 /* ── 반입 상태 체크 ── */
 .inbound-check-row{display:flex;align-items:center;gap:10px;background:#fff;border-radius:var(--rs);border:1.5px solid var(--g1);padding:10px 12px;cursor:pointer;transition:all .15s;margin-bottom:6px}
@@ -574,33 +558,19 @@ body{min-height:100vh;max-width:480px;margin:0 auto;background:var(--g0);color:v
     <!-- 현장 입력 폼 — 새 순서 -->
     <div class="fi-body" id="fd-fi-body">
 
-      <!-- 1. 입고 체크 (상하차) -->
+      <!-- 1. 반입 체크 (기본) -->
       <div class="fi-card">
         <div class="fi-title">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 11 12 6 7 11"/><line x1="12" y1="6" x2="12" y2="18"/></svg>
-          입고 체크 <span class="fi-badge">현장 입력</span>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          반입 체크 <span class="fi-badge">현장 입력</span>
         </div>
-        <div class="tgl-row">
-          <button class="tgl load" id="fd-tgl-load" onclick="setLoad('load')">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 11 12 6 7 11"/><line x1="12" y1="6" x2="12" y2="18"/></svg>입고 (반입)
-          </button>
-          <button class="tgl unload" id="fd-tgl-unload" onclick="setLoad('unload')">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="7 13 12 18 17 13"/><line x1="12" y1="18" x2="12" y2="6"/></svg>출고 (인도)
-          </button>
-        </div>
+        <label class="inbound-check-row" id="fd-inbound-row">
+          <input type="checkbox" id="fd-inbound-check" onchange="this.closest('.inbound-check-row').classList.toggle('checked',this.checked)"/>
+          <span style="font-size:13px;font-weight:600;color:var(--g5)">반입 완료 확인</span>
+        </label>
       </div>
 
-      <!-- 2. 수량 및 화주 체크 (HAWB별) -->
-      <div class="fi-card">
-        <div class="fi-title">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-          수량 · 화주 체크 <span class="fi-badge">현장 입력</span>
-          <span id="fd-hawb-ck-cnt" style="font-size:10px;color:var(--green-dark);font-weight:700;margin-left:4px"></span>
-        </div>
-        <div class="hawb-check-list" id="fd-hawb-check-list"></div>
-      </div>
-
-      <!-- 3. 실측 사이즈 · 중량 (박스별 추가 가능) -->
+      <!-- 2. 실측 사이즈 · 중량 -->
       <div class="fi-card">
         <div class="fi-title">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
@@ -612,7 +582,6 @@ body{min-height:100vh;max-width:480px;margin:0 auto;background:var(--g0);color:v
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           박스 추가
         </button>
-        <!-- 전체 합계 -->
         <div class="total-bar" id="fd-total-bar" style="display:none">
           <div class="tb-col"><div class="tb-lbl">총 CBM</div><div class="tb-val" id="fd-tot-cbm">—</div></div>
           <div class="tb-col"><div class="tb-lbl">볼륨중량</div><div class="tb-val" id="fd-tot-vw">—</div></div>
@@ -620,7 +589,7 @@ body{min-height:100vh;max-width:480px;margin:0 auto;background:var(--g0);color:v
         </div>
       </div>
 
-      <!-- 4. 화물 사진 -->
+      <!-- 3. 화물 사진 -->
       <div class="fi-card">
         <div class="fi-title">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
@@ -639,33 +608,23 @@ body{min-height:100vh;max-width:480px;margin:0 auto;background:var(--g0);color:v
         </div>
       </div>
 
-      <!-- 5. 반입 상태 체크 -->
-      <div class="fi-card">
-        <div class="fi-title">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-          반입 체크 <span class="fi-badge">현장 입력</span>
-        </div>
-        <label class="inbound-check-row" id="fd-inbound-row">
-          <input type="checkbox" id="fd-inbound-check" onchange="this.closest('.inbound-check-row').classList.toggle('checked',this.checked)"/>
-          <span style="font-size:13px;font-weight:600;color:var(--g5)">반입 완료 확인</span>
-        </label>
-      </div>
-
-      <!-- 6. 서류 접수 -->
+      <!-- 4. 서류 접수 -->
       <div class="fi-card">
         <div class="fi-title">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
           서류 접수 <span class="fi-badge">현장 입력</span>
         </div>
-        <div class="doc-check-list">
-          <label class="doc-check-row"><input type="checkbox" onchange="this.closest('.doc-check-row').classList.toggle('checked',this.checked)"/><span class="doc-check-label">AWB 사본</span></label>
-          <label class="doc-check-row"><input type="checkbox" onchange="this.closest('.doc-check-row').classList.toggle('checked',this.checked)"/><span class="doc-check-label">송장 (Invoice)</span></label>
-          <label class="doc-check-row"><input type="checkbox" onchange="this.closest('.doc-check-row').classList.toggle('checked',this.checked)"/><span class="doc-check-label">포장명세서 (Packing List)</span></label>
-          <label class="doc-check-row" id="fd-dgd-row" style="display:none"><input type="checkbox" onchange="this.closest('.doc-check-row').classList.toggle('checked',this.checked)"/><span class="doc-check-label">DGD (위험물신고서)</span></label>
-        </div>
+        <label class="inbound-check-row">
+          <input type="checkbox" id="fd-doc-awb" onchange="this.closest('.inbound-check-row').classList.toggle('checked',this.checked)"/>
+          <span style="font-size:13px;font-weight:600;color:var(--g5)">AWB / 서류 접수 완료</span>
+        </label>
+        <label class="inbound-check-row" id="fd-dgd-row" style="display:none;margin-top:6px">
+          <input type="checkbox" id="fd-doc-dgd" onchange="this.closest('.inbound-check-row').classList.toggle('checked',this.checked)"/>
+          <span style="font-size:13px;font-weight:600;color:var(--red-dark)">DGD (위험물신고서) 접수</span>
+        </label>
       </div>
 
-      <!-- 7. 화물 상태 (찍힘/구겨짐/젖음/이상없음) -->
+      <!-- 5. 화물 상태 -->
       <div class="fi-card">
         <div class="fi-title">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
@@ -691,7 +650,7 @@ body{min-height:100vh;max-width:480px;margin:0 auto;background:var(--g0);color:v
         </div>
       </div>
 
-      <!-- 8. 현장 메모 -->
+      <!-- 6. 현장 메모 -->
       <div class="fi-card">
         <div class="fi-title">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -1039,7 +998,7 @@ function renderFieldList(list){
         <div style="flex:1;min-width:0">
           <div class="cc-mawb-label">MAWB</div>
           <div class="mawb-display">${esc(mawb)}</div>
-          ${hawb?`<div style="margin-top:4px"><span style="font-size:9px;font-weight:700;color:var(--g3);text-transform:uppercase;letter-spacing:.4px;margin-right:4px">HAWB</span><span class="hawb-display">${esc(hawb)}</span></div>`:""}
+          ${hawb?`<div style="margin-top:3px"><span style="font-size:9px;font-weight:700;color:var(--g3);text-transform:uppercase;letter-spacing:.4px;margin-right:4px">HAWB</span><span style="font-family:var(--mono);font-size:13px;font-weight:600;color:var(--g5)">${esc(hawb)}</span></div>`:""}
         </div>
         <div style="flex-shrink:0;margin-left:8px">${sBadge(c["상태"]||"입력대기")}</div>
       </div>
@@ -1131,13 +1090,12 @@ function openFieldDetail(awb){
     slot.classList.remove("filled");
   }
 
-  // 상하차/체크 초기화
-  fieldLoad=null;
-  document.getElementById("fd-tgl-load").className="tgl load";
-  document.getElementById("fd-tgl-unload").className="tgl unload";
+  // 반입/서류체크 초기화
   document.getElementById("fd-inbound-check").checked=false;
   document.getElementById("fd-inbound-row").classList.remove("checked");
-  document.querySelectorAll(".doc-check-row").forEach(r=>{r.querySelector("input").checked=false;r.classList.remove("checked");});
+  const docAwb=document.getElementById("fd-doc-awb");if(docAwb)docAwb.checked=false;
+  const docDgd=document.getElementById("fd-doc-dgd");if(docDgd)docDgd.checked=false;
+  document.querySelectorAll(".cond-check-item input").forEach(cb=>cb.checked=false);
   document.getElementById("fd-note").value=c["현장메모"]||"";
 
   const done=c["상태"]==="현장완료"||c["상태"]==="반입완료";
