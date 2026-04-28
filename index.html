@@ -382,6 +382,75 @@ body{min-height:100vh;max-width:480px;margin:0 auto;background:var(--g0);color:v
 .bl-type-btn{flex:1;height:42px;border-radius:var(--rs);border:2px solid var(--g1);background:#fff;color:var(--g4);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--sans);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.3;transition:all .15s;padding:4px}
 .bl-type-btn.active{border-color:var(--blue2);background:var(--bl);color:var(--blue-dark);box-shadow:0 0 0 3px rgba(21,96,189,.12)}
 .bl-type-btn small{font-size:9px;font-weight:500;opacity:.7}
+
+/* ── MAWB 포맷 표시 ── */
+.mawb-display{font-family:var(--mono);font-size:15px;font-weight:700;color:var(--g5);letter-spacing:.5px}
+.hawb-display{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--blue-dark);background:var(--bl);border:1.5px solid var(--status-field-border);border-radius:var(--rs);padding:4px 10px;display:inline-block;margin-top:3px}
+
+/* ── 수량/화주 체크 ── */
+.hawb-check-list{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+.hawb-check-row{display:flex;align-items:center;gap:10px;background:#fff;border-radius:var(--rs);border:1.5px solid var(--g1);padding:10px 12px;transition:all .15s}
+.hawb-check-row.verified{background:var(--gl);border-color:var(--status-done-border)}
+.hcr-info{flex:1}
+.hcr-hawb{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--blue-dark)}
+.hcr-detail{font-size:11px;color:var(--g3);margin-top:2px}
+.hcr-check-btn{width:34px;height:34px;border-radius:50%;border:2px solid var(--g2);background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;font-size:16px}
+.hcr-check-btn:active{transform:scale(.88)}
+.hcr-check-btn.on{background:var(--green);border-color:var(--green-dark)}
+
+/* ── 서류 접수 체크 ── */
+.doc-check-list{display:flex;flex-direction:column;gap:6px}
+.doc-check-row{display:flex;align-items:center;gap:10px;background:#fff;border-radius:var(--rs);border:1.5px solid var(--g1);padding:10px 12px;cursor:pointer;transition:all .15s}
+.doc-check-row.checked{background:var(--bl);border-color:var(--status-field-border)}
+.doc-check-row input[type=checkbox]{width:18px;height:18px;accent-color:var(--blue2);cursor:pointer;flex-shrink:0}
+.doc-check-label{font-size:13px;font-weight:500;color:var(--g5)}
+
+/* ── 반입 상태 체크 ── */
+.inbound-check-row{display:flex;align-items:center;gap:10px;background:#fff;border-radius:var(--rs);border:1.5px solid var(--g1);padding:10px 12px;cursor:pointer;transition:all .15s;margin-bottom:6px}
+.inbound-check-row.checked{background:var(--gl);border-color:var(--status-done-border)}
+.inbound-check-row input[type=checkbox]{width:20px;height:20px;accent-color:var(--green);cursor:pointer;flex-shrink:0}
+
+/* ── 피스 사이즈 테이블 (박스별 입력) ── */
+.piece-input-card{background:#fff;border-radius:var(--rs);border:1.5px solid var(--g1);padding:11px 12px;margin-bottom:8px}
+.pic-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.pic-num{font-size:11px;font-weight:700;color:var(--blue-dark);background:var(--bl);border-radius:20px;padding:2px 9px}
+.pic-del{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--rl);background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--red);font-size:14px;transition:all .15s}
+.pic-del:active{background:var(--rl)}
+.pic-grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-bottom:7px}
+.pic-grid2{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:7px}
+.pic-fld{display:flex;flex-direction:column;gap:3px}
+.pic-fld label{font-size:10px;color:var(--g3);font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+.pic-fld input{height:40px;border-radius:var(--rs);border:1.5px solid var(--g1);background:var(--g0);color:var(--g5);font-size:16px;padding:0 10px;outline:none;text-align:center;font-family:var(--mono);width:100%;font-weight:600;transition:border-color .15s}
+.pic-fld input:focus{border-color:var(--green2);background:#fff}
+.pic-cbm-result{background:linear-gradient(135deg,var(--gl),#D4F0E3);border-radius:var(--rs);padding:8px 10px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:4px;border:1px solid var(--status-done-border)}
+.pic-cbm-col{display:flex;flex-direction:column;align-items:center;gap:1px}
+.pic-cbm-lbl{font-size:9px;color:var(--green-dark);font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+.pic-cbm-val{font-size:13px;font-weight:700;font-family:var(--mono);color:var(--green-dark)}
+.add-piece-btn{width:100%;height:40px;border-radius:var(--rs);border:2px dashed var(--g2);background:var(--g0);color:var(--g3);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--sans);display:flex;align-items:center;justify-content:center;gap:6px;transition:all .15s;margin-top:4px}
+.add-piece-btn:active{background:var(--gl);border-color:var(--green2);color:var(--green-dark)}
+
+/* ── 총합 표시 ── */
+.total-bar{background:linear-gradient(135deg,var(--blue-dark),var(--blue2));border-radius:var(--rs);padding:10px 12px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
+.tb-col{display:flex;flex-direction:column;align-items:center;gap:2px}
+.tb-lbl{font-size:9px;color:rgba(255,255,255,.7);font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+.tb-val{font-size:14px;font-weight:700;font-family:var(--mono);color:#fff}
+
+/* ── 화물 상태 체크박스 ── */
+.cond-check-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.cond-check-item{display:flex;align-items:center;gap:8px;background:#fff;border-radius:var(--rs);border:1.5px solid var(--g1);padding:9px 12px;cursor:pointer;transition:all .15s}
+.cond-check-item.ok{background:var(--gl);border-color:var(--status-done-border)}
+.cond-check-item.bad{background:var(--rl);border-color:var(--status-urgent-border)}
+.cond-check-item input[type=checkbox]{width:18px;height:18px;cursor:pointer;flex-shrink:0;accent-color:var(--green)}
+.cond-check-item.bad input[type=checkbox]{accent-color:var(--red)}
+.cond-check-label{font-size:13px;font-weight:600;color:var(--g5)}
+
+/* ── 사진 슬롯 + 아이콘만 ── */
+.ph-slot-plus{aspect-ratio:1;border-radius:var(--rs);border:2px dashed var(--g2);background:var(--g0);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;position:relative;overflow:hidden;transition:all .15s}
+.ph-slot-plus:active{background:var(--gl);border-color:var(--green2)}
+.ph-slot-plus.filled{border-style:solid;border-color:var(--status-done-border);background:var(--gl)}
+.ph-slot-plus input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;font-size:0}
+.ph-slot-plus img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.ph-plus-icon{font-size:22px;color:var(--g3);z-index:1;line-height:1}
 </style>
 </head>
 <body>
@@ -482,8 +551,14 @@ body{min-height:100vh;max-width:480px;margin:0 auto;background:var(--g0);color:v
         <div class="info-item"><div class="info-lbl">등록 중량</div><div class="info-val" id="fd-gw"></div></div>
         <div class="info-item" style="grid-column:1/-1"><div class="info-lbl">품목 (ITEM)</div><div class="info-val" id="fd-item"></div></div>
         <div class="info-item" style="grid-column:1/-1"><div class="info-lbl">화주 (SHIPPER)</div><div class="info-val" id="fd-shipper"></div></div>
-        <div class="info-item" style="grid-column:1/-1"><div class="info-lbl">MAWB</div><div class="info-val" id="fd-mawb" style="font-family:var(--mono)"></div></div>
-        <div class="info-item" id="fd-hawb-wrap" style="grid-column:1/-1;display:none"><div class="info-lbl">HAWB</div><div class="info-val" id="fd-hawb" style="font-family:var(--mono)"></div></div>
+        <div class="info-item" style="grid-column:1/-1">
+          <div class="info-lbl">MAWB</div>
+          <div class="info-val mawb-display" id="fd-mawb"></div>
+        </div>
+        <div class="info-item" id="fd-hawb-wrap" style="grid-column:1/-1;display:none">
+          <div class="info-lbl">HAWB</div>
+          <div id="fd-hawb-list"></div>
+        </div>
       </div>
     </div>
 
@@ -491,29 +566,19 @@ body{min-height:100vh;max-width:480px;margin:0 auto;background:var(--g0);color:v
     <div class="ro-card ro-red" id="fd-dg-warn" style="display:none">
       <div class="ro-title red">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        위험물 (DG) — 반입 마감 6시간 전
+        ⚠ 위험물 (DG) — 반입 마감 6시간 전
       </div>
       <div style="font-size:12px;color:var(--red-dark);font-weight:600">DGD 서류 및 포장 기준을 반드시 확인하세요.</div>
     </div>
 
-    <!-- 피스 체크리스트 -->
-    <div class="ro-card ro-gray" id="fd-pieces-card" style="display:none">
-      <div class="ro-title gray">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-        피스 확인 <span id="fd-ck-cnt" style="font-size:10px;color:var(--green-dark);margin-left:4px;font-weight:700"></span>
-      </div>
-      <div class="pieces-ro" id="fd-pieces-table"></div>
-      <div style="font-size:11px;color:var(--g3);margin:8px 0 4px;font-weight:600">각 피스 확인 후 체크</div>
-      <div class="pcl" id="fd-pcl"></div>
-    </div>
-
-    <!-- 현장 입력 폼 -->
+    <!-- 현장 입력 폼 — 새 순서 -->
     <div class="fi-body" id="fd-fi-body">
-      <!-- 상하차 -->
+
+      <!-- 1. 입고 체크 (상하차) -->
       <div class="fi-card">
         <div class="fi-title">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 11 12 6 7 11"/><line x1="12" y1="6" x2="12" y2="18"/></svg>
-          상하차 구분 <span class="fi-badge">현장 입력</span>
+          입고 체크 <span class="fi-badge">현장 입력</span>
         </div>
         <div class="tgl-row">
           <button class="tgl load" id="fd-tgl-load" onclick="setLoad('load')">
@@ -524,37 +589,38 @@ body{min-height:100vh;max-width:480px;margin:0 auto;background:var(--g0);color:v
           </button>
         </div>
       </div>
-      <!-- 실측 -->
+
+      <!-- 2. 수량 및 화주 체크 (HAWB별) -->
+      <div class="fi-card">
+        <div class="fi-title">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          수량 · 화주 체크 <span class="fi-badge">현장 입력</span>
+          <span id="fd-hawb-ck-cnt" style="font-size:10px;color:var(--green-dark);font-weight:700;margin-left:4px"></span>
+        </div>
+        <div class="hawb-check-list" id="fd-hawb-check-list"></div>
+      </div>
+
+      <!-- 3. 실측 사이즈 · 중량 (박스별 추가 가능) -->
       <div class="fi-card">
         <div class="fi-title">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
           실측 사이즈 · 중량 <span class="fi-badge">현장 입력</span>
         </div>
-        <div style="font-size:11px;color:var(--g3);margin-bottom:9px;font-weight:500">실측값이 다를 경우 입력 (언제든 수정 가능)</div>
-        <div class="sz-grid">
-          <div class="fi-fld"><label>가로 (cm)</label><input type="number" id="fd-w" inputmode="decimal" placeholder="0" oninput="calcFCBM()"/></div>
-          <div class="fi-fld"><label>세로 (cm)</label><input type="number" id="fd-d" inputmode="decimal" placeholder="0" oninput="calcFCBM()"/></div>
-          <div class="fi-fld"><label>높이 (cm)</label><input type="number" id="fd-h" inputmode="decimal" placeholder="0" oninput="calcFCBM()"/></div>
-        </div>
-        <div class="sz-grid r2">
-          <div class="fi-fld"><label>실중량 (kg)</label><input type="number" id="fd-gw" inputmode="decimal" placeholder="0.0" step="0.1" oninput="calcFCBM()"/></div>
-          <div class="fi-fld">
-            <label>총 개수 (pcs)</label>
-            <div class="pcs-row">
-              <button class="pcs-btn" onclick="chgPcs(-1)">−</button>
-              <span class="pcs-num" id="fd-pcs-n">1</span>
-              <span class="pcs-unit">pcs</span>
-              <button class="pcs-btn" onclick="chgPcs(1)">+</button>
-            </div>
-          </div>
-        </div>
-        <div class="cbm-result" id="fd-cbm-res" style="display:none">
-          <div class="cbm-col"><div class="cbm-lbl">총 CBM</div><div class="cbm-val" id="fd-cbm"></div></div>
-          <div class="cbm-col"><div class="cbm-lbl">볼륨중량</div><div class="cbm-val" id="fd-vw"></div><div style="font-size:8px;color:var(--green-dark);margin-top:1px">W×D×H×pcs÷6000</div></div>
-          <div class="cbm-col"><div class="cbm-lbl">운임중량</div><div class="cbm-val" id="fd-cw"></div></div>
+        <div style="font-size:11px;color:var(--g3);margin-bottom:9px;font-weight:500">박스별 사이즈·중량 입력 (박스마다 다를 경우 추가)</div>
+        <div id="fd-piece-inputs"></div>
+        <button class="add-piece-btn" onclick="addPieceInput()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          박스 추가
+        </button>
+        <!-- 전체 합계 -->
+        <div class="total-bar" id="fd-total-bar" style="display:none">
+          <div class="tb-col"><div class="tb-lbl">총 CBM</div><div class="tb-val" id="fd-tot-cbm">—</div></div>
+          <div class="tb-col"><div class="tb-lbl">볼륨중량</div><div class="tb-val" id="fd-tot-vw">—</div></div>
+          <div class="tb-col"><div class="tb-lbl">운임중량</div><div class="tb-val" id="fd-tot-cw">—</div></div>
         </div>
       </div>
-      <!-- 사진 -->
+
+      <!-- 4. 화물 사진 -->
       <div class="fi-card">
         <div class="fi-title">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
@@ -562,23 +628,76 @@ body{min-height:100vh;max-width:480px;margin:0 auto;background:var(--g0);color:v
           <span class="fi-badge">현장 입력</span>
         </div>
         <div class="photo-grid">
-          <div class="ph-slot" id="ph0"><input type="file" accept="image/*" capture="environment" onchange="loadPh(this,0,'전면')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><div class="ph-lbl">전면</div></div>
-          <div class="ph-slot" id="ph1"><input type="file" accept="image/*" capture="environment" onchange="loadPh(this,1,'측면')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><div class="ph-lbl">측면</div></div>
-          <div class="ph-slot" id="ph2"><input type="file" accept="image/*" capture="environment" onchange="loadPh(this,2,'라벨')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><div class="ph-lbl">라벨</div></div>
-          <div class="ph-slot" id="ph3"><input type="file" accept="image/*" capture="environment" onchange="loadPh(this,3,'손상')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><div class="ph-lbl">손상</div></div>
-          <div class="ph-slot" id="ph4"><input type="file" accept="image/*" capture="environment" onchange="loadPh(this,4,'추가')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><div class="ph-lbl">추가</div></div>
-          <div class="ph-slot" id="ph5"><input type="file" accept="image/*" capture="environment" onchange="loadPh(this,5,'추가')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><div class="ph-lbl">추가</div></div>
-          <div class="ph-slot" id="ph6"><input type="file" accept="image/*" capture="environment" onchange="loadPh(this,6,'추가')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><div class="ph-lbl">추가</div></div>
-          <div class="ph-slot" id="ph7"><input type="file" accept="image/*" capture="environment" onchange="loadPh(this,7,'추가')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><div class="ph-lbl">추가</div></div>
+          <div class="ph-slot-plus" id="ph0"><input type="file" accept="image/*" capture="environment" onchange="loadPh(this,0)"><div class="ph-plus-icon">＋</div></div>
+          <div class="ph-slot-plus" id="ph1"><input type="file" accept="image/*" capture="environment" onchange="loadPh(this,1)"><div class="ph-plus-icon">＋</div></div>
+          <div class="ph-slot-plus" id="ph2"><input type="file" accept="image/*" capture="environment" onchange="loadPh(this,2)"><div class="ph-plus-icon">＋</div></div>
+          <div class="ph-slot-plus" id="ph3"><input type="file" accept="image/*" capture="environment" onchange="loadPh(this,3)"><div class="ph-plus-icon">＋</div></div>
+          <div class="ph-slot-plus" id="ph4"><input type="file" accept="image/*" capture="environment" onchange="loadPh(this,4)"><div class="ph-plus-icon">＋</div></div>
+          <div class="ph-slot-plus" id="ph5"><input type="file" accept="image/*" capture="environment" onchange="loadPh(this,5)"><div class="ph-plus-icon">＋</div></div>
+          <div class="ph-slot-plus" id="ph6"><input type="file" accept="image/*" capture="environment" onchange="loadPh(this,6)"><div class="ph-plus-icon">＋</div></div>
+          <div class="ph-slot-plus" id="ph7"><input type="file" accept="image/*" capture="environment" onchange="loadPh(this,7)"><div class="ph-plus-icon">＋</div></div>
         </div>
       </div>
-      <!-- 메모 -->
+
+      <!-- 5. 반입 상태 체크 -->
+      <div class="fi-card">
+        <div class="fi-title">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          반입 체크 <span class="fi-badge">현장 입력</span>
+        </div>
+        <label class="inbound-check-row" id="fd-inbound-row">
+          <input type="checkbox" id="fd-inbound-check" onchange="this.closest('.inbound-check-row').classList.toggle('checked',this.checked)"/>
+          <span style="font-size:13px;font-weight:600;color:var(--g5)">반입 완료 확인</span>
+        </label>
+      </div>
+
+      <!-- 6. 서류 접수 -->
+      <div class="fi-card">
+        <div class="fi-title">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          서류 접수 <span class="fi-badge">현장 입력</span>
+        </div>
+        <div class="doc-check-list">
+          <label class="doc-check-row"><input type="checkbox" onchange="this.closest('.doc-check-row').classList.toggle('checked',this.checked)"/><span class="doc-check-label">AWB 사본</span></label>
+          <label class="doc-check-row"><input type="checkbox" onchange="this.closest('.doc-check-row').classList.toggle('checked',this.checked)"/><span class="doc-check-label">송장 (Invoice)</span></label>
+          <label class="doc-check-row"><input type="checkbox" onchange="this.closest('.doc-check-row').classList.toggle('checked',this.checked)"/><span class="doc-check-label">포장명세서 (Packing List)</span></label>
+          <label class="doc-check-row" id="fd-dgd-row" style="display:none"><input type="checkbox" onchange="this.closest('.doc-check-row').classList.toggle('checked',this.checked)"/><span class="doc-check-label">DGD (위험물신고서)</span></label>
+        </div>
+      </div>
+
+      <!-- 7. 화물 상태 (찍힘/구겨짐/젖음/이상없음) -->
+      <div class="fi-card">
+        <div class="fi-title">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          화물 상태 <span class="fi-badge">현장 입력</span>
+        </div>
+        <div class="cond-check-grid">
+          <label class="cond-check-item bad" onclick="toggleCond(this)">
+            <input type="checkbox" style="accent-color:var(--red)"/>
+            <span class="cond-check-label">찍힘</span>
+          </label>
+          <label class="cond-check-item bad" onclick="toggleCond(this)">
+            <input type="checkbox" style="accent-color:var(--red)"/>
+            <span class="cond-check-label">구겨짐</span>
+          </label>
+          <label class="cond-check-item bad" onclick="toggleCond(this)">
+            <input type="checkbox" style="accent-color:var(--red)"/>
+            <span class="cond-check-label">젖음</span>
+          </label>
+          <label class="cond-check-item ok" onclick="toggleCond(this)">
+            <input type="checkbox" style="accent-color:var(--green)"/>
+            <span class="cond-check-label">✓ 이상없음</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- 8. 현장 메모 -->
       <div class="fi-card">
         <div class="fi-title">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           현장 메모 <span class="fi-badge">현장 입력</span>
         </div>
-        <textarea class="memo-input" id="fd-note" placeholder="손상 여부, 특이사항, DGD 첨부 여부..."></textarea>
+        <textarea class="memo-input" id="fd-note" placeholder="특이사항, 기사 전달사항..."></textarea>
       </div>
     </div>
 
@@ -894,6 +1013,14 @@ async function loadField(){
   renderFieldList(allCargos);
 }
 
+function fmtMAWB(v){
+  // 000-0000 0000 형식으로 포맷
+  const d=(v||"").replace(/[^0-9]/g,"");
+  if(d.length<=3) return d;
+  if(d.length<=7) return d.slice(0,3)+"-"+d.slice(3);
+  return d.slice(0,3)+"-"+d.slice(3,7)+" "+d.slice(7,11);
+}
+
 function renderFieldList(list){
   document.getElementById("f-lbl").textContent=`오늘 화물 (${list.length}건)`;
   const el=document.getElementById("f-list-body");
@@ -905,19 +1032,21 @@ function renderFieldList(list){
     const remainTxt=remain===null?"":remain<0?"⚠ 마감 초과!":remain<1?`${Math.round(remain*60)}분 남음`:remain.toFixed(1)+"h 남음";
     const isDg=isDG(c);
     const condi=c["CONDI"]||c["화물구분"]||"";
+    const mawb=fmtMAWB(c["MAWB"]||c["AWB"]||"");
+    const hawb=c["HAWB"]||"";
     return `<div class="cargo-card${isDg?" dg":""}" onclick="openFieldDetail('${esc(c["AWB"]||c["MAWB"]||"")}')">
       <div class="cc-head">
-        <div>
+        <div style="flex:1;min-width:0">
           <div class="cc-mawb-label">MAWB</div>
-          <div class="cc-awb">${esc(c["MAWB"]||c["AWB"]||"—")}</div>
-          ${c["HAWB"]?`<div style="font-size:10px;color:var(--g3);font-family:var(--mono)">HAWB: ${esc(c["HAWB"])}</div>`:""}
+          <div class="mawb-display">${esc(mawb)}</div>
+          ${hawb?`<div style="margin-top:4px"><span style="font-size:9px;font-weight:700;color:var(--g3);text-transform:uppercase;letter-spacing:.4px;margin-right:4px">HAWB</span><span class="hawb-display">${esc(hawb)}</span></div>`:""}
         </div>
-        ${sBadge(c["상태"]||"입력대기")}
+        <div style="flex-shrink:0;margin-left:8px">${sBadge(c["상태"]||"입력대기")}</div>
       </div>
-      <div class="cc-sub">${esc(c["항공사"]||"")} ${esc(c["편명/일자"]||"")} · ${esc(c["출발지"]||"")}→${esc(c["DEST"]||c["목적지"]||"")}
+      <div class="cc-sub" style="margin-top:6px">${esc(c["항공사"]||"")} ${esc(c["편명/일자"]||"")} · ${esc(c["출발지"]||"")}→${esc(c["DEST"]||c["목적지"]||"")}
       ${c["총수량"]?` · ${esc(c["총수량"])}pcs / ${esc(c["총중량"])}kg`:""}
       </div>
-      <div class="cc-sub" style="margin-top:3px;color:var(--g4)">${esc(c["SHIPPER"]||"")} · ${esc(condi)}</div>
+      <div class="cc-sub" style="margin-top:3px;color:var(--g4);font-weight:500">${esc(c["SHIPPER"]||"")} · <span style="color:${isDg?"var(--red-dark)":"var(--g3)"}">${esc(condi)}</span></div>
       ${cut?`<div class="cc-cut ${ccls}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>반입마감 ${cut.toLocaleTimeString("ko",{hour:"2-digit",minute:"2-digit"})} · ${remainTxt}</div>`:""}
     </div>`;
   }).join("");
@@ -942,7 +1071,7 @@ function openFieldDetail(awb){
   document.getElementById("f-detail").classList.add("on");
 
   // 헤더
-  document.getElementById("f-det-awb").textContent=c["MAWB"]||c["AWB"];
+  document.getElementById("f-det-awb").textContent=fmtMAWB(c["MAWB"]||c["AWB"]);
   document.getElementById("f-det-meta").textContent=`${c["항공사"]||""} ${c["편명/일자"]||""} · ${c["출발지"]||""} → ${c["DEST"]||c["목적지"]||""}`;
 
   // 기본 정보
@@ -957,84 +1086,183 @@ function openFieldDetail(awb){
   document.getElementById("fd-gw").textContent=(c["총중량"]||"—")+"kg";
   document.getElementById("fd-item").textContent=c["ITEM"]||c["품목"]||"—";
   document.getElementById("fd-shipper").textContent=c["SHIPPER"]||"—";
-  document.getElementById("fd-mawb").textContent=c["MAWB"]||c["AWB"]||"—";
+  document.getElementById("fd-mawb").textContent=fmtMAWB(c["MAWB"]||c["AWB"]||"—");
 
-  const hawbEl=document.getElementById("fd-hawb-wrap");
-  if(c["HAWB"]){hawbEl.style.display="flex";document.getElementById("fd-hawb").textContent=c["HAWB"];}
-  else hawbEl.style.display="none";
+  // HAWB 표시 (기본정보에, 여러개 가능)
+  const hawbWrap=document.getElementById("fd-hawb-wrap");
+  const hawbListEl=document.getElementById("fd-hawb-list");
+  if(c["HAWB"]){
+    hawbWrap.style.display="block";
+    const hawbs=String(c["HAWB"]).split(/[,;/]/).map(h=>h.trim()).filter(Boolean);
+    hawbListEl.innerHTML=hawbs.map(h=>`<span class="hawb-display" style="margin-right:5px;margin-bottom:4px;display:inline-block">${esc(h)}</span>`).join("");
+  }else hawbWrap.style.display="none";
 
+  // 반입 마감
   const cutEl=document.getElementById("fd-cutoff");
   if(cut){
     const rem=remain;
     const cls=rem<0?"danger":rem<2?"warn":"";
-    cutEl.textContent=cut.toLocaleString("ko",{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"})+(rem<0?" ⚠":"");
+    cutEl.textContent=cut.toLocaleString("ko",{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"})+(rem<0?" ⚠ 마감초과":"");
     cutEl.className="info-val"+(cls?" "+cls:"");
   }else{cutEl.textContent="—";cutEl.className="info-val";}
 
   // DG 경고
-  document.getElementById("fd-dg-warn").style.display=isDG(c)?"block":"none";
+  const isDg=isDG(c);
+  document.getElementById("fd-dg-warn").style.display=isDg?"block":"none";
+  document.getElementById("fd-dgd-row").style.display=isDg?"flex":"none";
 
-  // 피스 (간단 표시)
-  const pcsCard=document.getElementById("fd-pieces-card");
+  // 수량/화주 체크 초기화 (HAWB별)
   const pcsN=Number(c["총수량"])||0;
-  if(pcsN>0){
-    pcsCard.style.display="block";
-    fieldChecks=[false];
-    document.getElementById("fd-pieces-table").innerHTML=`<table>
-      <thead><tr><th>품목</th><th>수량</th><th>중량</th><th>비고</th></tr></thead>
-      <tbody><tr>
-        <td class="dn">${esc(c["ITEM"]||c["품목"]||"—")}</td>
-        <td>${pcsN}</td>
-        <td class="cv">${c["총중량"]||"—"}kg</td>
-        <td>${c["CONDI"]||c["화물구분"]||"—"}</td>
-      </tr></tbody>
-    </table>`;
-    renderChecks(c);
-  }else pcsCard.style.display="none";
+  const hawbs=c["HAWB"]?String(c["HAWB"]).split(/[,;/]/).map(h=>h.trim()).filter(Boolean):[""];
+  hawbChecks=hawbs.map(h=>({hawb:h,pcs:pcsN,gw:Number(c["총중량"])||0,checked:false}));
+  renderHawbCheckList();
 
-  // 현장 입력 초기화
-  fieldPcs=Number(c["현장수량"])||pcsN||1;
-  document.getElementById("fd-pcs-n").textContent=fieldPcs;
-  document.getElementById("fd-gw").value=c["현장중량"]||"";
-  document.getElementById("fd-note").value=c["현장메모"]||"";
-  document.getElementById("fd-w").value="";document.getElementById("fd-d").value="";document.getElementById("fd-h").value="";
+  // 피스 입력 초기화
+  pieceInputs=[{w:"",d:"",h:"",gw:"",pcs:1}];
+  renderPieceInputs();
+
+  // 사진 초기화
+  fieldPhotos=[];updatePhotoCnt();
+  for(let i=0;i<8;i++){
+    const slot=document.getElementById("ph"+i);
+    if(!slot)continue;
+    slot.querySelector("img")?.remove();
+    const pi=slot.querySelector(".ph-plus-icon");if(pi)pi.style.display="flex";
+    slot.classList.remove("filled");
+  }
+
+  // 상하차/체크 초기화
   fieldLoad=null;
   document.getElementById("fd-tgl-load").className="tgl load";
   document.getElementById("fd-tgl-unload").className="tgl unload";
-  fieldPhotos=[];updatePhotoCnt();calcFCBM();
-  document.getElementById("fd-cbm-res").style.display="none";
+  document.getElementById("fd-inbound-check").checked=false;
+  document.getElementById("fd-inbound-row").classList.remove("checked");
+  document.querySelectorAll(".doc-check-row").forEach(r=>{r.querySelector("input").checked=false;r.classList.remove("checked");});
+  document.getElementById("fd-note").value=c["현장메모"]||"";
 
   const done=c["상태"]==="현장완료"||c["상태"]==="반입완료";
   document.getElementById("fd-done").className="done-screen"+(done?" on":"");
   document.getElementById("fd-fi-body").style.display=done?"none":"flex";
   document.getElementById("fd-submit-wrap").style.display=done?"none":"block";
   if(done){
-    document.getElementById("fd-done-sub").textContent=`AWB: ${c["AWB"]||c["MAWB"]}\n수량: ${c["현장수량"]||pcsN}pcs · 중량: ${c["현장중량"]||c["총중량"]}kg\n구글 시트 업데이트 완료\n화주가 즉시 확인 가능합니다.`;
+    document.getElementById("fd-done-sub").textContent=`MAWB: ${fmtMAWB(c["AWB"]||c["MAWB"])}\n${c["현장수량"]||pcsN}pcs · ${c["현장중량"]||c["총중량"]}kg\n구글 시트 업데이트 완료\n화주가 즉시 확인 가능합니다.`;
   }
   window.scrollTo(0,0);
 }
 
-function renderChecks(c){
-  const n=fieldChecks.filter(Boolean).length;
-  document.getElementById("fd-ck-cnt").textContent=`${n}/${fieldChecks.length} 확인됨`;
-  document.getElementById("fd-pcl").innerHTML=fieldChecks.map((checked,i)=>`
-    <div class="pcr${checked?" confirmed":""}">
-      <div class="pcr-num">${i+1}</div>
-      <div class="pcr-info">
-        <div class="pcr-desc">${esc(c["ITEM"]||c["품목"]||"화물")} <span style="font-size:10px;color:var(--g3)">×${c["총수량"]||1}</span></div>
-        <div class="pcr-dim">${c["총중량"]||0}kg · ${c["CONDI"]||""}</div>
+// 피스/HAWB 상태
+let pieceInputs=[{w:"",d:"",h:"",gw:"",pcs:1}];
+let hawbChecks=[];
+
+function renderHawbCheckList(){
+  const n=hawbChecks.filter(h=>h.checked).length;
+  document.getElementById("fd-hawb-ck-cnt").textContent=`${n}/${hawbChecks.length} 확인`;
+  const el=document.getElementById("fd-hawb-check-list");
+  const c=currentCargo;
+  if(!el)return;
+  el.innerHTML=hawbChecks.map((h,i)=>`
+    <div class="hawb-check-row${h.checked?" verified":""}" id="hcr-${i}">
+      <div class="hcr-info">
+        ${h.hawb?`<div class="hcr-hawb">HAWB: ${esc(h.hawb)}</div>`:`<div class="hcr-hawb">MAWB Single</div>`}
+        <div class="hcr-detail">화주: ${esc((c&&c["SHIPPER"])||"—")} · 등록 ${h.pcs}pcs / ${h.gw}kg</div>
       </div>
-      <button class="pcr-btn${checked?" checked":""}" onclick="toggleCheck(${i})">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-      </button>
+      <button class="hcr-check-btn${h.checked?" on":""}" onclick="toggleHawbCheck(${i})">${h.checked?"✓":""}</button>
     </div>`).join("");
 }
 
-window.toggleCheck=function(i){
-  fieldChecks[i]=!fieldChecks[i];
-  renderChecks(currentCargo);
-  if(fieldChecks.every(Boolean))toast("전체 피스 확인 완료! ✓");
+window.toggleHawbCheck=function(i){
+  hawbChecks[i].checked=!hawbChecks[i].checked;
+  renderHawbCheckList();
+  if(hawbChecks.every(h=>h.checked))toast("전체 수량·화주 확인 완료! ✓");
 };
+
+function renderPieceInputs(){
+  const el=document.getElementById("fd-piece-inputs");
+  if(!el)return;
+  el.innerHTML=pieceInputs.map((p,i)=>`
+    <div class="piece-input-card" id="pic-${i}">
+      <div class="pic-head">
+        <span class="pic-num">박스 ${i+1}</span>
+        ${pieceInputs.length>1?`<button class="pic-del" onclick="delPieceInput(${i})">×</button>`:""}
+      </div>
+      <div class="pic-grid3">
+        <div class="pic-fld"><label>가로 (cm)</label><input type="number" inputmode="decimal" value="${p.w}" placeholder="0" oninput="updatePiece(${i},'w',this.value)"/></div>
+        <div class="pic-fld"><label>세로 (cm)</label><input type="number" inputmode="decimal" value="${p.d}" placeholder="0" oninput="updatePiece(${i},'d',this.value)"/></div>
+        <div class="pic-fld"><label>높이 (cm)</label><input type="number" inputmode="decimal" value="${p.h}" placeholder="0" oninput="updatePiece(${i},'h',this.value)"/></div>
+      </div>
+      <div class="pic-grid2">
+        <div class="pic-fld"><label>박스당 중량 (kg)</label><input type="number" inputmode="decimal" value="${p.gw}" placeholder="0.0" step="0.1" oninput="updatePiece(${i},'gw',this.value)"/></div>
+        <div class="pic-fld"><label>박스 수량 (pcs)</label><input type="number" inputmode="decimal" value="${p.pcs||1}" placeholder="1" min="1" oninput="updatePiece(${i},'pcs',this.value)"/></div>
+      </div>
+      <div class="pic-cbm-result" id="pic-cbm-${i}" style="display:none">
+        <div class="pic-cbm-col"><div class="pic-cbm-lbl">CBM</div><div class="pic-cbm-val" id="pic-cbm-v-${i}">—</div></div>
+        <div class="pic-cbm-col"><div class="pic-cbm-lbl">볼륨중량</div><div class="pic-cbm-val" id="pic-vw-${i}">—</div></div>
+        <div class="pic-cbm-col"><div class="pic-cbm-lbl">운임중량</div><div class="pic-cbm-val" id="pic-cw-${i}">—</div></div>
+      </div>
+    </div>`).join("");
+  calcAllPieces();
+}
+
+window.updatePiece=function(i,field,val){
+  pieceInputs[i][field]=val;
+  const p=pieceInputs[i];
+  const w=Number(p.w)||0,d=Number(p.d)||0,h=Number(p.h)||0;
+  const gw=Number(p.gw)||0,pcs=Number(p.pcs)||1;
+  const cbm=w*d*h/1000000;
+  const totalCbm=cbm*pcs;
+  const vw=totalCbm*166.67;
+  const actualGw=gw*pcs;
+  const cw=Math.max(actualGw,vw);
+  const resEl=document.getElementById("pic-cbm-"+i);
+  if(resEl){
+    if((w&&d&&h)||gw){
+      resEl.style.display="grid";
+      document.getElementById("pic-cbm-v-"+i).textContent=totalCbm?totalCbm.toFixed(3)+"m³":"—";
+      document.getElementById("pic-vw-"+i).textContent=vw?vw.toFixed(1)+"kg":"—";
+      document.getElementById("pic-cw-"+i).textContent=cw?cw.toFixed(1)+"kg":"—";
+    }else resEl.style.display="none";
+  }
+  calcAllPieces();
+};
+
+function calcAllPieces(){
+  let totCbm=0,totVw=0,totGw=0;
+  pieceInputs.forEach(p=>{
+    const w=Number(p.w)||0,d=Number(p.d)||0,h=Number(p.h)||0,gw=Number(p.gw)||0,pcs=Number(p.pcs)||1;
+    const cbm=w*d*h/1000000*pcs;totCbm+=cbm;totVw+=cbm*166.67;totGw+=gw*pcs;
+  });
+  const totCw=Math.max(totGw,totVw);
+  const barEl=document.getElementById("fd-total-bar");
+  if(barEl){
+    if(totCbm||totGw){
+      barEl.style.display="grid";
+      document.getElementById("fd-tot-cbm").textContent=totCbm?totCbm.toFixed(3)+"m³":"—";
+      document.getElementById("fd-tot-vw").textContent=totVw?totVw.toFixed(1)+"kg":"—";
+      document.getElementById("fd-tot-cw").textContent=totCw?totCw.toFixed(1)+"kg":"—";
+    }else barEl.style.display="none";
+  }
+}
+
+window.addPieceInput=function(){
+  pieceInputs.push({w:"",d:"",h:"",gw:"",pcs:1});
+  renderPieceInputs();
+  setTimeout(()=>{const cards=document.querySelectorAll(".piece-input-card");if(cards.length)cards[cards.length-1].scrollIntoView({behavior:"smooth"});},100);
+};
+
+window.delPieceInput=function(i){
+  if(pieceInputs.length<=1)return;
+  pieceInputs.splice(i,1);
+  renderPieceInputs();
+};
+
+window.toggleCond=function(el){
+  const cb=el.querySelector("input");
+  cb.checked=!cb.checked;
+  el.classList.toggle("active",cb.checked);
+};
+
+
+
 
 function backField(){
   document.getElementById("f-list").style.display="block";
@@ -1048,46 +1276,35 @@ window.setLoad=function(t){
   document.getElementById("fd-tgl-unload").className="tgl unload"+(t==="unload"?" on":"");
 };
 
-window.chgPcs=function(d){fieldPcs=Math.max(1,fieldPcs+d);document.getElementById("fd-pcs-n").textContent=fieldPcs;calcFCBM();};
 
-window.calcFCBM=function(){
-  const w=parseFloat(document.getElementById("fd-w").value)||0;
-  const d=parseFloat(document.getElementById("fd-d").value)||0;
-  const h=parseFloat(document.getElementById("fd-h").value)||0;
-  const gw=parseFloat(document.getElementById("fd-gw").value)||0;
-  const p=fieldPcs||1;
-  const res=document.getElementById("fd-cbm-res");
-  if((w&&d&&h)||gw){
-    res.style.display="grid";
-    const cbm=w&&d&&h?w*d*h/1000000:0;
-    const vw=w&&d&&h?w*d*h*p/6000:0;
-    const cw=Math.max(gw,vw);
-    document.getElementById("fd-cbm").textContent=cbm?(cbm*p).toFixed(3)+"m³":"—";
-    document.getElementById("fd-vw").textContent=vw?vw.toFixed(1)+"kg":"—";
-    document.getElementById("fd-cw").textContent=cw?cw.toFixed(1)+"kg":"—";
-  }else res.style.display="none";
-};
 
-window.loadPh=function(input,idx,tag){
+window.loadPh=function(input,idx){
   const file=input.files[0];if(!file)return;
   const reader=new FileReader();
   reader.onload=e=>{
     fieldPhotos[idx]=e.target.result;
     const slot=document.getElementById("ph"+idx);
+    if(!slot)return;
     slot.querySelector("img")?.remove();
-    const sv=slot.querySelector("svg");if(sv)sv.style.display="none";
-    const lb=slot.querySelector(".ph-lbl");if(lb)lb.style.display="none";
+    const pi=slot.querySelector(".ph-plus-icon");if(pi)pi.style.display="none";
     const img=document.createElement("img");img.src=e.target.result;slot.appendChild(img);
     slot.classList.add("filled");
-    let pt=slot.querySelector(".ph-tag");if(!pt){pt=document.createElement("div");pt.className="ph-tag";slot.appendChild(pt);}
-    pt.textContent=tag;updatePhotoCnt();
+    updatePhotoCnt();
   };reader.readAsDataURL(file);
 };
 function updatePhotoCnt(){document.getElementById("fd-photo-cnt").textContent=fieldPhotos.filter(Boolean).length+"/8";}
 
 async function submitField(){
-  const gw=parseFloat(document.getElementById("fd-gw").value);
-  if(!gw){toast("실중량을 입력해 주세요.");return;}
+  const hasSize=pieceInputs.some(p=>Number(p.w)&&Number(p.d)&&Number(p.h)&&Number(p.gw));
+  if(!hasSize){toast("최소 1개 박스의 사이즈와 중량을 입력해 주세요.");return;}
+  let totCbm=0,totVw=0,totGw=0;
+  pieceInputs.forEach(p=>{
+    const w=Number(p.w)||0,d=Number(p.d)||0,h=Number(p.h)||0,gw=Number(p.gw)||0,pcs=Number(p.pcs)||1;
+    const cbm=w*d*h/1000000*pcs;totCbm+=cbm;totVw+=cbm*166.67;totGw+=gw*pcs;
+  });
+  const totCw=Math.max(totGw,totVw);
+  const totalPcs=pieceInputs.reduce((s,p)=>s+(Number(p.pcs)||1),0);
+  const gw=totGw;
   const btn=document.getElementById("fd-submit-btn");btn.disabled=true;btn.textContent="저장 중...";
   const w=parseFloat(document.getElementById("fd-w").value)||0;
   const d=parseFloat(document.getElementById("fd-d").value)||0;
@@ -1097,8 +1314,9 @@ async function submitField(){
   const payload={
     action:"updateField",
     awb:currentCargo["AWB"]||currentCargo["MAWB"],
-    status:"현장완료",fieldPcs,fieldGw:gw,
-    fieldVw:vw?vw.toFixed(1):"",fieldCw:cw?cw.toFixed(1):"",
+    status:"현장완료",
+    fieldPcs:totalPcs,fieldGw:gw.toFixed(1),
+    fieldVw:totVw?totVw.toFixed(1):"",fieldCw:totCw?totCw.toFixed(1):"",
     note:document.getElementById("fd-note").value,
     checkedAt:new Date().toLocaleString("ko-KR"),
     photoNote:fieldPhotos.filter(Boolean).length+"장 촬영"
@@ -1107,12 +1325,12 @@ async function submitField(){
     if(SHEET_URL){const r=await apiPost(payload);if(!r.ok)throw new Error(r.error);}
     // 로컬 캐시 업데이트
     const idx=allCargos.findIndex(x=>(x["AWB"]===currentCargo["AWB"]||x["MAWB"]===currentCargo["MAWB"]));
-    if(idx>=0){Object.assign(allCargos[idx],{상태:"현장완료",현장수량:fieldPcs,현장중량:gw,볼륨중량:vw?vw.toFixed(1):"",운임중량:cw?cw.toFixed(1):"",현장메모:payload.note});currentCargo=allCargos[idx];}
+    if(idx>=0){Object.assign(allCargos[idx],{상태:"현장완료",현장수량:totalPcs,현장중량:gw.toFixed(1),볼륨중량:totVw?totVw.toFixed(1):"",운임중량:totCw?totCw.toFixed(1):"",현장메모:payload.note});currentCargo=allCargos[idx];}
     saveCargosLocal(allCargos);
     document.getElementById("fd-fi-body").style.display="none";
     document.getElementById("fd-submit-wrap").style.display="none";
     document.getElementById("fd-done").className="done-screen on";
-    document.getElementById("fd-done-sub").textContent=`AWB: ${currentCargo["AWB"]||currentCargo["MAWB"]}\n${fieldPcs}pcs · ${gw}kg\n저장 완료! 화주가 즉시 확인 가능합니다.`;
+    document.getElementById("fd-done-sub").textContent=`MAWB: ${fmtMAWB(currentCargo["AWB"]||currentCargo["MAWB"])}\n${totalPcs}pcs · ${gw.toFixed(1)}kg · CBM ${totCbm.toFixed(3)}\n저장 완료! 화주가 즉시 확인 가능합니다.`;
     document.getElementById("f-sync").textContent="방금 저장됨";
     toast("저장 완료! 화주에게 즉시 공유됩니다. ✅");
   }catch(e){toast("저장 오류: "+e.message);}
