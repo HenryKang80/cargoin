@@ -435,6 +435,40 @@ body{min-height:100vh;max-width:480px;margin:0 auto;background:var(--g0);color:v
 .ph-slot-plus input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;font-size:0}
 .ph-slot-plus img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .ph-plus-icon{font-size:22px;color:var(--g3);z-index:1;line-height:1}
+
+/* ── 단계별 실시간 체크 카드 ── */
+.step-card{background:#fff;border-radius:var(--r);border:1.5px solid var(--g1);padding:13px 14px;box-shadow:0 1px 4px rgba(0,0,0,.06);transition:border-color .2s,background .2s}
+.step-card.step-done{border-color:var(--status-done-border);background:linear-gradient(135deg,#F8FFFC,var(--gl))}
+.step-card.step-partial{border-color:var(--status-wait-border);background:linear-gradient(135deg,#FFFDF8,var(--al))}
+.step-header{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.step-num{width:22px;height:22px;border-radius:50%;background:var(--g1);color:var(--g3);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s}
+.step-num.done{background:var(--green);color:#fff}
+.step-num.partial{background:var(--amber);color:#fff}
+.step-title{font-size:12px;font-weight:700;color:var(--g4);text-transform:uppercase;letter-spacing:.4px;flex:1}
+.step-status{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px}
+.step-status.done{background:var(--gl);color:var(--green-dark)}
+.step-status.partial{background:var(--al);color:var(--amber-dark)}
+.step-status.pending{background:var(--g1);color:var(--g3)}
+/* 단계 체크 행 */
+.step-check-row{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:var(--rs);border:1.5px solid var(--g1);background:#fff;margin-bottom:6px;cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent}
+.step-check-row:last-child{margin-bottom:0}
+.step-check-row.checked{border-color:var(--status-done-border);background:var(--gl)}
+.step-check-row.checked-bad{border-color:var(--status-urgent-border);background:var(--rl)}
+.step-check-row input[type=checkbox]{width:20px;height:20px;flex-shrink:0;cursor:pointer;accent-color:var(--green)}
+.step-check-row input.bad{accent-color:var(--red)}
+.step-check-label{font-size:13px;font-weight:600;color:var(--g5);flex:1}
+.step-check-label.bad{color:var(--red-dark)}
+/* 실시간 전송 표시 */
+.realtime-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;color:var(--green-dark);background:var(--gl);border-radius:20px;padding:2px 8px;margin-left:auto}
+.rt-dot{width:5px;height:5px;border-radius:50%;background:var(--green);animation:blink 1.5s infinite}
+/* 사이즈 완료 버튼 */
+.size-confirm-btn{width:100%;height:42px;border-radius:var(--rs);border:none;background:linear-gradient(135deg,var(--green-dark),var(--green));color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--sans);margin-top:10px;display:flex;align-items:center;justify-content:center;gap:7px;box-shadow:0 3px 10px rgba(11,110,79,.25);transition:opacity .15s}
+.size-confirm-btn:disabled{background:var(--g1);color:var(--g3);box-shadow:none}
+.size-confirm-btn.confirmed{background:linear-gradient(135deg,#0A5038,var(--green-dark))}
+/* 사진 완료 버튼 */
+.photo-confirm-btn{width:100%;height:42px;border-radius:var(--rs);border:none;background:linear-gradient(135deg,var(--blue-dark),var(--blue2));color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--sans);margin-top:10px;display:flex;align-items:center;justify-content:center;gap:7px;box-shadow:0 3px 10px rgba(13,63,122,.25);transition:opacity .15s}
+.photo-confirm-btn.confirmed{background:linear-gradient(135deg,#092B55,var(--blue-dark))}
+/* 마지막 최종완료 버튼 제거 → 단계별로 대체되므로 숨김 */
 </style>
 </head>
 <body>
@@ -558,25 +592,44 @@ body{min-height:100vh;max-width:480px;margin:0 auto;background:var(--g0);color:v
     <!-- 현장 입력 폼 — 새 순서 -->
     <div class="fi-body" id="fd-fi-body">
 
-      <!-- 1. 반입 체크 (기본) -->
-      <div class="fi-card">
-        <div class="fi-title">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-          반입 체크 <span class="fi-badge">현장 입력</span>
+      <!-- STEP 1: 반입 체크 + 화물 상태 -->
+      <div class="step-card" id="step-card-1">
+        <div class="step-header">
+          <div class="step-num" id="step-num-1">1</div>
+          <div class="step-title">반입 체크</div>
+          <div class="realtime-badge"><div class="rt-dot"></div>실시간</div>
         </div>
-        <label class="inbound-check-row" id="fd-inbound-row">
-          <input type="checkbox" id="fd-inbound-check" onchange="this.closest('.inbound-check-row').classList.toggle('checked',this.checked)"/>
-          <span style="font-size:13px;font-weight:600;color:var(--g5)">반입 완료 확인</span>
+        <label class="step-check-row" id="fd-inbound-row" onclick="onStepCheck('inbound',this)">
+          <input type="checkbox" id="fd-inbound-check"/>
+          <span class="step-check-label">반입 완료 확인</span>
+        </label>
+        <div style="font-size:10px;font-weight:700;color:var(--g3);text-transform:uppercase;letter-spacing:.4px;margin:10px 0 6px">화물 상태</div>
+        <label class="step-check-row" onclick="onCondCheck(this,'ok')">
+          <input type="checkbox" id="fd-cond-ok"/>
+          <span class="step-check-label">✓ 이상없음</span>
+        </label>
+        <label class="step-check-row" onclick="onCondCheck(this,'bad')">
+          <input type="checkbox" id="fd-cond-dent" class="bad" style="accent-color:var(--red)"/>
+          <span class="step-check-label bad">찍힘</span>
+        </label>
+        <label class="step-check-row" onclick="onCondCheck(this,'bad')">
+          <input type="checkbox" id="fd-cond-crush" class="bad" style="accent-color:var(--red)"/>
+          <span class="step-check-label bad">구겨짐</span>
+        </label>
+        <label class="step-check-row" onclick="onCondCheck(this,'bad')">
+          <input type="checkbox" id="fd-cond-wet" class="bad" style="accent-color:var(--red)"/>
+          <span class="step-check-label bad">젖음</span>
         </label>
       </div>
 
-      <!-- 2. 실측 사이즈 · 중량 -->
-      <div class="fi-card">
-        <div class="fi-title">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-          실측 사이즈 · 중량 <span class="fi-badge">현장 입력</span>
+      <!-- STEP 2: 실측 사이즈 · 중량 -->
+      <div class="step-card" id="step-card-2">
+        <div class="step-header">
+          <div class="step-num" id="step-num-2">2</div>
+          <div class="step-title">실측 사이즈 · 중량</div>
+          <div class="realtime-badge"><div class="rt-dot"></div>실시간</div>
         </div>
-        <div style="font-size:11px;color:var(--g3);margin-bottom:9px;font-weight:500">박스별 사이즈·중량 입력 (박스마다 다를 경우 추가)</div>
+        <div style="font-size:11px;color:var(--g3);margin-bottom:9px;font-weight:500">박스별 입력 — 다를 경우 박스 추가</div>
         <div id="fd-piece-inputs"></div>
         <button class="add-piece-btn" onclick="addPieceInput()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -587,14 +640,19 @@ body{min-height:100vh;max-width:480px;margin:0 auto;background:var(--g0);color:v
           <div class="tb-col"><div class="tb-lbl">볼륨중량</div><div class="tb-val" id="fd-tot-vw">—</div></div>
           <div class="tb-col"><div class="tb-lbl">운임중량</div><div class="tb-val" id="fd-tot-cw">—</div></div>
         </div>
+        <button class="size-confirm-btn" id="fd-size-confirm-btn" onclick="confirmSize()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          실측 확인 완료 — 화주에게 전송
+        </button>
       </div>
 
-      <!-- 3. 화물 사진 -->
-      <div class="fi-card">
-        <div class="fi-title">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-          화물 사진 <span style="font-size:10px;color:var(--g3);font-weight:600;margin-left:3px" id="fd-photo-cnt">0/8</span>
-          <span class="fi-badge">현장 입력</span>
+      <!-- STEP 3: 화물 사진 -->
+      <div class="step-card" id="step-card-3">
+        <div class="step-header">
+          <div class="step-num" id="step-num-3">3</div>
+          <div class="step-title">화물 사진</div>
+          <span style="font-size:10px;color:var(--g3);font-weight:600" id="fd-photo-cnt">0/8</span>
+          <div class="realtime-badge"><div class="rt-dot"></div>실시간</div>
         </div>
         <div class="photo-grid">
           <div class="ph-slot-plus" id="ph0"><input type="file" accept="image/*" capture="environment" onchange="loadPh(this,0)"><div class="ph-plus-icon">＋</div></div>
@@ -606,64 +664,44 @@ body{min-height:100vh;max-width:480px;margin:0 auto;background:var(--g0);color:v
           <div class="ph-slot-plus" id="ph6"><input type="file" accept="image/*" capture="environment" onchange="loadPh(this,6)"><div class="ph-plus-icon">＋</div></div>
           <div class="ph-slot-plus" id="ph7"><input type="file" accept="image/*" capture="environment" onchange="loadPh(this,7)"><div class="ph-plus-icon">＋</div></div>
         </div>
+        <button class="photo-confirm-btn" id="fd-photo-confirm-btn" onclick="confirmPhoto()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          사진 확인 완료 — 화주에게 전송
+        </button>
       </div>
 
-      <!-- 4. 서류 접수 -->
-      <div class="fi-card">
-        <div class="fi-title">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          서류 접수 <span class="fi-badge">현장 입력</span>
+      <!-- STEP 4: 서류 접수 -->
+      <div class="step-card" id="step-card-4">
+        <div class="step-header">
+          <div class="step-num" id="step-num-4">4</div>
+          <div class="step-title">서류 접수</div>
+          <div class="realtime-badge"><div class="rt-dot"></div>실시간</div>
         </div>
-        <label class="inbound-check-row">
-          <input type="checkbox" id="fd-doc-awb" onchange="this.closest('.inbound-check-row').classList.toggle('checked',this.checked)"/>
-          <span style="font-size:13px;font-weight:600;color:var(--g5)">AWB / 서류 접수 완료</span>
+        <label class="step-check-row" onclick="onStepCheck('doc',this)">
+          <input type="checkbox" id="fd-doc-awb"/>
+          <span class="step-check-label">AWB / 서류 접수 완료</span>
         </label>
-        <label class="inbound-check-row" id="fd-dgd-row" style="display:none;margin-top:6px">
-          <input type="checkbox" id="fd-doc-dgd" onchange="this.closest('.inbound-check-row').classList.toggle('checked',this.checked)"/>
-          <span style="font-size:13px;font-weight:600;color:var(--red-dark)">DGD (위험물신고서) 접수</span>
+        <label class="step-check-row" id="fd-dgd-row" style="display:none;margin-top:6px" onclick="onStepCheck('dgd',this)">
+          <input type="checkbox" id="fd-doc-dgd"/>
+          <span class="step-check-label bad">DGD (위험물신고서) 접수</span>
         </label>
       </div>
 
-      <!-- 5. 화물 상태 -->
-      <div class="fi-card">
-        <div class="fi-title">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          화물 상태 <span class="fi-badge">현장 입력</span>
+      <!-- 현장 메모 -->
+      <div class="step-card">
+        <div class="step-header">
+          <div class="step-num">✎</div>
+          <div class="step-title">현장 메모</div>
         </div>
-        <div class="cond-check-grid">
-          <label class="cond-check-item bad" onclick="toggleCond(this)">
-            <input type="checkbox" style="accent-color:var(--red)"/>
-            <span class="cond-check-label">찍힘</span>
-          </label>
-          <label class="cond-check-item bad" onclick="toggleCond(this)">
-            <input type="checkbox" style="accent-color:var(--red)"/>
-            <span class="cond-check-label">구겨짐</span>
-          </label>
-          <label class="cond-check-item bad" onclick="toggleCond(this)">
-            <input type="checkbox" style="accent-color:var(--red)"/>
-            <span class="cond-check-label">젖음</span>
-          </label>
-          <label class="cond-check-item ok" onclick="toggleCond(this)">
-            <input type="checkbox" style="accent-color:var(--green)"/>
-            <span class="cond-check-label">✓ 이상없음</span>
-          </label>
-        </div>
+        <textarea class="memo-input" id="fd-note" placeholder="특이사항, 기사 전달사항..." onblur="autoSaveMemo()"></textarea>
       </div>
 
-      <!-- 6. 현장 메모 -->
-      <div class="fi-card">
-        <div class="fi-title">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-          현장 메모 <span class="fi-badge">현장 입력</span>
-        </div>
-        <textarea class="memo-input" id="fd-note" placeholder="특이사항, 기사 전달사항..."></textarea>
-      </div>
     </div>
 
     <!-- 완료 화면 -->
     <div class="done-screen" id="fd-done">
       <div class="done-icon"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--green-dark)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
-      <div class="done-title">현장 입력 완료! ✅</div>
+      <div class="done-title">모든 단계 완료! ✅</div>
       <div class="done-sub" id="fd-done-sub"></div>
       <div class="done-actions">
         <button class="btn-back" onclick="backField()">목록으로</button>
@@ -672,12 +710,8 @@ body{min-height:100vh;max-width:480px;margin:0 auto;background:var(--g0);color:v
         </button>
       </div>
     </div>
-    <div class="submit-wrap" id="fd-submit-wrap">
-      <button class="submit-btn" id="fd-submit-btn" onclick="submitField()">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-        구글 시트 저장 · 화주 즉시 공유
-      </button>
-    </div>
+    <!-- 최종완료 버튼 제거 — 단계별 실시간 전송으로 대체 -->
+    <div style="height:20px"></div>
   </div>
 </div>
 
@@ -1090,13 +1124,35 @@ function openFieldDetail(awb){
     slot.classList.remove("filled");
   }
 
-  // 반입/서류체크 초기화
-  document.getElementById("fd-inbound-check").checked=false;
-  document.getElementById("fd-inbound-row").classList.remove("checked");
-  const docAwb=document.getElementById("fd-doc-awb");if(docAwb)docAwb.checked=false;
-  const docDgd=document.getElementById("fd-doc-dgd");if(docDgd)docDgd.checked=false;
-  document.querySelectorAll(".cond-check-item input").forEach(cb=>cb.checked=false);
+  // 단계 상태 초기화
+  stepStatus={inbound:false,cond:'',size:false,photo:false,doc:false};
+  // 체크박스 초기화
+  ["fd-inbound-check","fd-cond-ok","fd-cond-dent","fd-cond-crush","fd-cond-wet","fd-doc-awb","fd-doc-dgd"].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.checked=false;
+  });
+  document.querySelectorAll(".step-check-row").forEach(r=>r.classList.remove("checked","checked-bad"));
+  // 확인 버튼 초기화
+  const sizeBtn=document.getElementById("fd-size-confirm-btn");
+  if(sizeBtn){sizeBtn.textContent="실측 확인 완료 — 화주에게 전송";sizeBtn.className="size-confirm-btn";}
+  const photoBtn=document.getElementById("fd-photo-confirm-btn");
+  if(photoBtn){photoBtn.textContent="사진 확인 완료 — 화주에게 전송";photoBtn.className="photo-confirm-btn";}
+  // 단계 카드 초기화
+  [1,2,3,4].forEach(n=>updateStepCard(n,""));
   document.getElementById("fd-note").value=c["현장메모"]||"";
+  // 기존 데이터 복원
+  if(c["반입체크"]==="완료"){
+    stepStatus.inbound=true;
+    const el=document.getElementById("fd-inbound-check");if(el)el.checked=true;
+    document.getElementById("fd-inbound-row")?.classList.add("checked");
+    updateStepCard(1,"done");
+  }
+  if(c["실측완료"]==="완료"){stepStatus.size=true;updateStepCard(2,"done");if(sizeBtn){sizeBtn.textContent="✓ 실측 전송 완료";sizeBtn.className="size-confirm-btn confirmed";}}
+  if(c["사진완료"]==="완료"){stepStatus.photo=true;updateStepCard(3,"done");if(photoBtn){photoBtn.textContent="✓ 사진 전송 완료";photoBtn.className="photo-confirm-btn confirmed";}}
+  if(c["서류접수"]==="완료"){
+    stepStatus.doc=true;updateStepCard(4,"done");
+    const el=document.getElementById("fd-doc-awb");if(el)el.checked=true;
+    el?.closest(".step-check-row")?.classList.add("checked");
+  }
 
   const done=c["상태"]==="현장완료"||c["상태"]==="반입완료";
   document.getElementById("fd-done").className="done-screen"+(done?" on":"");
@@ -1252,9 +1308,116 @@ window.loadPh=function(input,idx){
 };
 function updatePhotoCnt(){document.getElementById("fd-photo-cnt").textContent=fieldPhotos.filter(Boolean).length+"/8";}
 
-async function submitField(){
+// ── 단계별 실시간 전송 상태 ──
+let stepStatus={inbound:false,cond:'',size:false,photo:false,doc:false};
+
+// 구글시트에 단계 업데이트 (실시간)
+async function pushStep(stepData){
+  const c=currentCargo;if(!c)return;
+  const awb=c["AWB"]||c["MAWB"];
+  const payload={action:"updateStep",awb,...stepData,updatedAt:new Date().toLocaleString("ko-KR")};
+  try{
+    if(SHEET_URL) await apiPost(payload);
+    // 로컬 캐시도 업데이트
+    const idx=allCargos.findIndex(x=>(x["AWB"]===awb||x["MAWB"]===awb));
+    if(idx>=0) Object.assign(allCargos[idx],stepData);
+    saveCargosLocal(allCargos);
+  }catch(e){console.log("pushStep error:",e);}
+}
+
+// 단계 카드 상태 업데이트
+function updateStepCard(num,state){
+  const card=document.getElementById("step-card-"+num);
+  const numEl=document.getElementById("step-num-"+num);
+  if(!card||!numEl)return;
+  card.classList.remove("step-done","step-partial");
+  numEl.classList.remove("done","partial");
+  if(state==="done"){card.classList.add("step-done");numEl.classList.add("done");numEl.textContent="✓";}
+  else if(state==="partial"){card.classList.add("step-partial");numEl.classList.add("partial");}
+  else numEl.textContent=num;
+}
+
+// 전체 진행 상태 체크 → 모두 완료면 완료 화면
+function checkAllDone(){
+  const allDone=stepStatus.inbound&&stepStatus.size&&stepStatus.photo&&stepStatus.doc;
+  if(allDone){
+    const c=currentCargo;
+    document.getElementById("fd-done").className="done-screen on";
+    document.getElementById("fd-fi-body").style.display="none";
+    document.getElementById("fd-done-sub").textContent=`MAWB: ${fmtMAWB(c["AWB"]||c["MAWB"])}\n모든 단계 완료 · 화주에게 실시간 공유됨`;
+    // 최종 상태 반입완료로 업데이트
+    pushStep({상태:"반입완료"});
+    const idx=allCargos.findIndex(x=>(x["AWB"]===c["AWB"]||x["MAWB"]===c["MAWB"]));
+    if(idx>=0){allCargos[idx]["상태"]="반입완료";saveCargosLocal(allCargos);}
+  }
+}
+
+// STEP1 - 반입 체크
+window.onStepCheck=async function(type,rowEl){
+  const cb=rowEl.querySelector("input");
+  cb.checked=!cb.checked;
+  rowEl.classList.toggle("checked",cb.checked);
+  if(type==="inbound"){
+    stepStatus.inbound=cb.checked;
+    const cond=getCondStatus();
+    await pushStep({상태:cb.checked?"현장완료":"입력대기",반입체크:cb.checked?"완료":"",화물상태:cond});
+    updateStepCard(1,cb.checked&&cond?"done":cb.checked||cond?"partial":"");
+    toast(cb.checked?"반입 완료 — 화주에게 전송됨 ✓":"반입 체크 해제");
+  }else if(type==="doc"){
+    stepStatus.doc=cb.checked;
+    await pushStep({서류접수:cb.checked?"완료":""});
+    updateStepCard(4,cb.checked?"done":"");
+    if(cb.checked){toast("서류 접수 완료 — 화주에게 전송됨 ✓");checkAllDone();}
+  }else if(type==="dgd"){
+    await pushStep({DGD접수:cb.checked?"완료":""});
+    toast(cb.checked?"DGD 접수 완료 ✓":"DGD 체크 해제");
+  }
+};
+
+// STEP1 - 화물 상태 체크
+window.onCondCheck=async function(rowEl,type){
+  const cb=rowEl.querySelector("input");
+  cb.checked=!cb.checked;
+  if(type==="ok"){
+    rowEl.classList.toggle("checked",cb.checked);
+    // 이상없음 체크시 나쁜것들 해제
+    if(cb.checked){
+      document.querySelectorAll("#fd-cond-dent,#fd-cond-crush,#fd-cond-wet").forEach(c=>{
+        c.checked=false;c.closest(".step-check-row").classList.remove("checked","checked-bad");
+      });
+    }
+  }else{
+    rowEl.classList.toggle("checked-bad",cb.checked);
+    // 나쁜것 체크시 이상없음 해제
+    if(cb.checked){
+      const ok=document.getElementById("fd-cond-ok");
+      if(ok){ok.checked=false;ok.closest(".step-check-row").classList.remove("checked");}
+    }
+  }
+  const cond=getCondStatus();
+  if(cond){
+    await pushStep({화물상태:cond});
+    const inbound=document.getElementById("fd-inbound-check")?.checked;
+    updateStepCard(1,inbound&&cond?"done":inbound||cond?"partial":"");
+    toast(`화물상태 [${cond}] — 화주에게 전송됨 ✓`);
+  }
+};
+
+function getCondStatus(){
+  const ok=document.getElementById("fd-cond-ok")?.checked;
+  const dent=document.getElementById("fd-cond-dent")?.checked;
+  const crush=document.getElementById("fd-cond-crush")?.checked;
+  const wet=document.getElementById("fd-cond-wet")?.checked;
+  if(ok) return "이상없음";
+  const bads=[];
+  if(dent)bads.push("찍힘");if(crush)bads.push("구겨짐");if(wet)bads.push("젖음");
+  return bads.join(", ");
+}
+
+// STEP2 - 실측 확인 완료 버튼
+window.confirmSize=async function(){
   const hasSize=pieceInputs.some(p=>Number(p.w)&&Number(p.d)&&Number(p.h)&&Number(p.gw));
-  if(!hasSize){toast("최소 1개 박스의 사이즈와 중량을 입력해 주세요.");return;}
+  if(!hasSize){toast("사이즈와 중량을 입력해 주세요.");return;}
   let totCbm=0,totVw=0,totGw=0;
   pieceInputs.forEach(p=>{
     const w=Number(p.w)||0,d=Number(p.d)||0,h=Number(p.h)||0,gw=Number(p.gw)||0,pcs=Number(p.pcs)||1;
@@ -1262,7 +1425,41 @@ async function submitField(){
   });
   const totCw=Math.max(totGw,totVw);
   const totalPcs=pieceInputs.reduce((s,p)=>s+(Number(p.pcs)||1),0);
-  const gw=totGw;
+  await pushStep({
+    현장수량:totalPcs,현장중량:totGw.toFixed(1),
+    볼륨중량:totVw?totVw.toFixed(1):"",운임중량:totCw?totCw.toFixed(1):"",
+    CBM:totCbm?totCbm.toFixed(3):"",실측완료:"완료"
+  });
+  stepStatus.size=true;
+  updateStepCard(2,"done");
+  const btn=document.getElementById("fd-size-confirm-btn");
+  if(btn){btn.textContent="✓ 실측 전송 완료";btn.className="size-confirm-btn confirmed";}
+  toast(`실측 ${totalPcs}pcs · ${totGw.toFixed(1)}kg · CBM ${totCbm.toFixed(3)} — 화주에게 전송됨 ✓`);
+  checkAllDone();
+};
+
+// STEP3 - 사진 확인 완료 버튼
+window.confirmPhoto=async function(){
+  const cnt=fieldPhotos.filter(Boolean).length;
+  if(!cnt){toast("사진을 최소 1장 찍어주세요.");return;}
+  await pushStep({사진수:cnt+"장",사진완료:"완료"});
+  stepStatus.photo=true;
+  updateStepCard(3,"done");
+  const btn=document.getElementById("fd-photo-confirm-btn");
+  if(btn){btn.textContent="✓ 사진 전송 완료";btn.className="photo-confirm-btn confirmed";}
+  toast(`사진 ${cnt}장 — 화주에게 전송됨 ✓`);
+  checkAllDone();
+};
+
+// 메모 자동저장
+window.autoSaveMemo=async function(){
+  const note=document.getElementById("fd-note").value;
+  if(note) await pushStep({현장메모:note});
+};
+
+// 기존 submitField → 더 이상 사용 안 하지만 오류방지용 남김
+async function submitField(){
+  toast("각 단계별 체크로 실시간 전송됩니다.");
   const btn=document.getElementById("fd-submit-btn");btn.disabled=true;btn.textContent="저장 중...";
   const w=parseFloat(document.getElementById("fd-w").value)||0;
   const d=parseFloat(document.getElementById("fd-d").value)||0;
@@ -1373,11 +1570,25 @@ function renderSCards(t){
 
 function getSSteps(c){
   const status=c["상태"]||"입력대기";
-  return[{label:"서류등록"},{label:"현장반입"},{label:"세관신고"},{label:"탑재완료"}].map((s,i)=>{
+  // 단계별 실제 데이터 체크
+  const inbound=c["반입체크"]==="완료";
+  const sized=c["실측완료"]==="완료";
+  const photoed=c["사진완료"]==="완료";
+  const doced=c["서류접수"]==="완료";
+  const allDone=status==="반입완료";
+
+  return[
+    {label:"반입확인", key:"inbound"},
+    {label:"실측완료", key:"size"},
+    {label:"사진완료", key:"photo"},
+    {label:"서류접수", key:"doc"}
+  ].map((s)=>{
     let state="pend";
-    if(status==="입력대기"&&i===0)state="active";
-    if(status==="현장완료"){if(i===0)state="done";else if(i===1)state="active";}
-    if(status==="반입완료"){state=i<=2?"done":i===3?"active":"pend";}
+    if(s.key==="inbound") state=inbound?"done":status!=="입력대기"?"active":"pend";
+    if(s.key==="size") state=sized?"done":inbound&&!sized?"active":"pend";
+    if(s.key==="photo") state=photoed?"done":sized&&!photoed?"active":"pend";
+    if(s.key==="doc") state=doced?"done":photoed&&!doced?"active":"pend";
+    if(allDone) state="done";
     return{...s,state};
   });
 }
@@ -1415,18 +1626,40 @@ function openSModal(awb){
     </div>
     <div class="modal-sec" style="margin-top:14px">
       <div class="modal-stitle">현장 업데이트</div>
-      ${hasField?`<div class="fub">
-        <div class="fub-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>현장 실측 확인 정보</div>
-        <div class="fub-grid">
-          <div class="fub-item"><div class="fub-lbl">실측 수량</div><div class="fub-val">${esc(c["현장수량"]||"—")}pcs</div></div>
-          <div class="fub-item"><div class="fub-lbl">실측 중량</div><div class="fub-val">${esc(c["현장중량"]||"—")}kg</div></div>
-          <div class="fub-item"><div class="fub-lbl">볼륨중량</div><div class="fub-val">${esc(c["볼륨중량"]||"—")}kg</div></div>
-          <div class="fub-item"><div class="fub-lbl">운임중량</div><div class="fub-val">${esc(c["운임중량"]||"—")}kg</div></div>
-        </div>
-        ${c["반입시간"]?`<div style="font-size:10px;color:#2D6A4F;margin-top:7px;font-weight:600">반입시간: ${esc(c["반입시간"])}</div>`:""}
-        ${c["현장메모"]?`<div style="font-size:12px;color:var(--green-dark);margin-top:5px;padding:7px 9px;background:rgba(255,255,255,.65);border-radius:7px">메모: ${esc(c["현장메모"])}</div>`:""}
-        ${c["사진URL"]?`<div style="font-size:11px;color:var(--g3);margin-top:6px;display:flex;align-items:center;gap:5px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>현장 사진 ${esc(c["사진URL"])}</div>`:""}
-      </div>`:`<div style="font-size:12px;color:var(--g3);line-height:1.7;padding:10px 0">아직 현장에서 업데이트하지 않았습니다.<br>현장 담당자가 확인 후 업데이트하면 여기에 표시됩니다.</div>`}
+      <div style="display:flex;flex-direction:column;gap:7px">
+        <!-- 단계별 현황 -->
+        ${[
+          {key:"반입체크",label:"반입 확인",icon:"✓"},
+          {key:"화물상태",label:"화물 상태",icon:"📦"},
+          {key:"실측완료",label:"실측 완료",icon:"📐"},
+          {key:"사진완료",label:"사진 완료",icon:"📷"},
+          {key:"서류접수",label:"서류 접수",icon:"📄"}
+        ].map(step=>{
+          const val=c[step.key]||"";
+          const done=val==="완료"||val==="이상없음"||val.includes("pcs")||val.length>0;
+          const isBad=val&&val!=="완료"&&val!=="이상없음"&&step.key==="화물상태";
+          return `<div style="display:flex;align-items:center;gap:9px;padding:8px 11px;border-radius:var(--rs);border:1.5px solid ${done?(isBad?"var(--status-urgent-border)":"var(--status-done-border)"):"var(--g1)"};background:${done?(isBad?"var(--rl)":"var(--gl)"):"var(--g0)"}">
+            <span style="font-size:14px">${done?(isBad?"⚠":"✅"):"⏳"}</span>
+            <div style="flex:1">
+              <div style="font-size:12px;font-weight:700;color:${done?(isBad?"var(--red-dark)":"var(--green-dark)"):"var(--g3)"}">${step.label}</div>
+              ${val?`<div style="font-size:11px;color:${isBad?"var(--red-dark)":"var(--g3)"};margin-top:1px">${esc(val)}</div>`:`<div style="font-size:11px;color:var(--g3)">대기 중</div>`}
+            </div>
+          </div>`;
+        }).join("")}
+        <!-- 실측 수치 -->
+        ${(c["현장수량"]||c["현장중량"])?`<div style="background:linear-gradient(135deg,var(--gl),#D4F0E3);border:1.5px solid var(--status-done-border);border-radius:var(--rs);padding:10px 12px;margin-top:4px">
+          <div style="font-size:10px;font-weight:700;color:var(--green-dark);text-transform:uppercase;letter-spacing:.4px;margin-bottom:7px">실측 데이터</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+            <div><div style="font-size:10px;color:#2D6A4F">수량</div><div style="font-size:14px;font-weight:700;color:var(--green-dark);font-family:var(--mono)">${esc(c["현장수량"]||"—")}pcs</div></div>
+            <div><div style="font-size:10px;color:#2D6A4F">중량</div><div style="font-size:14px;font-weight:700;color:var(--green-dark);font-family:var(--mono)">${esc(c["현장중량"]||"—")}kg</div></div>
+            <div><div style="font-size:10px;color:#2D6A4F">볼륨중량</div><div style="font-size:14px;font-weight:700;color:var(--green-dark);font-family:var(--mono)">${esc(c["볼륨중량"]||"—")}kg</div></div>
+            <div><div style="font-size:10px;color:#2D6A4F">운임중량</div><div style="font-size:14px;font-weight:700;color:var(--green-dark);font-family:var(--mono)">${esc(c["운임중량"]||"—")}kg</div></div>
+          </div>
+          ${c["CBM"]?`<div style="font-size:11px;color:#2D6A4F;margin-top:5px">CBM: ${esc(c["CBM"])}</div>`:""}
+          ${c["현장메모"]?`<div style="font-size:12px;color:var(--green-dark);margin-top:6px;padding:6px 8px;background:rgba(255,255,255,.6);border-radius:6px">메모: ${esc(c["현장메모"])}</div>`:""}
+          ${c["사진수"]?`<div style="font-size:11px;color:var(--g3);margin-top:5px">📷 현장 사진 ${esc(c["사진수"])}</div>`:""}
+        </div>`:""}
+      </div>
     </div>
     <div style="height:24px"></div>`;
   document.getElementById("s-modal").classList.add("on");window.scrollTo(0,0);
