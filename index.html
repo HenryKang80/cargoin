@@ -501,13 +501,6 @@ body{min-height:100vh;max-width:480px;margin:0 auto;background:var(--g0);color:v
     </button>
     <div class="login-forgot">비밀번호 분실 시 관리자에게 문의하세요</div>
   </div>
-  <div class="login-url-wrap">
-    <div class="login-url-label">Google Apps Script URL (관리자 설정)</div>
-    <div class="login-url-row">
-      <input class="login-url-input" id="l-sheet-url" placeholder="https://script.google.com/macros/s/.../exec"/>
-      <button class="login-url-btn" onclick="saveSheetUrl()">저장</button>
-    </div>
-  </div>
   <div class="demo-hint">
     데모 — 관리자: admin@cargoin.com / admin123<br>
     현장: field@cargoin.com / field123<br>
@@ -765,6 +758,7 @@ body{min-height:100vh;max-width:480px;margin:0 auto;background:var(--g0);color:v
     <div class="admin-tab" onclick="setAtab('cargos',this)">화물 목록</div>
     <div class="admin-tab" onclick="setAtab('register',this)">화물 등록</div>
     <div class="admin-tab" onclick="setAtab('accounts',this)">계정 관리</div>
+    <div class="admin-tab" onclick="setAtab('settings',this)">⚙ 설정</div>
   </div>
 
   <!-- 대시보드 -->
@@ -843,6 +837,30 @@ body{min-height:100vh;max-width:480px;margin:0 auto;background:var(--g0);color:v
     <div style="font-size:10px;font-weight:700;color:var(--g3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">등록된 계정</div>
     <div id="a-acc-list"></div>
   </div>
+
+  <!-- 설정 -->
+  <div class="a-panel" id="ap-settings">
+    <div class="a-form">
+      <div class="a-form-title">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        Google Apps Script 연결
+      </div>
+      <div style="font-size:12px;color:var(--g3);margin-bottom:12px;line-height:1.6">
+        구글 시트와 연동할 Apps Script URL을 설정하세요.<br>
+        현장 앱과 화주 앱 모두 이 URL로 데이터를 주고받습니다.
+      </div>
+      <div class="af-fld af-full" style="margin-bottom:10px">
+        <label>Apps Script URL</label>
+        <input type="url" id="a-sheet-url" placeholder="https://script.google.com/macros/s/.../exec" style="font-family:var(--mono);font-size:11px"/>
+      </div>
+      <button class="af-save" onclick="saveAdminUrl()">저장 및 연결 확인</button>
+      <div style="margin-top:10px;padding:10px 12px;border-radius:var(--rs);font-size:12px;display:flex;align-items:center;gap:8px" id="a-url-status">
+        <span id="a-url-dot" style="width:8px;height:8px;border-radius:50%;background:var(--g2);flex-shrink:0;display:inline-block"></span>
+        <span id="a-url-text" style="color:var(--g3)">연결 전</span>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <!-- 비밀번호 변경 모달 -->
@@ -915,9 +933,28 @@ function isDG(c){return (c["CONDI"]||c["화물구분"]||"").includes("DG")||"".i
    SHEET URL
 ═══════════════════════════════════════════════════ */
 window.saveSheetUrl=function(){
-  const u=document.getElementById("l-sheet-url").value.trim();
-  SHEET_URL=u;localStorage.setItem(SURL_KEY,u);
-  toast(u?"URL 저장됨":"URL 초기화됨");
+  // 하위 호환 유지용 (더 이상 로그인화면에 없음)
+};
+window.saveAdminUrl=async function(){
+  const url=(document.getElementById("a-sheet-url").value||"").trim();
+  if(!url){toast("URL을 입력해 주세요.");return;}
+  SHEET_URL=url;localStorage.setItem(SURL_KEY,url);
+  const dot=document.getElementById("a-url-dot");
+  const txt=document.getElementById("a-url-text");
+  dot.style.background="var(--amber)";txt.style.color="var(--amber-dark)";txt.textContent="연결 확인 중...";
+  try{
+    const res=await apiGet("ping");
+    if(res.ok){
+      dot.style.background="var(--green)";txt.style.color="var(--green-dark)";
+      txt.textContent="연결 완료 ✓  "+new Date().toLocaleTimeString("ko",{hour:"2-digit",minute:"2-digit"});
+      toast("연결 성공! 데이터 불러오는 중...");
+      loadAdmin();
+    }else throw new Error(res.error||"오류");
+  }catch(e){
+    dot.style.background="var(--red)";txt.style.color="var(--red-dark)";
+    txt.textContent="연결 실패 — URL을 확인해 주세요";
+    toast("연결 실패: "+e.message);
+  }
 };
 async function apiGet(action,params={}){
   const url=new URL(SHEET_URL);url.searchParams.set("action",action);
@@ -932,7 +969,6 @@ async function apiPost(body){
    LOGIN / LOGOUT
 ═══════════════════════════════════════════════════ */
 window.onload=function(){
-  document.getElementById("l-sheet-url").value=SHEET_URL;
   const saved=localStorage.getItem(SESS_KEY);
   if(saved){
     try{session=JSON.parse(saved);enterApp();}
@@ -1731,6 +1767,17 @@ window.setAtab=function(id,el){
   document.querySelectorAll(".admin-tab").forEach(t=>t.classList.remove("active"));el.classList.add("active");
   document.querySelectorAll(".a-panel").forEach(p=>p.classList.remove("on"));
   document.getElementById("ap-"+id).classList.add("on");
+  // 설정 탭 진입시 저장된 URL 표시
+  if(id==="settings"){
+    const urlEl=document.getElementById("a-sheet-url");
+    if(urlEl) urlEl.value=SHEET_URL||"";
+    if(SHEET_URL){
+      const dot=document.getElementById("a-url-dot");
+      const txt=document.getElementById("a-url-text");
+      if(dot) dot.style.background="var(--green)";
+      if(txt){txt.style.color="var(--green-dark)";txt.textContent="URL 저장됨";}
+    }
+  }
 };
 
 /* 화물 등록 */
