@@ -1807,11 +1807,38 @@ async function loadShipper(){
   document.getElementById("s-updated").textContent="불러오는 중...";
   try{
     if(SHEET_URL){
-      const data=await apiGet("getShipperCargos",{id:session.shipperId});
-      shipperCargos=Array.isArray(data)?data:getCargosLocal().filter(c=>c["화주ID"]===session.shipperId);
+      // shipperId로 먼저 시도, 없으면 화주명으로 매칭
+      let data=await apiGet("getShipperCargos",{id:session.shipperId||session.name||""});
+      if(Array.isArray(data)&&data.length>0){
+        shipperCargos=data;
+      }else{
+        // 화주명으로 재시도
+        const all=await apiGet("getCargos");
+        if(Array.isArray(all)){
+          const name=(session.name||"").trim();
+          const sid=(session.shipperId||"").trim();
+          shipperCargos=all.filter(c=>{
+            const cName=(c["SHIPPER"]||"").trim();
+            const cId=(c["화주ID"]||"").trim();
+            return (sid&&(cId===sid||cName===sid))||
+                   (name&&(cName===name||cId===name));
+          });
+        }else{
+          throw new Error();
+        }
+      }
     }else throw new Error();
   }catch{
-    shipperCargos=getCargosLocal().filter(c=>c["화주ID"]===session.shipperId);
+    // 로컬 데이터에서 화주명 또는 shipperId로 매칭
+    const all=getCargosLocal();
+    const name=(session.name||"").trim();
+    const sid=(session.shipperId||"").trim();
+    shipperCargos=all.filter(c=>{
+      const cName=(c["SHIPPER"]||"").trim();
+      const cId=(c["화주ID"]||"").trim();
+      return (sid&&(cId===sid||cName===sid))||
+             (name&&(cName===name||cId===name));
+    });
   }
   hideLoading();
   document.getElementById("s-updated").textContent="업데이트: "+nowStr();
