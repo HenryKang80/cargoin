@@ -1046,17 +1046,20 @@ window.onload=function(){
 };
 
 window.doLogin=async function(){
-  const email=document.getElementById("l-email").value.trim();
+  const userId=document.getElementById("l-email").value.trim();
   const pw=document.getElementById("l-pw").value.trim();
-  if(!email||!pw){showErr("이메일과 비밀번호를 입력해 주세요.");return;}
+  if(!userId||!pw){showErr("아이디와 비밀번호를 입력해 주세요.");return;}
   const btn=document.getElementById("l-btn");btn.disabled=true;
   showLoading("로그인 중...");
 
-  // 1. 로컬 계정 확인
+  // 1. 로컬 계정 확인 (userId 또는 email 모두 지원)
   const accs=getAccounts();
-  const local=accs.find(a=>a.email.toLowerCase()===email.toLowerCase()&&a.password===pw&&a.status!=="비활성");
+  const local=accs.find(a=>{
+    const id=(a.userId||a.email||"").toLowerCase();
+    return id===userId.toLowerCase()&&a.password===pw&&a.status!=="비활성";
+  });
   if(local){
-    session={email,role:local.role,name:local.name,shipperId:local.shipperId||""};
+    session={userId,role:local.role,name:local.name,shipperId:local.shipperId||""};
     localStorage.setItem(SESS_KEY,JSON.stringify(session));
     hideLoading();btn.disabled=false;
     enterApp();return;
@@ -1064,9 +1067,9 @@ window.doLogin=async function(){
   // 2. Sheets 계정 확인
   if(SHEET_URL){
     try{
-      const res=await apiPost({action:"shipperLogin",email,password:pw});
+      const res=await apiPost({action:"shipperLogin",email:userId,password:pw});
       if(res.ok){
-        session={email,role:"shipper",name:res.companyName||email,shipperId:res.shipperId||""};
+        session={userId,role:"shipper",name:res.companyName||userId,shipperId:res.shipperId||""};
         localStorage.setItem(SESS_KEY,JSON.stringify(session));
         hideLoading();btn.disabled=false;enterApp();return;
       }
