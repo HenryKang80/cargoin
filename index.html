@@ -476,6 +476,11 @@ body{min-height:100vh;max-width:480px;margin:0 auto;background:var(--g0);color:v
 .sync-btn.spinning svg{animation:spin .7s linear infinite}
 .sync-bar{background:rgba(0,0,0,.15);padding:6px 14px;display:flex;align-items:center;justify-content:space-between;font-size:11px;color:rgba(255,255,255,.75)}
 .sync-bar-time{display:flex;align-items:center;gap:5px}
+
+/* ── HAWB 탭 ── */
+.hawb-tab{padding:4px 12px;border-radius:20px;border:1.5px solid rgba(255,255,255,.4);background:rgba(255,255,255,.15);color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--mono);white-space:nowrap;transition:all .15s}
+.hawb-tab.active{background:#fff;color:var(--green-dark);border-color:#fff}
+.hawb-tab.single{padding:3px 10px;font-size:11px}
 </style>
 </head>
 <body>
@@ -559,12 +564,13 @@ body{min-height:100vh;max-width:480px;margin:0 auto;background:var(--g0);color:v
       <div class="det-back" onclick="backField()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>목록으로
       </div>
-      <div style="font-size:10px;opacity:.7;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">MAWB</div>
-      <div class="det-awb" id="f-det-awb"></div>
-      <div id="f-det-hawb" style="display:none;margin-top:4px">
-        <span style="font-size:10px;opacity:.7;text-transform:uppercase;letter-spacing:.5px">HAWB</span>
-        <span style="font-family:var(--mono);font-size:14px;font-weight:600;color:#fff;margin-left:6px" id="f-det-hawb-val"></span>
+      <!-- MAWB 가로 배치 -->
+      <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px">
+        <span style="font-size:10px;opacity:.7;text-transform:uppercase;letter-spacing:.5px;flex-shrink:0">MAWB</span>
+        <span class="det-awb" id="f-det-awb"></span>
       </div>
+      <!-- HAWB 탭 필터 (여러 건) -->
+      <div id="f-hawb-tabs" style="display:none;margin-top:6px;display:flex;gap:5px;flex-wrap:wrap"></div>
     </div>
 
     <!-- 기본 정보 -->
@@ -582,10 +588,7 @@ body{min-height:100vh;max-width:480px;margin:0 auto;background:var(--g0);color:v
         <div class="info-item"><div class="info-lbl">등록 중량</div><div class="info-val" id="fd-gw"></div></div>
         <div class="info-item"><div class="info-lbl">화주</div><div class="info-val" id="fd-shipper"></div></div>
         <div class="info-item"><div class="info-lbl">품목</div><div class="info-val" id="fd-item"></div></div>
-        <div class="info-item" id="fd-hawb-wrap" style="grid-column:1/-1;display:none">
-          <div class="info-lbl">HAWB</div>
-          <div id="fd-hawb-list"></div>
-        </div>
+
       </div>
     </div>
 
@@ -609,27 +612,27 @@ body{min-height:100vh;max-width:480px;margin:0 auto;background:var(--g0);color:v
           <div class="realtime-badge"><div class="rt-dot"></div>실시간</div>
         </div>
         <!-- 반입완료: 클릭토글 -->
-        <div class="step-check-row" id="fd-inbound-row" onclick="toggleInbound()" style="cursor:pointer">
-          <input type="checkbox" id="fd-inbound-check" style="pointer-events:none"/>
+        <div class="step-check-row" id="fd-inbound-row" style="cursor:pointer" onclick="event.preventDefault();toggleInbound()">
+          <input type="checkbox" id="fd-inbound-check" onclick="event.stopPropagation()" style="pointer-events:none"/>
           <span class="step-check-label">반입 완료 확인</span>
           <span id="fd-inbound-lbl" style="font-size:10px;color:var(--g3);margin-left:auto">탭하여 확인</span>
         </div>
         <div style="font-size:10px;font-weight:700;color:var(--g3);text-transform:uppercase;letter-spacing:.4px;margin:10px 0 6px">화물 상태 (중복 선택 가능)</div>
         <!-- 이상없음: 선택시 나머지 비활성 -->
-        <div class="step-check-row" id="fd-cond-ok-row" onclick="toggleCond('ok')" style="cursor:pointer">
+        <div class="step-check-row" id="fd-cond-ok-row" style="cursor:pointer" onclick="event.preventDefault();toggleCond('ok')">
           <input type="checkbox" id="fd-cond-ok" style="pointer-events:none;accent-color:var(--green)"/>
           <span class="step-check-label">✓ 이상없음</span>
         </div>
         <!-- 불량: 중복 허용, 이상없음 체크시 비활성 -->
-        <div class="step-check-row" id="fd-cond-dent-row" onclick="toggleCond('dent')" style="cursor:pointer">
+        <div class="step-check-row" id="fd-cond-dent-row" style="cursor:pointer" onclick="event.preventDefault();toggleCond('dent')">
           <input type="checkbox" id="fd-cond-dent" style="pointer-events:none;accent-color:var(--red)"/>
           <span class="step-check-label bad">찍힘</span>
         </div>
-        <div class="step-check-row" id="fd-cond-crush-row" onclick="toggleCond('crush')" style="cursor:pointer">
+        <div class="step-check-row" id="fd-cond-crush-row" style="cursor:pointer" onclick="event.preventDefault();toggleCond('crush')">
           <input type="checkbox" id="fd-cond-crush" style="pointer-events:none;accent-color:var(--red)"/>
           <span class="step-check-label bad">구겨짐</span>
         </div>
-        <div class="step-check-row" id="fd-cond-wet-row" onclick="toggleCond('wet')" style="cursor:pointer">
+        <div class="step-check-row" id="fd-cond-wet-row" style="cursor:pointer" onclick="event.preventDefault();toggleCond('wet')">
           <input type="checkbox" id="fd-cond-wet" style="pointer-events:none;accent-color:var(--red)"/>
           <span class="step-check-label bad">젖음</span>
         </div>
@@ -690,14 +693,14 @@ body{min-height:100vh;max-width:480px;margin:0 auto;background:var(--g0);color:v
           <div class="step-title">서류 접수</div>
           <div class="realtime-badge"><div class="rt-dot"></div>실시간</div>
         </div>
-        <label class="step-check-row" onclick="onStepCheck('doc',this)">
-          <input type="checkbox" id="fd-doc-awb"/>
+        <div class="step-check-row" id="fd-doc-row" style="cursor:pointer" onclick="event.preventDefault();onDocCheck('doc')">
+          <input type="checkbox" id="fd-doc-awb" style="pointer-events:none"/>
           <span class="step-check-label">AWB / 서류 접수 완료</span>
-        </label>
-        <label class="step-check-row" id="fd-dgd-row" style="display:none;margin-top:6px" onclick="onStepCheck('dgd',this)">
-          <input type="checkbox" id="fd-doc-dgd"/>
+        </div>
+        <div class="step-check-row" id="fd-dgd-row" style="display:none;margin-top:6px;cursor:pointer" onclick="event.preventDefault();onDocCheck('dgd')">
+          <input type="checkbox" id="fd-doc-dgd" style="pointer-events:none"/>
           <span class="step-check-label bad">DGD (위험물신고서) 접수</span>
-        </label>
+        </div>
       </div>
 
       <!-- 현장 메모 -->
@@ -1146,22 +1149,18 @@ async function syncAdmin(){
   if(btn) btn.classList.remove("spinning");
 }
 
-// 편명 포맷 - "KE901 / 2025-04-19" → "KE901/4월"
-function fmtFlight(v){
+// 편명 포맷 - SKD날짜 우선 사용, "KE901 / 2025-04-19" → "KE901/2025년 4월 4일"
+function fmtFlight(v, skd){
   if(!v||v==="—") return "—";
-  // "/" 기준으로 분리
   const idx=v.indexOf("/");
-  if(idx<0) return v.trim();
-  const flightNo=v.slice(0,idx).trim();
-  const datePart=v.slice(idx+1).trim();
-  if(!datePart) return flightNo||v;
-  // YYYY-MM-DD 또는 YYYY-M-D 형태 파싱
-  const m=datePart.match(/(\d{4})[-.](\d{1,2})[-.](\d{1,2})/);
-  if(m) return `${flightNo}/${parseInt(m[2])}월`;
-  // 숫자만 있는 경우 (월 직접 입력)
-  const m2=datePart.match(/^(\d{1,2})월/);
-  if(m2) return `${flightNo}/${m2[1]}월`;
-  return `${flightNo}/${datePart}`;
+  const flightNo=(idx>=0?v.slice(0,idx):v).trim();
+  if(!flightNo) return v;
+  // SKD(실제 스케줄 날짜) 우선 사용
+  const dateStr=skd||(idx>=0?v.slice(idx+1).trim():"");
+  if(!dateStr) return flightNo;
+  const m=dateStr.match(/(\d{4})[-.](\d{1,2})[-.](\d{1,2})/);
+  if(m) return `${flightNo} / ${parseInt(m[1])}년 ${parseInt(m[2])}월 ${parseInt(m[3])}일`;
+  return flightNo;
 }
 function fmtDate(v, showTime=false){
   if(!v) return "—";
@@ -1211,7 +1210,7 @@ function renderFieldList(list){
         <div style="flex-shrink:0;margin-left:8px">${sBadge(c["상태"]||"입력대기")}</div>
       </div>
       <div class="cc-sub" style="margin-top:6px">
-        ${fmtFlight(c["편명/일자"]||c["편명"]||"")} · ICN→${esc(c["DEST"]||c["목적지"]||"")}
+        ${fmtFlight(c["편명/일자"]||c["편명"]||"",c["SKD"]||c["출발일시"]||"")} · ICN→${esc(c["DEST"]||c["목적지"]||"")}
         ${c["총수량"]?` · ${esc(c["총수량"])}pcs / ${esc(c["총중량"])}kg`:""}
       </div>
       <div class="cc-sub" style="margin-top:3px;color:var(--g4);font-weight:500">${esc(c["SHIPPER"]||"")} · <span style="color:${isDg?"var(--red-dark)":"var(--g3)"}">${esc(condi)}</span></div>
@@ -1238,19 +1237,20 @@ function openFieldDetail(awb){
   document.getElementById("f-list").style.display="none";
   document.getElementById("f-detail").classList.add("on");
 
-  // 헤더 - MAWB + HAWB 표시
+  // 헤더 - MAWB + HAWB 탭
   document.getElementById("f-det-awb").textContent=fmtMAWB(c["MAWB"]||c["AWB"]);
-  const detHawb=document.getElementById("f-det-hawb");
-  const detHawbVal=document.getElementById("f-det-hawb-val");
-  if(c["HAWB"]&&detHawb&&detHawbVal){detHawb.style.display="block";detHawbVal.textContent=c["HAWB"];}
-  else if(detHawb) detHawb.style.display="none";
+  // HAWB 탭 렌더
+  const hawbArr=c["HAWB"]?String(c["HAWB"]).split(/[,;]/).map(h=>h.trim()).filter(Boolean):[];
+  currentHawbs=hawbArr.length>0?hawbArr:[""];
+  currentHawbIdx=0;
+  renderHawbTabs();
 
   // 기본 정보
   const etd=c["출발일시"]||c["SKD"]||"";
   const dep=etd?new Date(etd):null;
   const cut=cutoff(c);
   const remain=cut?(cut-new Date())/3600000:null;
-  document.getElementById("fd-flt").textContent=fmtFlight(c["편명/일자"]||c["편명"]||"");
+  document.getElementById("fd-flt").textContent=fmtFlight(c["편명/일자"]||c["편명"]||"",c["SKD"]||c["출발일시"]||"");
   document.getElementById("fd-route").textContent=`ICN → ${c["DEST"]||c["목적지"]||"—"}`;
   document.getElementById("fd-etd").textContent=dep?fmtDate(dep,true):"—";
   document.getElementById("fd-pcs").textContent=(c["총수량"]||"—")+"pcs";
@@ -1258,14 +1258,7 @@ function openFieldDetail(awb){
   document.getElementById("fd-item").textContent=c["ITEM"]||c["품목"]||"—";
   document.getElementById("fd-shipper").textContent=c["SHIPPER"]||"—";
 
-  // HAWB 표시 (기본정보에, 여러개 가능)
-  const hawbWrap=document.getElementById("fd-hawb-wrap");
-  const hawbListEl=document.getElementById("fd-hawb-list");
-  if(c["HAWB"]){
-    hawbWrap.style.display="block";
-    const hawbs=String(c["HAWB"]).split(/[,;/]/).map(h=>h.trim()).filter(Boolean);
-    hawbListEl.innerHTML=hawbs.map(h=>`<span class="hawb-display" style="margin-right:5px;margin-bottom:4px;display:inline-block">${esc(h)}</span>`).join("");
-  }else hawbWrap.style.display="none";
+
 
   // 반입 마감
   const cutEl=document.getElementById("fd-cutoff");
@@ -1281,11 +1274,7 @@ function openFieldDetail(awb){
   document.getElementById("fd-dg-warn").style.display=isDg?"block":"none";
   document.getElementById("fd-dgd-row").style.display=isDg?"flex":"none";
 
-  // 수량/화주 체크 초기화 (HAWB별)
-  const pcsN=Number(c["총수량"])||0;
-  const hawbs=c["HAWB"]?String(c["HAWB"]).split(/[,;/]/).map(h=>h.trim()).filter(Boolean):[""];
-  hawbChecks=hawbs.map(h=>({hawb:h,pcs:pcsN,gw:Number(c["총중량"])||0,checked:false}));
-  renderHawbCheckList();
+  const pcsN=Number(c['총수량'])||0;
 
   // 피스 입력 초기화
   pieceInputs=[{w:"",d:"",h:"",gw:"",pcs:1}];
@@ -1301,26 +1290,17 @@ function openFieldDetail(awb){
     slot.classList.remove("filled");
   }
 
-  // 단계 상태 초기화
-  stepStatus={inbound:false,cond:'',size:false,photo:false,doc:false};
-  // 체크박스 초기화
-  ["fd-inbound-check","fd-cond-ok","fd-cond-dent","fd-cond-crush","fd-cond-wet","fd-doc-awb","fd-doc-dgd"].forEach(id=>{
-    const el=document.getElementById(id);if(el)el.checked=false;
-  });
-  document.querySelectorAll(".step-check-row").forEach(r=>r.classList.remove("checked","checked-bad"));
-  // 확인 버튼 초기화
-  const sizeBtn=document.getElementById("fd-size-confirm-btn");
-  if(sizeBtn){sizeBtn.textContent="실측 확인 완료 — 화주에게 전송";sizeBtn.className="size-confirm-btn";}
-  const photoBtn=document.getElementById("fd-photo-confirm-btn");
-  if(photoBtn){photoBtn.textContent="사진 확인 완료 — 화주에게 전송";photoBtn.className="photo-confirm-btn";}
   // 단계 카드 초기화
-  [1,2,3,4].forEach(n=>updateStepCard(n,""));
+  resetStepCards();
   document.getElementById("fd-note").value=c["현장메모"]||"";
   // 기존 데이터 복원
+  const sizeBtn=document.getElementById("fd-size-confirm-btn");
+  const photoBtn=document.getElementById("fd-photo-confirm-btn");
   if(c["반입체크"]==="완료"){
     stepStatus.inbound=true;
     const el=document.getElementById("fd-inbound-check");if(el)el.checked=true;
     document.getElementById("fd-inbound-row")?.classList.add("checked");
+    const lbl=document.getElementById("fd-inbound-lbl");if(lbl)lbl.textContent="완료";
     updateStepCard(1,"done");
   }
   if(c["실측완료"]==="완료"){stepStatus.size=true;updateStepCard(2,"done");if(sizeBtn){sizeBtn.textContent="✓ 실측 전송 완료";sizeBtn.className="size-confirm-btn confirmed";}}
@@ -1328,7 +1308,7 @@ function openFieldDetail(awb){
   if(c["서류접수"]==="완료"){
     stepStatus.doc=true;updateStepCard(4,"done");
     const el=document.getElementById("fd-doc-awb");if(el)el.checked=true;
-    el?.closest(".step-check-row")?.classList.add("checked");
+    document.getElementById("fd-doc-row")?.classList.add("checked");
   }
 
   const done=c["상태"]==="현장완료"||c["상태"]==="반입완료";
@@ -1344,6 +1324,90 @@ function openFieldDetail(awb){
 // 피스/HAWB 상태
 let pieceInputs=[{w:"",d:"",h:"",gw:"",pcs:1}];
 let hawbChecks=[];
+let currentHawbs=[""];
+let currentHawbIdx=0;
+
+// HAWB 탭 렌더
+function renderHawbTabs(){
+  const tabsEl=document.getElementById("f-hawb-tabs");
+  if(!tabsEl)return;
+  if(currentHawbs.length<=1&&!currentHawbs[0]){
+    tabsEl.style.display="none";return;
+  }
+  tabsEl.style.display="flex";
+  tabsEl.innerHTML=currentHawbs.map((h,i)=>`
+    <button class="hawb-tab${i===currentHawbIdx?" active":""}" onclick="switchHawbTab(${i})">
+      ${h||"MAWB Single"}
+    </button>`).join("");
+  // 기본정보도 현재 HAWB에 맞게 업데이트
+  updateBasicInfoForHawb(currentHawbIdx);
+}
+
+window.switchHawbTab=function(idx){
+  currentHawbIdx=idx;
+  renderHawbTabs();
+  // 해당 HAWB의 저장된 데이터로 단계 복원
+  const hawbKey=currentHawbs[idx]||"";
+  const c=currentCargo;
+  if(!c)return;
+  // 단계 초기화 후 해당 HAWB 데이터 복원
+  resetStepCards();
+  const prefix=hawbKey?"hawb_"+hawbKey.replace(/[^a-zA-Z0-9]/g,"_")+"_":"";
+  if(c[prefix+"반입체크"]==="완료"||(!prefix&&c["반입체크"]==="완료")){
+    stepStatus.inbound=true;
+    const el=document.getElementById("fd-inbound-check");if(el)el.checked=true;
+    document.getElementById("fd-inbound-row")?.classList.add("checked");
+    const lbl=document.getElementById("fd-inbound-lbl");if(lbl)lbl.textContent="완료";
+    updateStepCard(1,"done");
+  }
+};
+
+function updateBasicInfoForHawb(idx){
+  const c=currentCargo;if(!c)return;
+  const hawb=currentHawbs[idx]||"";
+  // HAWB 헤더에 표시
+  const awbEl=document.getElementById("f-det-awb");
+  if(awbEl) awbEl.textContent=fmtMAWB(c["MAWB"]||c["AWB"]);
+}
+
+function resetStepCards(){
+  stepStatus={inbound:false,cond:'',size:false,photo:false,doc:false};
+  ["fd-inbound-check","fd-cond-ok","fd-cond-dent","fd-cond-crush","fd-cond-wet","fd-doc-awb","fd-doc-dgd"].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.checked=false;
+  });
+  document.querySelectorAll(".step-check-row").forEach(r=>r.classList.remove("checked","checked-bad"));
+  const lbl=document.getElementById("fd-inbound-lbl");if(lbl)lbl.textContent="탭하여 확인";
+  ["dent","crush","wet"].forEach(id=>{
+    const row=document.getElementById("fd-cond-"+id+"-row");
+    if(row){row.style.opacity="";row.style.pointerEvents="";}
+  });
+  [1,2,3,4].forEach(n=>updateStepCard(n,""));
+  const sizeBtn=document.getElementById("fd-size-confirm-btn");
+  if(sizeBtn){sizeBtn.textContent="실측 확인 완료 — 화주에게 전송";sizeBtn.className="size-confirm-btn";}
+  const photoBtn=document.getElementById("fd-photo-confirm-btn");
+  if(photoBtn){photoBtn.textContent="사진 확인 완료 — 화주에게 전송";photoBtn.className="photo-confirm-btn";}
+}
+
+// 서류 체크 (label→div로 바뀌어서 별도 함수)
+window.onDocCheck=async function(type){
+  const cbId=type==="doc"?"fd-doc-awb":"fd-doc-dgd";
+  const rowId=type==="doc"?"fd-doc-row":"fd-dgd-row";
+  const cb=document.getElementById(cbId);
+  const row=document.getElementById(rowId);
+  if(!cb||!row)return;
+  cb.checked=!cb.checked;
+  row.classList.toggle("checked",cb.checked);
+  if(type==="doc"){
+    stepStatus.doc=cb.checked;
+    await pushStep({서류접수:cb.checked?"완료":""});
+    updateStepCard(4,cb.checked?"done":"");
+    if(cb.checked){toast("서류 접수 완료 — 화주에게 전송됨 ✓");checkAllDone();}
+    else toast("서류 접수 해제");
+  }else{
+    await pushStep({DGD접수:cb.checked?"완료":""});
+    toast(cb.checked?"DGD 접수 완료 ✓":"DGD 체크 해제");
+  }
+};
 
 function renderHawbCheckList(){
   const n=hawbChecks.filter(h=>h.checked).length;
@@ -1727,7 +1791,7 @@ function renderSCards(t){
           <div class="sc-awb">${esc(c["MAWB"]||c["AWB"]||"—")}</div>
           ${sBadge(status)}
         </div>
-        <div class="sc-route">${fmtFlight(c["편명/일자"]||c["편명"]||"")} · ICN→${esc(c["DEST"]||c["목적지"]||"")}${dep?" · "+fmtDate(dep,true):""}</div>
+        <div class="sc-route">${fmtFlight(c["편명/일자"]||c["편명"]||"",c["SKD"]||c["출발일시"]||"")} · ICN→${esc(c["DEST"]||c["목적지"]||"")}${dep?" · "+fmtDate(dep,true):""}</div>
       </div>
       <div class="timeline">${steps.map((s,i)=>`
         <div class="tl-step">
@@ -1773,7 +1837,7 @@ function getSSteps(c){
 function openSModal(awb){
   const c=shipperCargos.find(x=>(x["AWB"]===awb||x["MAWB"]===awb));if(!c)return;
   document.getElementById("s-m-awb").textContent=c["MAWB"]||c["AWB"];
-  document.getElementById("s-m-route").textContent=`${fmtFlight(c["편명/일자"]||c["편명"]||"")} · ICN → ${c["DEST"]||c["목적지"]||""}`;
+  document.getElementById("s-m-route").textContent=`${fmtFlight(c["편명/일자"]||c["편명"]||"",c["SKD"]||c["출발일시"]||"")} · ICN → ${c["DEST"]||c["목적지"]||""}`;
   const dep=(c["출발일시"]||c["SKD"])?new Date(c["출발일시"]||c["SKD"]):null;
   const cut=cutoff(c);const steps=getSSteps(c);const hasField=!!(c["현장중량"]||c["현장수량"]);
   document.getElementById("s-m-body").innerHTML=`
@@ -1967,7 +2031,7 @@ function renderACard(c){
     </div>
     <!-- 화물 정보 그리드 -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin:7px 0 5px">
-      <div style="font-size:11px;color:var(--g4)"><span style="font-size:9px;color:var(--g3);font-weight:700;display:block;margin-bottom:1px">편명</span>${fmtFlight(flight)||"—"}</div>
+      <div style="font-size:11px;color:var(--g4)"><span style="font-size:9px;color:var(--g3);font-weight:700;display:block;margin-bottom:1px">편명</span>${fmtFlight(flight,c["SKD"]||c["출발일시"]||"")||"—"}</div>
       <div style="font-size:11px;color:var(--g4)"><span style="font-size:9px;color:var(--g3);font-weight:700;display:block;margin-bottom:1px">노선</span>ICN → ${esc(dest)||"—"}</div>
       <div style="font-size:11px;color:var(--g4)"><span style="font-size:9px;color:var(--g3);font-weight:700;display:block;margin-bottom:1px">화주</span>${esc(shipper)||"—"}</div>
       <div style="font-size:11px;color:var(--g4)"><span style="font-size:9px;color:var(--g3);font-weight:700;display:block;margin-bottom:1px">품목</span>${esc(item)||"—"}</div>
