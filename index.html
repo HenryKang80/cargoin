@@ -537,7 +537,26 @@ body{min-height:100vh;max-width:480px;margin:0 auto;background:var(--g0);color:v
   <!-- 목록 -->
   <div id="f-list">
     <div class="search-bar">
-      <input class="search-input" id="f-search" placeholder="MAWB · 목적지 · 기사명 검색..." oninput="filterField()"/>
+      <input class="search-input" id="f-search" placeholder="MAWB · 화주 · 품목 검색..." oninput="filterField()"/>
+    </div>
+    <!-- 현장앱 필터 -->
+    <div style="padding:6px 14px 0;display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch">
+      <select id="f-filter-fwd" onchange="filterField()" style="height:30px;border-radius:20px;border:1.5px solid var(--g1);background:#fff;font-size:11px;font-weight:600;padding:0 10px;color:var(--g4);flex-shrink:0;font-family:var(--sans);outline:none;max-width:130px">
+        <option value="">🏢 전체 포워딩</option>
+      </select>
+      <select id="f-filter-date" onchange="filterField()" style="height:30px;border-radius:20px;border:1.5px solid var(--g1);background:#fff;font-size:11px;font-weight:600;padding:0 10px;color:var(--g4);flex-shrink:0;font-family:var(--sans);outline:none">
+        <option value="">📅 전체 날짜</option>
+        <option value="today">오늘</option>
+        <option value="week">이번 주</option>
+        <option value="month">이번 달</option>
+      </select>
+      <select id="f-filter-status" onchange="filterField()" style="height:30px;border-radius:20px;border:1.5px solid var(--g1);background:#fff;font-size:11px;font-weight:600;padding:0 10px;color:var(--g4);flex-shrink:0;font-family:var(--sans);outline:none">
+        <option value="">🔖 전체 상태</option>
+        <option value="입력대기">대기</option>
+        <option value="현장완료">진행</option>
+        <option value="반입완료">완료</option>
+      </select>
+      <button onclick="resetFieldFilter()" style="height:30px;padding:0 10px;border-radius:20px;border:1.5px solid var(--g1);background:#fff;font-size:11px;font-weight:600;color:var(--red-dark);flex-shrink:0;cursor:pointer;font-family:var(--sans)">초기화</button>
     </div>
     <!-- 동기화 상태바 -->
     <div class="sync-bar" style="background:var(--green-dark)">
@@ -737,7 +756,7 @@ body{min-height:100vh;max-width:480px;margin:0 auto;background:var(--g0);color:v
 <div class="screen" id="scr-shipper">
   <div class="topbar blue">
     <div class="tb-logo">CargoIN</div>
-    <div class="tb-role-pill shipper">화주</div>
+    <div class="tb-role-pill shipper">포워딩</div>
     <span class="tb-user" id="s-company"></span>
     <div class="tb-right"><button class="tb-logout" onclick="doLogout()">로그아웃</button></div>
   </div>
@@ -747,18 +766,31 @@ body{min-height:100vh;max-width:480px;margin:0 auto;background:var(--g0);color:v
     <div class="tab" id="s-tab-prog" onclick="setStab('prog')">진행 <span class="tab-count" id="s-cnt-prog">0</span></div>
     <div class="tab" id="s-tab-done" onclick="setStab('done')">완료 <span class="tab-count" id="s-cnt-done">0</span></div>
   </div>
-  <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 14px;font-size:11px;color:var(--g3)">
+  <!-- 포워딩앱 필터 -->
+  <div style="padding:8px 14px 0;display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch">
+    <select id="s-filter-date" onchange="filterShipper()" style="height:30px;border-radius:20px;border:1.5px solid var(--g1);background:#fff;font-size:11px;font-weight:600;padding:0 10px;color:var(--g4);flex-shrink:0;font-family:var(--sans);outline:none">
+      <option value="">📅 전체 날짜</option>
+      <option value="today">오늘</option>
+      <option value="week">이번 주</option>
+      <option value="month">이번 달</option>
+    </select>
+    <select id="s-filter-dest" onchange="filterShipper()" style="height:30px;border-radius:20px;border:1.5px solid var(--g1);background:#fff;font-size:11px;font-weight:600;padding:0 10px;color:var(--g4);flex-shrink:0;font-family:var(--sans);outline:none">
+      <option value="">✈ 전체 DEST</option>
+    </select>
+    <button onclick="resetShipperFilter()" style="height:30px;padding:0 10px;border-radius:20px;border:1.5px solid var(--g1);background:#fff;font-size:11px;font-weight:600;color:var(--red-dark);flex-shrink:0;cursor:pointer;font-family:var(--sans)">초기화</button>
+  </div>
+  <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 14px;font-size:11px;color:var(--g3)">
     <span id="s-updated">로딩 중...</span>
     <button class="refresh-btn" onclick="loadShipper()">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>새로고침
     </button>
   </div>
   <div class="list-sec" id="s-list" style="padding-top:0"></div>
-  <!-- 화주 상세 모달 -->
+  <!-- 포워딩 상세 모달 -->
   <div class="modal-ov" id="s-modal">
     <div class="modal-hd blue">
       <div class="modal-back" onclick="closeSModal()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>내 화물 목록
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>화물 목록
       </div>
       <div class="modal-awb" id="s-m-awb"></div>
       <div class="modal-route" id="s-m-route"></div>
@@ -966,9 +998,9 @@ const DEMO_ACCOUNTS=[
   {userId:"field",   password:"111", name:"김현장",    role:"field",   shipperId:"",          status:"활성"},
   {userId:"samsung", password:"222", name:"삼성전자",  role:"shipper", shipperId:"SHIPPER001",status:"활성"},
   {userId:"lg",      password:"333", name:"LG전자",   role:"shipper", shipperId:"SHIPPER002",status:"활성"},
-  {userId:"gaon",    password:"444", name:"가온트레이드", role:"shipper",shipperId:"GAON001",  status:"활성"},
-  {userId:"haijiu",  password:"555", name:"하이지우",  role:"shipper", shipperId:"HAIJIU001", status:"활성"},
-  {userId:"marine",  password:"666", name:"마린트럼프", role:"shipper", shipperId:"MARINE001", status:"활성"}
+  {userId:"gaon",    password:"444", name:"가온트레이드", role:"shipper",shipperId:"가온트레이드", status:"활성"},
+  {userId:"haijiu",  password:"555", name:"하이지우",   role:"shipper", shipperId:"하이지우",   status:"활성"},
+  {userId:"marine",  password:"666", name:"마린트럼프",  role:"shipper", shipperId:"마린트럼프",  status:"활성"}
 ];
 
 const DEMO_CARGOS=[
@@ -1134,6 +1166,7 @@ async function loadField(){
   document.getElementById("f-sync").textContent=t;
   const st=document.getElementById("f-sync-time");
   if(st) st.textContent="마지막 동기화: "+t+" (총 "+allCargos.length+"건)";
+  buildFieldFilterOptions();
   renderFieldList(allCargos);
 }
 
@@ -1152,17 +1185,17 @@ async function syncAdmin(){
   if(btn) btn.classList.remove("spinning");
 }
 
-// 편명 포맷 - SKD날짜 우선 사용, "KE901 / 2025-04-19" → "KE901/2025년 4월 4일"
+// 편명 포맷 - "KE901 / 2025-04-19" → "KE901 / 4월19일"  (DATE값 사용)
 function fmtFlight(v, skd){
   if(!v||v==="—") return "—";
   const idx=v.indexOf("/");
   const flightNo=(idx>=0?v.slice(0,idx):v).trim();
   if(!flightNo) return v;
-  // SKD(실제 스케줄 날짜) 우선 사용
+  // SKD 또는 편명 내 날짜 파싱
   const dateStr=skd||(idx>=0?v.slice(idx+1).trim():"");
   if(!dateStr) return flightNo;
-  const m=dateStr.match(/(\d{4})[-.](\d{1,2})[-.](\d{1,2})/);
-  if(m) return `${flightNo} / ${parseInt(m[1])}년 ${parseInt(m[2])}월 ${parseInt(m[3])}일`;
+  const m=dateStr.match(/(\d{4})[-./](\d{1,2})[-./](\d{1,2})/);
+  if(m) return `${flightNo} / ${parseInt(m[2])}월${parseInt(m[3])}일`;
   return flightNo;
 }
 function fmtDate(v, showTime=false){
@@ -1223,14 +1256,46 @@ function renderFieldList(list){
 }
 
 function filterField(){
-  const q=document.getElementById("f-search").value.trim().toLowerCase();
-  if(!q){renderFieldList(allCargos);return;}
-  renderFieldList(allCargos.filter(c=>
-    (c["AWB"]||c["MAWB"]||"").toLowerCase().includes(q)||
-    (c["DEST"]||c["목적지"]||"").toLowerCase().includes(q)||
-    (c["SHIPPER"]||"").toLowerCase().includes(q)||
-    (c["ITEM"]||"").toLowerCase().includes(q)
-  ));
+  const q=(document.getElementById("f-search")?.value||"").trim().toLowerCase();
+  const fwdF=document.getElementById("f-filter-fwd")?.value||"";
+  const dateF=document.getElementById("f-filter-date")?.value||"";
+  const statusF=document.getElementById("f-filter-status")?.value||"";
+  const now=new Date();
+  const todayStr=now.toISOString().slice(0,10);
+  const weekAgo=new Date(now.getTime()-7*86400000);
+  const monthStart=new Date(now.getFullYear(),now.getMonth(),1);
+  let filtered=allCargos.filter(c=>{
+    if(q){
+      const hay=[c["AWB"]||c["MAWB"]||"",c["SHIPPER"]||"",c["ITEM"]||"",c["DEST"]||c["목적지"]||"",c["포워딩명"]||""].join(" ").toLowerCase();
+      if(!hay.includes(q))return false;
+    }
+    if(fwdF&&(c["포워딩명"]||c["화주ID"]||c["SHIPPER"]||"")!==fwdF)return false;
+    if(dateF){
+      const d=new Date(c["DATE"]||c["출발일시"]||c["SKD"]||"");
+      if(!isNaN(d)){
+        if(dateF==="today"&&d.toISOString().slice(0,10)!==todayStr)return false;
+        if(dateF==="week"&&d<weekAgo)return false;
+        if(dateF==="month"&&d<monthStart)return false;
+      }
+    }
+    if(statusF&&(c["상태"]||"입력대기")!==statusF)return false;
+    return true;
+  });
+  renderFieldList(filtered);
+}
+
+window.resetFieldFilter=function(){
+  ["f-search","f-filter-fwd","f-filter-date","f-filter-status"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});
+  renderFieldList(allCargos);
+};
+
+function buildFieldFilterOptions(){
+  const fwdSet=[...new Set(allCargos.map(c=>c["포워딩명"]||c["화주ID"]||c["SHIPPER"]||"").filter(Boolean))].sort();
+  const el=document.getElementById("f-filter-fwd");
+  if(el){
+    const cur=el.value;
+    el.innerHTML='<option value="">🏢 전체 포워딩</option>'+fwdSet.map(f=>`<option value="${esc(f)}"${cur===f?" selected":""}>${esc(f)}</option>`).join("");
+  }
 }
 
 function openFieldDetail(awb){
@@ -1603,6 +1668,16 @@ window.loadPh=function(input,idx){
     const img=document.createElement("img");img.src=e.target.result;slot.appendChild(img);
     slot.classList.add("filled");
     updatePhotoCnt();
+    // 사진 데이터를 로컬 캐시에 저장 (포워딩앱에서 볼 수 있도록)
+    if(currentCargo){
+      const awb=currentCargo["AWB"]||currentCargo["MAWB"];
+      const idx2=allCargos.findIndex(x=>(x["AWB"]===awb||x["MAWB"]===awb));
+      if(idx2>=0){
+        if(!Array.isArray(allCargos[idx2]["사진URL"])) allCargos[idx2]["사진URL"]=[];
+        allCargos[idx2]["사진URL"][idx]=e.target.result;
+        saveCargosLocal(allCargos);
+      }
+    }
   };reader.readAsDataURL(file);
 };
 function updatePhotoCnt(){document.getElementById("fd-photo-cnt").textContent=fieldPhotos.filter(Boolean).length+"/8";}
@@ -1818,10 +1893,11 @@ async function loadShipper(){
           const name=(session.name||"").trim();
           const sid=(session.shipperId||"").trim();
           shipperCargos=all.filter(c=>{
+            const cFwd=(c["포워딩명"]||"").trim();
             const cName=(c["SHIPPER"]||"").trim();
             const cId=(c["화주ID"]||"").trim();
-            return (sid&&(cId===sid||cName===sid))||
-                   (name&&(cName===name||cId===name));
+            return (sid&&(cFwd===sid||cId===sid||cName===sid))||
+                   (name&&(cFwd===name||cName===name||cId===name));
           });
         }else{
           throw new Error();
@@ -1834,15 +1910,16 @@ async function loadShipper(){
     const name=(session.name||"").trim();
     const sid=(session.shipperId||"").trim();
     shipperCargos=all.filter(c=>{
+      const cFwd=(c["포워딩명"]||"").trim();
       const cName=(c["SHIPPER"]||"").trim();
       const cId=(c["화주ID"]||"").trim();
-      return (sid&&(cId===sid||cName===sid))||
-             (name&&(cName===name||cId===name));
+      return (sid&&(cFwd===sid||cId===sid||cName===sid))||
+             (name&&(cFwd===name||cName===name||cId===name));
     });
   }
   hideLoading();
   document.getElementById("s-updated").textContent="업데이트: "+nowStr();
-  renderSCounts();renderSCards(sTab);
+  buildShipperFilterOptions();renderSCounts();renderSCards(sTab);
 }
 
 function setStab(t){
@@ -1850,6 +1927,44 @@ function setStab(t){
     document.getElementById("s-tab-"+id).classList.toggle("active",id===t);
   });renderSCards(t);
 }
+
+function buildShipperFilterOptions(){
+  const dests=[...new Set(shipperCargos.map(c=>c["DEST"]||c["목적지"]||"").filter(Boolean))].sort();
+  const el=document.getElementById("s-filter-dest");
+  if(el){
+    const cur=el.value;
+    el.innerHTML='<option value="">✈ 전체 DEST</option>'+dests.map(d=>`<option value="${esc(d)}"${cur===d?" selected":""}>${esc(d)}</option>`).join("");
+  }
+}
+
+window.filterShipper=function(){
+  const dateF=document.getElementById("s-filter-date")?.value||"";
+  const destF=document.getElementById("s-filter-dest")?.value||"";
+  const now=new Date();
+  const todayStr=now.toISOString().slice(0,10);
+  const weekAgo=new Date(now.getTime()-7*86400000);
+  const monthStart=new Date(now.getFullYear(),now.getMonth(),1);
+  let filtered=shipperCargos.filter(c=>{
+    if(dateF){
+      const d=new Date(c["DATE"]||c["출발일시"]||c["SKD"]||"");
+      if(!isNaN(d)){
+        if(dateF==="today"&&d.toISOString().slice(0,10)!==todayStr)return false;
+        if(dateF==="week"&&d<weekAgo)return false;
+        if(dateF==="month"&&d<monthStart)return false;
+      }
+    }
+    if(destF&&(c["DEST"]||c["목적지"]||"")!==destF)return false;
+    return true;
+  });
+  const el=document.getElementById("s-list");
+  if(!filtered.length){el.innerHTML='<div class="empty-state">해당 화물이 없습니다.</div>';return;}
+  el.innerHTML=filtered.map(c=>renderSCard(c)).join("");
+};
+
+window.resetShipperFilter=function(){
+  ["s-filter-date","s-filter-dest"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});
+  renderSCards(sTab);
+};
 
 function renderSCounts(){
   document.getElementById("s-cnt-all").textContent=shipperCargos.length;
@@ -1983,7 +2098,19 @@ function openSModal(awb){
           </div>
           ${c["CBM"]?`<div style="font-size:11px;color:#2D6A4F;margin-top:5px">CBM: ${esc(c["CBM"])}</div>`:""}
           ${c["현장메모"]?`<div style="font-size:12px;color:var(--green-dark);margin-top:6px;padding:6px 8px;background:rgba(255,255,255,.6);border-radius:6px">메모: ${esc(c["현장메모"])}</div>`:""}
-          ${c["사진수"]?`<div style="font-size:11px;color:var(--g3);margin-top:5px">📷 현장 사진 ${esc(c["사진수"])}</div>`:""}
+          ${c["사진수"]?`<div style="font-size:11px;color:var(--g3);margin-top:5px;display:flex;align-items:center;gap:5px">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          현장 사진 ${esc(c["사진수"])} 촬영 완료
+        </div>`:""}
+        ${c["사진URL"]&&c["사진URL"]!=="완료"?`<div style="margin-top:8px">
+          <div style="font-size:10px;font-weight:700;color:var(--g3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">현장 사진</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px">${
+            (Array.isArray(c["사진URL"])?c["사진URL"]:[c["사진URL"]]).filter(Boolean).map(url=>
+              url.startsWith("data:")||url.startsWith("http")?
+              `<div style="aspect-ratio:1;border-radius:7px;overflow:hidden;background:var(--g0)"><img src="${url}" style="width:100%;height:100%;object-fit:cover"/></div>`:""
+            ).join("")
+          }</div>
+        </div>`:""}`
         </div>`:""}
       </div>
     </div>
@@ -2312,7 +2439,7 @@ window.savePw=function(){
 };
 
 /* ── init ── */
-if(!localStorage.getItem(ACCS_KEY)||localStorage.getItem("cargoin_acc_ver")!=="v3"){saveAccounts(DEMO_ACCOUNTS);localStorage.setItem("cargoin_acc_ver","v3");}
+if(!localStorage.getItem(ACCS_KEY)||localStorage.getItem("cargoin_acc_ver")!=="v4"){saveAccounts(DEMO_ACCOUNTS);localStorage.setItem("cargoin_acc_ver","v4");}
 if(!localStorage.getItem("cargoin_v2"))saveCargosLocal(DEMO_CARGOS);
 if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('./field/sw.js').catch(()=>{});});}
 </script>
