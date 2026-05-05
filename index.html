@@ -514,7 +514,7 @@ body{min-height:100vh;max-width:480px;margin:0 auto;background:var(--g0);color:v
     <div class="login-forgot">비밀번호 분실 시 관리자에게 문의하세요</div>
   </div>
   <div class="demo-hint">
-    데모 — admin / 000 &nbsp;·&nbsp; field / 111 &nbsp;·&nbsp; samsung / 222
+    데모 — admin/000 · field/111 · samsung/222<br>gaon/444 · haijiu/555 · marine/666
   </div>
 </div>
 
@@ -962,10 +962,13 @@ let sTab="all", pwTargetEmail=null;
    DEMO DATA
 ═══════════════════════════════════════════════════ */
 const DEMO_ACCOUNTS=[
-  {userId:"admin",  password:"000", name:"관리자",  role:"admin",    shipperId:"",          status:"활성"},
-  {userId:"field",  password:"111", name:"김현장",  role:"field",    shipperId:"",          status:"활성"},
-  {userId:"samsung",password:"222", name:"삼성전자", role:"shipper",  shipperId:"SHIPPER001",status:"활성"},
-  {userId:"lg",     password:"333", name:"LG전자",  role:"shipper",  shipperId:"SHIPPER002",status:"활성"}
+  {userId:"admin",   password:"000", name:"관리자",    role:"admin",   shipperId:"",          status:"활성"},
+  {userId:"field",   password:"111", name:"김현장",    role:"field",   shipperId:"",          status:"활성"},
+  {userId:"samsung", password:"222", name:"삼성전자",  role:"shipper", shipperId:"SHIPPER001",status:"활성"},
+  {userId:"lg",      password:"333", name:"LG전자",   role:"shipper", shipperId:"SHIPPER002",status:"활성"},
+  {userId:"gaon",    password:"444", name:"가온트레이드", role:"shipper",shipperId:"GAON001",  status:"활성"},
+  {userId:"haijiu",  password:"555", name:"하이지우",  role:"shipper", shipperId:"HAIJIU001", status:"활성"},
+  {userId:"marine",  password:"666", name:"마린트럼프", role:"shipper", shipperId:"MARINE001", status:"활성"}
 ];
 
 const DEMO_CARGOS=[
@@ -1510,10 +1513,65 @@ window.delPieceInput=function(i){
   renderPieceInputs();
 };
 
-window.toggleCond=function(el){
-  const cb=el.querySelector("input");
+// 반입완료 토글
+window.toggleInbound=async function(){
+  const cb=document.getElementById("fd-inbound-check");
+  const row=document.getElementById("fd-inbound-row");
+  const lbl=document.getElementById("fd-inbound-lbl");
+  if(!cb)return;
   cb.checked=!cb.checked;
-  el.classList.toggle("active",cb.checked);
+  row&&row.classList.toggle("checked",cb.checked);
+  if(lbl)lbl.textContent=cb.checked?"완료 ✓":"탭하여 확인";
+  stepStatus.inbound=cb.checked;
+  const cond=getCondStatus();
+  await pushStep({상태:cb.checked?"현장완료":"입력대기",반입체크:cb.checked?"완료":"",화물상태:cond});
+  updateStepCard(1,cb.checked&&cond?"done":cb.checked||cond?"partial":"");
+  toast(cb.checked?"반입 완료 — 화주에게 전송됨 ✓":"반입 체크 해제");
+};
+
+// 화물상태 토글 (중복허용, 이상없음↔불량 상호배타)
+window.toggleCond=async function(type){
+  const ok=document.getElementById("fd-cond-ok");
+  const badIds=["dent","crush","wet"];
+  if(type==="ok"){
+    if(!ok)return;
+    ok.checked=!ok.checked;
+    document.getElementById("fd-cond-ok-row")?.classList.toggle("checked",ok.checked);
+    if(ok.checked){
+      badIds.forEach(id=>{
+        const el=document.getElementById("fd-cond-"+id);
+        const row=document.getElementById("fd-cond-"+id+"-row");
+        if(el)el.checked=false;
+        if(row){row.classList.remove("checked-bad");row.style.opacity="0.4";row.style.pointerEvents="none";}
+      });
+    }else{
+      badIds.forEach(id=>{
+        const row=document.getElementById("fd-cond-"+id+"-row");
+        if(row){row.style.opacity="";row.style.pointerEvents="";}
+      });
+    }
+  }else{
+    const cb=document.getElementById("fd-cond-"+type);
+    const row=document.getElementById("fd-cond-"+type+"-row");
+    if(!cb||!row)return;
+    cb.checked=!cb.checked;
+    row.classList.toggle("checked-bad",cb.checked);
+    if(cb.checked&&ok){
+      ok.checked=false;
+      document.getElementById("fd-cond-ok-row")?.classList.remove("checked");
+      badIds.forEach(id=>{
+        const r=document.getElementById("fd-cond-"+id+"-row");
+        if(r){r.style.opacity="";r.style.pointerEvents="";}
+      });
+    }
+  }
+  const cond=getCondStatus();
+  if(cond){
+    await pushStep({화물상태:cond});
+    const inbound=document.getElementById("fd-inbound-check")?.checked;
+    updateStepCard(1,inbound&&cond?"done":inbound||cond?"partial":"");
+    toast("화물상태 ["+cond+"] — 화주에게 전송됨 ✓");
+  }
 };
 
 
@@ -2227,7 +2285,7 @@ window.savePw=function(){
 };
 
 /* ── init ── */
-if(!localStorage.getItem(ACCS_KEY)||localStorage.getItem("cargoin_acc_ver")!=="v2"){saveAccounts(DEMO_ACCOUNTS);localStorage.setItem("cargoin_acc_ver","v2");}
+if(!localStorage.getItem(ACCS_KEY)||localStorage.getItem("cargoin_acc_ver")!=="v3"){saveAccounts(DEMO_ACCOUNTS);localStorage.setItem("cargoin_acc_ver","v3");}
 if(!localStorage.getItem("cargoin_v2"))saveCargosLocal(DEMO_CARGOS);
 if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('./field/sw.js').catch(()=>{});});}
 </script>
