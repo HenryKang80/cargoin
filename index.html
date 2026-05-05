@@ -509,9 +509,7 @@ body{min-height:100vh;max-width:480px;margin:0 auto;background:var(--g0);color:v
     <div class="login-forgot">비밀번호 분실 시 관리자에게 문의하세요</div>
   </div>
   <div class="demo-hint">
-    데모 아이디 — admin / admin123<br>
-    현장: field01 / field123<br>
-    화주: samsung / 1234
+    데모 — admin / 000 &nbsp;·&nbsp; field / 111 &nbsp;·&nbsp; samsung / 222
   </div>
 </div>
 
@@ -961,10 +959,10 @@ let sTab="all", pwTargetEmail=null;
    DEMO DATA
 ═══════════════════════════════════════════════════ */
 const DEMO_ACCOUNTS=[
-  {email:"admin@cargoin.com",password:"admin123",name:"관리자",role:"admin",shipperId:"",status:"활성"},
-  {email:"field@cargoin.com",password:"field123",name:"김현장",role:"field",shipperId:"",status:"활성"},
-  {email:"samsung@test.com", password:"1234",    name:"삼성전자",role:"shipper",shipperId:"SHIPPER001",status:"활성"},
-  {email:"lg@test.com",      password:"5678",    name:"LG전자",  role:"shipper",shipperId:"SHIPPER002",status:"활성"}
+  {userId:"admin",  password:"000", name:"관리자",  role:"admin",    shipperId:"",          status:"활성"},
+  {userId:"field",  password:"111", name:"김현장",  role:"field",    shipperId:"",          status:"활성"},
+  {userId:"samsung",password:"222", name:"삼성전자", role:"shipper",  shipperId:"SHIPPER001",status:"활성"},
+  {userId:"lg",     password:"333", name:"LG전자",  role:"shipper",  shipperId:"SHIPPER002",status:"활성"}
 ];
 
 const DEMO_CARGOS=[
@@ -2162,7 +2160,7 @@ window.savePw=function(){
 };
 
 /* ── init ── */
-if(!localStorage.getItem(ACCS_KEY))saveAccounts(DEMO_ACCOUNTS);
+if(!localStorage.getItem(ACCS_KEY)||localStorage.getItem("cargoin_acc_ver")!=="v2"){saveAccounts(DEMO_ACCOUNTS);localStorage.setItem("cargoin_acc_ver","v2");}
 if(!localStorage.getItem("cargoin_v2"))saveCargosLocal(DEMO_CARGOS);
 if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('./field/sw.js').catch(()=>{});});}
 </script>
