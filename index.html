@@ -1112,53 +1112,68 @@ async function apiPost(body){
    LOGIN / LOGOUT
 ═══════════════════════════════════════════════════ */
 window.onload=function(){
+  // 로딩 오버레이 확실히 숨김
+  const loadEl=document.getElementById("loading");
+  if(loadEl) loadEl.classList.add("hide");
+
   const saved=localStorage.getItem(SESS_KEY);
   if(saved){
     try{
       session=JSON.parse(saved);
-      showLoading("로그인 중...");
-      enterApp();
-    }catch{
-      localStorage.removeItem(SESS_KEY);
-      showScr("login");
-    }
-  }else{
-    showScr("login");
+      if(session&&session.role){
+        enterApp();
+        return;
+      }
+    }catch(e){}
+    // 세션 오류시 초기화
+    localStorage.removeItem(SESS_KEY);
+    session=null;
   }
+  // 로그인 화면 표시
+  showScr("login");
 };
 
 window.doLogin=async function(){
   const userId=document.getElementById("l-email").value.trim();
   const pw=document.getElementById("l-pw").value.trim();
   if(!userId||!pw){showErr("아이디와 비밀번호를 입력해 주세요.");return;}
-  const btn=document.getElementById("l-btn");btn.disabled=true;
-  showLoading("로그인 중...");
+  const btn=document.getElementById("l-btn");
+  btn.disabled=true;
+  btn.textContent="확인 중...";
 
-  // 1. 로컬 계정 확인 (userId 또는 email 모두 지원)
-  const accs=getAccounts();
-  const local=accs.find(a=>{
-    const id=(a.userId||a.email||"").toLowerCase();
-    return id===userId.toLowerCase()&&a.password===pw&&a.status!=="비활성";
-  });
-  if(local){
-    session={userId,role:local.role,name:local.name,shipperId:local.shipperId||""};
-    localStorage.setItem(SESS_KEY,JSON.stringify(session));
-    hideLoading();btn.disabled=false;
-    enterApp();return;
+  try{
+    // 1. 로컬 계정 확인
+    const accs=getAccounts();
+    const local=accs.find(a=>{
+      const id=(a.userId||a.email||"").toLowerCase();
+      return id===userId.toLowerCase()&&a.password===pw&&a.status!=="비활성";
+    });
+    if(local){
+      session={userId,role:local.role,name:local.name,shipperId:local.shipperId||""};
+      localStorage.setItem(SESS_KEY,JSON.stringify(session));
+      btn.disabled=false;btn.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg> 로그인';
+      enterApp();return;
+    }
+    // 2. Sheets 계정 확인
+    if(SHEET_URL){
+      try{
+        const res=await apiPost({action:"shipperLogin",email:userId,password:pw});
+        if(res.ok){
+          session={userId,role:"shipper",name:res.companyName||userId,shipperId:res.shipperId||""};
+          localStorage.setItem(SESS_KEY,JSON.stringify(session));
+          btn.disabled=false;btn.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg> 로그인';
+          enterApp();return;
+        }
+      }catch(e){console.log("Sheets login error:",e);}
+    }
+    showErr("아이디 또는 비밀번호가 올바르지 않습니다.");
+  }catch(e){
+    showErr("오류가 발생했습니다. 다시 시도해 주세요.");
+    console.error(e);
+  }finally{
+    btn.disabled=false;
+    btn.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg> 로그인';
   }
-  // 2. Sheets 계정 확인
-  if(SHEET_URL){
-    try{
-      const res=await apiPost({action:"shipperLogin",email:userId,password:pw});
-      if(res.ok){
-        session={userId,role:"shipper",name:res.companyName||userId,shipperId:res.shipperId||""};
-        localStorage.setItem(SESS_KEY,JSON.stringify(session));
-        hideLoading();btn.disabled=false;enterApp();return;
-      }
-    }catch{}
-  }
-  hideLoading();btn.disabled=false;
-  showErr("이메일 또는 비밀번호가 올바르지 않습니다.");
 };
 
 function showErr(m){const e=document.getElementById("l-err");e.textContent=m;e.classList.add("on");setTimeout(()=>e.classList.remove("on"),4000);}
@@ -1170,26 +1185,24 @@ window.doLogout=function(){
 };
 
 function enterApp(){
-  if(!session){hideLoading();showScr("login");return;}
-  hideLoading();
+  if(!session||!session.role){showScr("login");return;}
   if(session.role==="admin"){
     showScr("admin");
-    loadAdmin(); // 앱 열 때 자동 동기화
+    loadAdmin();
   }else if(session.role==="field"){
     showScr("field");
-    loadField(); // 앱 열 때 자동 동기화
+    loadField();
   }else{
     showScr("shipper");
-    document.getElementById("s-company").textContent=session.name||"";
-    loadShipper(); // 앱 열 때 자동 동기화
+    const sc=document.getElementById("s-company");
+    if(sc) sc.textContent=session.name||"";
+    loadShipper();
   }
-  // 현장/화주앱: 5분마다 자동 재동기화
+  // 자동 재동기화
+  clearInterval(window._autoSync);
   if(session.role==="field"){
-    clearInterval(window._autoSync);
     window._autoSync=setInterval(()=>{if(session&&session.role==="field")syncField();},300000);
-  }
-  if(session.role==="shipper"){
-    clearInterval(window._autoSync);
+  }else if(session.role==="shipper"){
     window._autoSync=setInterval(()=>{if(session&&session.role==="shipper")loadShipper();},300000);
   }
 }
