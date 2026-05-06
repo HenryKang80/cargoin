@@ -550,65 +550,78 @@ body{min-height:100vh;max-width:480px;margin:0 auto;background:var(--g0);color:v
     </div>
   </div>
 
+  <!-- 탭 바 (관리자/포워딩과 동일 구조) -->
+  <div class="admin-tabs">
+    <div class="admin-tab active" id="f-tab-dash" onclick="setFieldTab('dash',this)">대시보드</div>
+    <div class="admin-tab" id="f-tab-list" onclick="setFieldTab('list',this)">화물 목록</div>
+  </div>
+
   <!-- 목록 -->
   <div id="f-list">
-    <div class="filter-wrap">
-      <!-- 검색 -->
-      <div class="search-row">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--g3)" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input id="f-search" placeholder="MAWB · 화주 · 품목 검색..." oninput="filterField()"/>
-      </div>
-      <!-- 필터 -->
-      <div class="filter-row">
-        <select class="filter-sel" id="f-filter-fwd" onchange="filterField()">
-          <option value="">🏢 전체 포워딩</option>
-        </select>
-        <select class="filter-sel" id="f-filter-status" onchange="filterField()">
-          <option value="">🔖 전체 상태</option>
-          <option value="입력대기">대기</option>
-          <option value="현장완료">진행</option>
-          <option value="반입완료">완료</option>
-        </select>
-        <select class="filter-sel" id="f-filter-dest" onchange="filterField()">
-          <option value="">✈ 전체 DEST</option>
-        </select>
-        <button class="filter-reset" onclick="resetFieldFilter()">초기화</button>
-      </div>
-      <!-- 날짜 범위 (온보드 기준) -->
-      <div class="date-range-row">
-        <span style="font-size:10px;font-weight:700;color:var(--g3);flex-shrink:0">온보드</span>
-        <input type="date" id="f-date-from" onchange="filterField()" title="시작일"/>
-        <span class="date-range-sep">~</span>
-        <input type="date" id="f-date-to" onchange="filterField()" title="종료일"/>
-      </div>
-      <!-- 건수 -->
-      <div class="filter-cnt-bar">
-        <span class="filter-cnt" id="f-lbl">전체 0건</span>
+
+    <!-- 대시보드 패널 -->
+    <div id="f-panel-dash" style="padding:14px">
+      <!-- 동기화 상태 -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--g3)">
+          <div class="sdot"></div>
+          <span id="f-sync-time">동기화 중...</span>
+        </div>
         <button class="refresh-btn" onclick="syncField()">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>동기화
         </button>
       </div>
-    </div>
-    <!-- 동기화 상태바 -->
-    <div class="sync-bar" style="background:var(--green-dark)">
-      <div class="sync-bar-time">
-        <div class="sdot"></div>
-        <span id="f-sync-time">구글 시트에서 불러오는 중...</span>
+      <!-- 전체 통계 -->
+      <div class="stat-row" style="margin-bottom:12px">
+        <div class="stat-card"><div class="stat-n" id="f-stat-tot">0</div><div class="stat-lbl">전체 화물</div></div>
+        <div class="stat-card"><div class="stat-n amber" id="f-stat-wait">0</div><div class="stat-lbl">⏳ 대기</div></div>
+        <div class="stat-card"><div class="stat-n blue" id="f-stat-prog">0</div><div class="stat-lbl">🔵 진행</div></div>
+        <div class="stat-card"><div class="stat-n green" id="f-stat-done">0</div><div class="stat-lbl">✅ 완료</div></div>
       </div>
-      <span style="font-size:10px;opacity:.7">구글 시트 입력 후 동기화 버튼 클릭</span>
+      <!-- 포워딩별 카드 -->
+      <div style="font-size:10px;font-weight:700;color:var(--g3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:9px">
+        포워딩별 현황
+      </div>
+      <div id="f-fwd-cards"></div>
     </div>
-    <!-- 포워딩 대시보드 뷰 -->
-    <div id="f-fwd-dash" style="display:none">
-      <div class="fwd-dash">
-        <div class="fwd-dash-title">
-          <span>포워딩별 현황</span>
-          <span id="f-fwd-total-cnt" style="font-size:11px;color:var(--g3);font-weight:600"></span>
+
+    <!-- 화물목록 패널 -->
+    <div id="f-panel-list" style="display:none">
+      <div class="filter-wrap">
+        <!-- 검색 -->
+        <div class="search-row">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--g3)" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input id="f-search" placeholder="MAWB · 화주 · 품목 검색..." oninput="filterField()"/>
         </div>
-        <div id="f-fwd-cards"></div>
+        <!-- 필터 -->
+        <div class="filter-row">
+          <select class="filter-sel" id="f-filter-fwd" onchange="filterField()">
+            <option value="">🏢 전체 포워딩</option>
+          </select>
+          <select class="filter-sel" id="f-filter-status" onchange="filterField()">
+            <option value="">🔖 전체 상태</option>
+            <option value="입력대기">대기</option>
+            <option value="현장완료">진행</option>
+            <option value="반입완료">완료</option>
+          </select>
+          <select class="filter-sel" id="f-filter-dest" onchange="filterField()">
+            <option value="">✈ 전체 DEST</option>
+          </select>
+          <button class="filter-reset" onclick="resetFieldFilter()">초기화</button>
+        </div>
+        <!-- 날짜 범위 -->
+        <div class="date-range-row">
+          <span style="font-size:10px;font-weight:700;color:var(--g3);flex-shrink:0">온보드</span>
+          <input type="date" id="f-date-from" onchange="filterField()" title="시작일"/>
+          <span class="date-range-sep">~</span>
+          <input type="date" id="f-date-to" onchange="filterField()" title="종료일"/>
+        </div>
+        <!-- 건수 -->
+        <div class="filter-cnt-bar">
+          <span class="filter-cnt" id="f-lbl">전체 0건</span>
+        </div>
       </div>
-    </div>
-    <!-- 화물 목록 뷰 -->
-    <div id="f-cargo-view">
+      <!-- 포워딩 선택 뒤로가기 바 -->
       <div id="f-fwd-back-bar" style="display:none" class="fwd-back-bar" onclick="backToFwdDash()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--g5)" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
         <span class="fwd-back-name" id="f-fwd-back-name">전체 포워딩</span>
@@ -618,6 +631,7 @@ body{min-height:100vh;max-width:480px;margin:0 auto;background:var(--g0);color:v
         <div id="f-list-body"></div>
       </div>
     </div>
+
   </div>
 
   <!-- 상세 -->
@@ -1299,21 +1313,34 @@ function fmtMAWB(v){
 let fieldViewMode='dash';
 let selectedFwd=null;
 
+// 현장앱 탭 전환
+window.setFieldTab=function(id,el){
+  document.querySelectorAll("#scr-field .admin-tab").forEach(t=>t.classList.remove("active"));
+  el.classList.add("active");
+  if(id==="dash")showFieldDash();
+  else showFieldList(selectedFwd);
+};
+
 function showFieldDash(){
-  fieldViewMode='dash';selectedFwd=null;
-  const dash=document.getElementById("f-fwd-dash");
-  const cargo=document.getElementById("f-cargo-view");
-  if(dash)dash.style.display="block";
-  if(cargo)cargo.style.display="none";
+  fieldViewMode='dash';
+  const dp=document.getElementById("f-panel-dash");
+  const lp=document.getElementById("f-panel-list");
+  if(dp)dp.style.display="block";
+  if(lp)lp.style.display="none";
+  document.getElementById("f-tab-dash")?.classList.add("active");
+  document.getElementById("f-tab-list")?.classList.remove("active");
+  updateFieldStats();
   renderFwdDash();
 }
 
 function showFieldList(fwd){
   fieldViewMode='list';selectedFwd=fwd;
-  const dash=document.getElementById("f-fwd-dash");
-  const cargo=document.getElementById("f-cargo-view");
-  if(dash)dash.style.display="none";
-  if(cargo)cargo.style.display="block";
+  const dp=document.getElementById("f-panel-dash");
+  const lp=document.getElementById("f-panel-list");
+  if(dp)dp.style.display="none";
+  if(lp)lp.style.display="block";
+  document.getElementById("f-tab-dash")?.classList.remove("active");
+  document.getElementById("f-tab-list")?.classList.add("active");
   const bar=document.getElementById("f-fwd-back-bar");
   const nameEl=document.getElementById("f-fwd-back-name");
   const cntEl=document.getElementById("f-fwd-back-cnt");
@@ -1323,14 +1350,27 @@ function showFieldList(fwd){
     const filtered=allCargos.filter(c=>(c["포워딩명"]||c["SHIPPER"]||"")===fwd);
     if(cntEl)cntEl.textContent=filtered.length+"건";
     renderFieldList(filtered);
+    const flbl=document.getElementById("f-lbl");if(flbl)flbl.textContent=filtered.length+"건";
   }else{
     if(bar)bar.style.display="none";
     renderFieldList(allCargos);
   }
 }
 
-window.backToFwdDash=function(){showFieldDash();};
+window.backToFwdDash=function(){selectedFwd=null;showFieldDash();};
 window.selectFwd=function(fwd){showFieldList(fwd);};
+
+function updateFieldStats(){
+  const tot=allCargos.length;
+  const wait=allCargos.filter(c=>!c["상태"]||c["상태"]==="입력대기").length;
+  const prog=allCargos.filter(c=>c["상태"]==="현장완료").length;
+  const done=allCargos.filter(c=>c["상태"]==="반입완료").length;
+  const ge=id=>document.getElementById(id);
+  if(ge("f-stat-tot"))ge("f-stat-tot").textContent=tot;
+  if(ge("f-stat-wait"))ge("f-stat-wait").textContent=wait;
+  if(ge("f-stat-prog"))ge("f-stat-prog").textContent=prog;
+  if(ge("f-stat-done"))ge("f-stat-done").textContent=done;
+}
 
 function renderFwdDash(){
   const groups={};
@@ -1443,9 +1483,7 @@ function filterField(){
   });
   document.getElementById("f-lbl").textContent=`${filtered.length}건 (전체 ${allCargos.length}건)`;
   // 필터 사용 시 목록 뷰로 전환
-  document.getElementById("f-fwd-dash").style.display="none";
-  document.getElementById("f-cargo-view").style.display="block";
-  document.getElementById("f-fwd-back-bar").style.display="none";
+  showFieldList(null);
   renderFieldList(filtered);
 }
 
