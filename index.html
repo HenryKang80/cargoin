@@ -39,18 +39,19 @@
 /* ── 기본 ── */
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html{background:var(--g0);font-family:var(--sans)}
+html{background:#0B6E4F}
 body{min-height:100vh;max-width:480px;margin:0 auto;background:var(--g0);color:var(--g5);font-size:14px;padding-bottom:env(safe-area-inset-bottom,0)}
 
 /* ═══════════════════════════════════════
    SCREEN SYSTEM
 ═══════════════════════════════════════ */
-.screen{display:none;flex-direction:column;min-height:100vh}
-.screen.on{display:flex}
+.screen{display:none;flex-direction:column}
+.screen.on{display:flex;min-height:100vh}
 
 /* ═══════════════════════════════════════
    LOGIN
 ═══════════════════════════════════════ */
-#scr-login{background:linear-gradient(155deg,var(--green-dark) 0%,var(--blue-dark) 100%);align-items:center;justify-content:center;padding:24px 20px 40px}
+#scr-login{background:linear-gradient(155deg,var(--green-dark) 0%,var(--blue-dark) 100%);align-items:center;justify-content:flex-start;padding:40px 20px 40px;overflow-y:auto;min-height:100vh}
 .login-brand{text-align:center;margin-bottom:32px}
 .login-logo{font-family:var(--mono);font-size:34px;font-weight:500;color:#fff;letter-spacing:-1px}
 .login-tagline{font-size:12px;color:rgba(255,255,255,.55);margin-top:5px;letter-spacing:.5px}
@@ -1014,7 +1015,8 @@ body{min-height:100vh;max-width:480px;margin:0 auto;background:var(--g0);color:v
 
 <div class="toast" id="toast"></div>
 
-<script>
+
+<script defer>
 /* ═══════════════════════════════════════════════════
    STATE
 ═══════════════════════════════════════════════════ */
@@ -1070,7 +1072,7 @@ function cutoff(cargo){
   const dep=new Date(etd);const isDG=(cargo["CONDI"]||cargo["화물구분"]||"").includes("DG");
   return new Date(dep.getTime()-(isDG?6:4)*3600000);
 }
-function isDG(c){return (c["CONDI"]||c["화물구분"]||"").includes("DG")||"".includes("위험물");}
+function isDG(c){const v=(c["CONDI"]||c["화물구분"]||"");return v.includes("DG")||v.includes("위험물");}
 
 /* ═══════════════════════════════════════════════════
    SHEET URL
@@ -1446,7 +1448,7 @@ function openFieldDetail(awb){
   const done=c["상태"]==="현장완료"||c["상태"]==="반입완료";
   document.getElementById("fd-done").className="done-screen"+(done?" on":"");
   document.getElementById("fd-fi-body").style.display=done?"none":"flex";
-  document.getElementById("fd-submit-wrap").style.display=done?"none":"block";
+  const _fdSubmitWrap=document.getElementById("fd-submit-wrap"); if(_fdSubmitWrap) _fdSubmitWrap.style.display=done?"none":"block";
   if(done){
     document.getElementById("fd-done-sub").textContent=`MAWB: ${fmtMAWB(c["AWB"]||c["MAWB"])}\n${c["현장수량"]||pcsN}pcs · ${c["현장중량"]||c["총중량"]}kg\n구글 시트 업데이트 완료\n화주가 즉시 확인 가능합니다.`;
   }
@@ -1898,7 +1900,7 @@ window.autoSaveMemo=async function(){
 // 기존 submitField → 더 이상 사용 안 하지만 오류방지용 남김
 async function submitField(){
   toast("각 단계별 체크로 실시간 전송됩니다.");
-  const btn=document.getElementById("fd-submit-btn");btn.disabled=true;btn.textContent="저장 중...";
+  const btn=document.getElementById("fd-submit-btn"); if(!btn){toast("각 단계별 체크로 실시간 전송됩니다."); return;} btn.disabled=true;btn.textContent="저장 중...";
   const w=parseFloat(document.getElementById("fd-w").value)||0;
   const d=parseFloat(document.getElementById("fd-d").value)||0;
   const h=parseFloat(document.getElementById("fd-h").value)||0;
@@ -1921,7 +1923,7 @@ async function submitField(){
     if(idx>=0){Object.assign(allCargos[idx],{상태:"현장완료",현장수량:totalPcs,현장중량:gw.toFixed(1),볼륨중량:totVw?totVw.toFixed(1):"",운임중량:totCw?totCw.toFixed(1):"",현장메모:payload.note});currentCargo=allCargos[idx];}
     saveCargosLocal(allCargos);
     document.getElementById("fd-fi-body").style.display="none";
-    document.getElementById("fd-submit-wrap").style.display="none";
+    const _fdSubmitWrap2=document.getElementById("fd-submit-wrap"); if(_fdSubmitWrap2) _fdSubmitWrap2.style.display="none";
     document.getElementById("fd-done").className="done-screen on";
     document.getElementById("fd-done-sub").textContent=`MAWB: ${fmtMAWB(currentCargo["AWB"]||currentCargo["MAWB"])}\n${totalPcs}pcs · ${gw.toFixed(1)}kg · CBM ${totCbm.toFixed(3)}\n저장 완료! 화주가 즉시 확인 가능합니다.`;
     document.getElementById("f-sync").textContent="방금 저장됨";
@@ -1933,7 +1935,7 @@ async function submitField(){
 window.enableEdit=function(){
   document.getElementById("fd-done").className="done-screen";
   document.getElementById("fd-fi-body").style.display="flex";
-  document.getElementById("fd-submit-wrap").style.display="block";
+  const _fdSubmitWrap3=document.getElementById("fd-submit-wrap"); if(_fdSubmitWrap3) _fdSubmitWrap3.style.display="block";
   toast("수정 모드 전환됨");
   document.getElementById("fd-fi-body").scrollIntoView({behavior:"smooth"});
 };
@@ -2019,7 +2021,7 @@ window.filterShipper=function(){
   const updEl=document.getElementById("s-updated");
   if(updEl) updEl.textContent=`${filtered.length}건 (전체 ${shipperCargos.length}건) · ${nowStr()} 기준`;
   if(!filtered.length){el.innerHTML='<div class="empty-state">해당 화물이 없습니다.</div>';return;}
-  el.innerHTML=filtered.map(c=>renderSCard(c)).join("");
+  el.innerHTML=filtered.map(c=>renderShipperCard(c)).join("");
 };
 
 window.resetShipperFilter=function(){
@@ -2034,6 +2036,35 @@ function renderSCounts(){
   document.getElementById("s-cnt-done").textContent=shipperCargos.filter(c=>c["상태"]==="반입완료").length;
   const updEl=document.getElementById("s-updated");
   if(updEl) updEl.textContent=`총 ${shipperCargos.length}건 · ${nowStr()} 기준`;
+}
+
+
+function renderShipperCard(c){
+  const status=c["상태"]||"입력대기";
+  const dep=(c["출발일시"]||c["SKD"])?new Date(c["출발일시"]||c["SKD"]):null;
+  const hasField=!!(c["현장중량"]||c["현장수량"]);
+  const steps=getSSteps(c);
+  return `<div class="shipper-card" onclick="openSModal('${esc(c["AWB"]||c["MAWB"]||"")}')">
+    <div class="sc-head">
+      <div class="sc-awb-row">
+        <div class="sc-awb">${esc(c["MAWB"]||c["AWB"]||"—")}</div>
+        ${sBadge(status)}
+      </div>
+      <div class="sc-route">${fmtFlight(c["편명/일자"]||c["편명"]||"",c["SKD"]||c["출발일시"]||"")} · ICN→${esc(c["DEST"]||c["목적지"]||"")}${dep?" · "+fmtDate(dep,true):""}</div>
+    </div>
+    <div class="timeline">${steps.map((s,i)=>`
+      <div class="tl-step">
+        <div class="tl-dot ${s.state}">${s.state==="done"?"✓":i+1}</div>
+        <div class="tl-label${s.state==="active"?" active":""}">${s.label}</div>
+      </div>${i<steps.length-1?`<div class="tl-line${s.state==="done"?" done":""}"></div>`:""}`).join("")}
+    </div>
+    <div class="sc-metrics">
+      <div class="cm-item"><div class="cm-label">수량</div><div class="cm-value${hasField?" updated":""}">${(hasField?c["현장수량"]:c["총수량"])||"—"}<span style="font-size:9px">pcs</span></div></div>
+      <div class="cm-item"><div class="cm-label">중량</div><div class="cm-value${hasField?" updated":""}">${(hasField?c["현장중량"]:c["총중량"])||"—"}<span style="font-size:9px">kg</span></div></div>
+      <div class="cm-item"><div class="cm-label">볼륨중량</div><div class="cm-value">${c["볼륨중량"]||"—"}<span style="font-size:9px">kg</span></div></div>
+      <div class="cm-item"><div class="cm-label">운임중량</div><div class="cm-value">${c["운임중량"]||"—"}<span style="font-size:9px">kg</span></div></div>
+    </div>
+  </div>`;
 }
 
 function renderSCards(t){
@@ -2173,7 +2204,7 @@ function openSModal(awb){
               `<div style="aspect-ratio:1;border-radius:7px;overflow:hidden;background:var(--g0)"><img src="${url}" style="width:100%;height:100%;object-fit:cover"/></div>`:""
             ).join("")
           }</div>
-        </div>`:""}`
+        </div>`:""}
         </div>`:""}
       </div>
     </div>
