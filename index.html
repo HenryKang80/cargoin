@@ -1072,7 +1072,7 @@ function cutoff(cargo){
   const dep=new Date(etd);const isDG=(cargo["CONDI"]||cargo["화물구분"]||"").includes("DG");
   return new Date(dep.getTime()-(isDG?6:4)*3600000);
 }
-function isDG(c){const v=(c["CONDI"]||c["화물구분"]||"");return v.includes("DG")||v.includes("위험물");}
+function isDG(c){return (c["CONDI"]||c["화물구분"]||"").includes("DG")||"".includes("위험물");}
 
 /* ═══════════════════════════════════════════════════
    SHEET URL
@@ -1448,7 +1448,7 @@ function openFieldDetail(awb){
   const done=c["상태"]==="현장완료"||c["상태"]==="반입완료";
   document.getElementById("fd-done").className="done-screen"+(done?" on":"");
   document.getElementById("fd-fi-body").style.display=done?"none":"flex";
-  const _fdSubmitWrap=document.getElementById("fd-submit-wrap"); if(_fdSubmitWrap) _fdSubmitWrap.style.display=done?"none":"block";
+  const submitWrap=document.getElementById("fd-submit-wrap"); if(submitWrap) submitWrap.style.display=done?"none":"block";
   if(done){
     document.getElementById("fd-done-sub").textContent=`MAWB: ${fmtMAWB(c["AWB"]||c["MAWB"])}\n${c["현장수량"]||pcsN}pcs · ${c["현장중량"]||c["총중량"]}kg\n구글 시트 업데이트 완료\n화주가 즉시 확인 가능합니다.`;
   }
@@ -1545,7 +1545,7 @@ window.onDocCheck=async function(type){
 
 function renderHawbCheckList(){
   const n=hawbChecks.filter(h=>h.checked).length;
-  document.getElementById("fd-hawb-ck-cnt").textContent=`${n}/${hawbChecks.length} 확인`;
+  const hawbCntEl=document.getElementById("fd-hawb-ck-cnt"); if(hawbCntEl) hawbCntEl.textContent=`${n}/${hawbChecks.length} 확인`;
   const el=document.getElementById("fd-hawb-check-list");
   const c=currentCargo;
   if(!el)return;
@@ -1758,20 +1758,11 @@ async function pushStep(stepData){
   const payload={action:"updateStep",awb,...stepData,updatedAt:new Date().toLocaleString("ko-KR")};
   try{
     if(SHEET_URL) await apiPost(payload);
-  }catch(e){console.log("pushStep network error:",e);}
-  // 로컬 캐시 업데이트 (네트워크 성공/실패 무관)
-  const idx=allCargos.findIndex(x=>(x["AWB"]===awb||x["MAWB"]===awb));
-  if(idx>=0) Object.assign(allCargos[idx],stepData);
-  saveCargosLocal(allCargos);
-  // 포워딩 캐시도 동기화
-  const sidx=shipperCargos.findIndex(x=>(x["AWB"]===awb||x["MAWB"]===awb));
-  if(sidx>=0) Object.assign(shipperCargos[sidx],stepData);
-  // 관리자/포워딩 UI 즉시 반영
-  if(session&&session.role==="admin"){
-    renderAdminDash();renderAdminCargos();
-  }else if(session&&session.role==="shipper"){
-    renderSCounts();renderSCards(sTab);
-  }
+    // 로컬 캐시도 업데이트
+    const idx=allCargos.findIndex(x=>(x["AWB"]===awb||x["MAWB"]===awb));
+    if(idx>=0) Object.assign(allCargos[idx],stepData);
+    saveCargosLocal(allCargos);
+  }catch(e){console.log("pushStep error:",e);}
 }
 
 // 단계 카드 상태 업데이트
@@ -1787,18 +1778,17 @@ function updateStepCard(num,state){
 }
 
 // 전체 진행 상태 체크 → 모두 완료면 완료 화면
-async function checkAllDone(){
+function checkAllDone(){
   const allDone=stepStatus.inbound&&stepStatus.size&&stepStatus.photo&&stepStatus.doc;
   if(allDone){
     const c=currentCargo;
     document.getElementById("fd-done").className="done-screen on";
     document.getElementById("fd-fi-body").style.display="none";
-    document.getElementById("fd-done-sub").textContent="MAWB: "+fmtMAWB(c["AWB"]||c["MAWB"])+"\n모든 단계 완료 · 화주에게 실시간 공유됨";
-    await pushStep({상태:"반입완료"});
+    document.getElementById("fd-done-sub").textContent=`MAWB: ${fmtMAWB(c["AWB"]||c["MAWB"])}\n모든 단계 완료 · 화주에게 실시간 공유됨`;
+    // 최종 상태 반입완료로 업데이트
+    pushStep({상태:"반입완료"});
     const idx=allCargos.findIndex(x=>(x["AWB"]===c["AWB"]||x["MAWB"]===c["MAWB"]));
     if(idx>=0){allCargos[idx]["상태"]="반입완료";saveCargosLocal(allCargos);}
-    const sidx=shipperCargos.findIndex(x=>(x["AWB"]===c["AWB"]||x["MAWB"]===c["MAWB"]));
-    if(sidx>=0){shipperCargos[sidx]["상태"]="반입완료";}
   }
 }
 
@@ -1910,7 +1900,7 @@ window.autoSaveMemo=async function(){
 // 기존 submitField → 더 이상 사용 안 하지만 오류방지용 남김
 async function submitField(){
   toast("각 단계별 체크로 실시간 전송됩니다.");
-  const btn=document.getElementById("fd-submit-btn"); if(!btn){toast("각 단계별 체크로 실시간 전송됩니다."); return;} btn.disabled=true;btn.textContent="저장 중...";
+  const btn=document.getElementById("fd-submit-btn");btn.disabled=true;btn.textContent="저장 중...";
   const w=parseFloat(document.getElementById("fd-w").value)||0;
   const d=parseFloat(document.getElementById("fd-d").value)||0;
   const h=parseFloat(document.getElementById("fd-h").value)||0;
@@ -1933,7 +1923,7 @@ async function submitField(){
     if(idx>=0){Object.assign(allCargos[idx],{상태:"현장완료",현장수량:totalPcs,현장중량:gw.toFixed(1),볼륨중량:totVw?totVw.toFixed(1):"",운임중량:totCw?totCw.toFixed(1):"",현장메모:payload.note});currentCargo=allCargos[idx];}
     saveCargosLocal(allCargos);
     document.getElementById("fd-fi-body").style.display="none";
-    const _fdSubmitWrap2=document.getElementById("fd-submit-wrap"); if(_fdSubmitWrap2) _fdSubmitWrap2.style.display="none";
+    const submitWrap=document.getElementById("fd-submit-wrap"); if(submitWrap) submitWrap.style.display="none";
     document.getElementById("fd-done").className="done-screen on";
     document.getElementById("fd-done-sub").textContent=`MAWB: ${fmtMAWB(currentCargo["AWB"]||currentCargo["MAWB"])}\n${totalPcs}pcs · ${gw.toFixed(1)}kg · CBM ${totCbm.toFixed(3)}\n저장 완료! 화주가 즉시 확인 가능합니다.`;
     document.getElementById("f-sync").textContent="방금 저장됨";
@@ -1945,7 +1935,7 @@ async function submitField(){
 window.enableEdit=function(){
   document.getElementById("fd-done").className="done-screen";
   document.getElementById("fd-fi-body").style.display="flex";
-  const _fdSubmitWrap3=document.getElementById("fd-submit-wrap"); if(_fdSubmitWrap3) _fdSubmitWrap3.style.display="block";
+  const submitWrap=document.getElementById("fd-submit-wrap"); if(submitWrap) submitWrap.style.display="block";
   toast("수정 모드 전환됨");
   document.getElementById("fd-fi-body").scrollIntoView({behavior:"smooth"});
 };
@@ -1955,7 +1945,7 @@ window.enableEdit=function(){
 ═══════════════════════════════════════════════════ */
 async function loadShipper(){
   showLoading("화물 불러오는 중...");
-  const updEl=document.getElementById("s-updated");if(updEl)updEl.textContent="불러오는 중...";
+  document.getElementById("s-updated").textContent="불러오는 중...";
   try{
     if(SHEET_URL){
       // shipperId로 먼저 시도, 없으면 화주명으로 매칭
@@ -2031,7 +2021,7 @@ window.filterShipper=function(){
   const updEl=document.getElementById("s-updated");
   if(updEl) updEl.textContent=`${filtered.length}건 (전체 ${shipperCargos.length}건) · ${nowStr()} 기준`;
   if(!filtered.length){el.innerHTML='<div class="empty-state">해당 화물이 없습니다.</div>';return;}
-  el.innerHTML=filtered.map(c=>renderShipperCard(c)).join("");
+  el.innerHTML=filtered.map(c=>renderSCard(c)).join("");
 };
 
 window.resetShipperFilter=function(){
@@ -2048,45 +2038,40 @@ function renderSCounts(){
   if(updEl) updEl.textContent=`총 ${shipperCargos.length}건 · ${nowStr()} 기준`;
 }
 
-
-function renderShipperCard(c){
-  const status=c["상태"]||"입력대기";
-  const dep=(c["출발일시"]||c["SKD"])?new Date(c["출발일시"]||c["SKD"]):null;
-  const hasField=!!(c["현장중량"]||c["현장수량"]);
-  const steps=getSSteps(c);
-  return `<div class="shipper-card" onclick="openSModal('${esc(c["AWB"]||c["MAWB"]||"")}')">
-    <div class="sc-head">
-      <div class="sc-awb-row">
-        <div class="sc-awb">${esc(c["MAWB"]||c["AWB"]||"—")}</div>
-        ${sBadge(status)}
-      </div>
-      <div class="sc-route">${fmtFlight(c["편명/일자"]||c["편명"]||"",c["SKD"]||c["출발일시"]||"")} · ICN→${esc(c["DEST"]||c["목적지"]||"")}${dep?" · "+fmtDate(dep,true):""}</div>
-    </div>
-    <div class="timeline">${steps.map((s,i)=>`
-      <div class="tl-step">
-        <div class="tl-dot ${s.state}">${s.state==="done"?"✓":i+1}</div>
-        <div class="tl-label${s.state==="active"?" active":""}">${s.label}</div>
-      </div>${i<steps.length-1?`<div class="tl-line${s.state==="done"?" done":""}"></div>`:""}`).join("")}
-    </div>
-    <div class="sc-metrics">
-      <div class="cm-item"><div class="cm-label">수량</div><div class="cm-value${hasField?" updated":""}">${(hasField?c["현장수량"]:c["총수량"])||"—"}<span style="font-size:9px">pcs</span></div></div>
-      <div class="cm-item"><div class="cm-label">중량</div><div class="cm-value${hasField?" updated":""}">${(hasField?c["현장중량"]:c["총중량"])||"—"}<span style="font-size:9px">kg</span></div></div>
-      <div class="cm-item"><div class="cm-label">볼륨중량</div><div class="cm-value">${c["볼륨중량"]||"—"}<span style="font-size:9px">kg</span></div></div>
-      <div class="cm-item"><div class="cm-label">운임중량</div><div class="cm-value">${c["운임중량"]||"—"}<span style="font-size:9px">kg</span></div></div>
-    </div>
-  </div>`;
-}
-
 function renderSCards(t){
   let list=shipperCargos;
   if(t==="wait")list=list.filter(c=>c["상태"]==="입력대기");
   if(t==="prog")list=list.filter(c=>c["상태"]==="현장완료");
   if(t==="done")list=list.filter(c=>c["상태"]==="반입완료");
   const el=document.getElementById("s-list");
-  if(!el)return;
   if(!list.length){el.innerHTML='<div class="empty-state">해당 화물이 없습니다.</div>';return;}
-  // 관리자 카드와 동일한 renderACard 재사용 (onclick만 openSModal로)
-  el.innerHTML=list.map(c=>renderACard(c,true)).join("");
+  el.innerHTML=list.map(c=>{
+    const status=c["상태"]||"입력대기";
+    const dep=(c["출발일시"]||c["SKD"])?new Date(c["출발일시"]||c["SKD"]):null;
+    const hasField=!!(c["현장중량"]||c["현장수량"]);
+    const steps=getSSteps(c);
+    return `<div class="shipper-card" onclick="openSModal('${esc(c["AWB"]||c["MAWB"]||"")}')">
+      <div class="sc-head">
+        <div class="sc-awb-row">
+          <div class="sc-awb">${esc(c["MAWB"]||c["AWB"]||"—")}</div>
+          ${sBadge(status)}
+        </div>
+        <div class="sc-route">${fmtFlight(c["편명/일자"]||c["편명"]||"",c["SKD"]||c["출발일시"]||"")} · ICN→${esc(c["DEST"]||c["목적지"]||"")}${dep?" · "+fmtDate(dep,true):""}</div>
+      </div>
+      <div class="timeline">${steps.map((s,i)=>`
+        <div class="tl-step">
+          <div class="tl-dot ${s.state}">${s.state==="done"?"✓":i+1}</div>
+          <div class="tl-label${s.state==="active"?" active":""}">${s.label}</div>
+        </div>${i<steps.length-1?`<div class="tl-line${s.state==="done"?" done":""}"></div>`:""}`).join("")}
+      </div>
+      <div class="sc-metrics">
+        <div class="cm-item"><div class="cm-label">수량</div><div class="cm-value${hasField?" updated":""}">${(hasField?c["현장수량"]:c["총수량"])||"—"}<span style="font-size:9px">pcs</span></div></div>
+        <div class="cm-item"><div class="cm-label">중량</div><div class="cm-value${hasField?" updated":""}">${(hasField?c["현장중량"]:c["총중량"])||"—"}<span style="font-size:9px">kg</span></div></div>
+        <div class="cm-item"><div class="cm-label">볼륨중량</div><div class="cm-value">${c["볼륨중량"]||"—"}<span style="font-size:9px">kg</span></div></div>
+        <div class="cm-item"><div class="cm-label">운임중량</div><div class="cm-value">${c["운임중량"]||"—"}<span style="font-size:9px">kg</span></div></div>
+      </div>
+    </div>`;
+  }).join("");
 }
 
 function getSSteps(c){
@@ -2287,7 +2272,7 @@ window.resetAdminFilter=function(){
   renderAdminCargos();
 };
 
-function renderACard(c, isShipper){
+function renderACard(c){
   const isDg=isDG(c);
   const cut=cutoff(c);const remain=cut?(cut-new Date())/3600000:null;
   const mawb=fmtMAWB(c["MAWB"]||c["AWB"]||"");
@@ -2297,9 +2282,8 @@ function renderACard(c, isShipper){
   const shipper=c["SHIPPER"]||"";
   const item=c["ITEM"]||c["품목"]||"";
   const awbKey=esc(c["AWB"]||c["MAWB"]||"");
-  const cardClick=isShipper?`onclick="openSModal('${awbKey}')"`:""
-  const cardStyle=isShipper?"cursor:pointer":""
-  return `<div class="a-cargo-card${isDg?" dg":""}" ${cardClick} style="${cardStyle}">
+  return `<div class="a-cargo-card${isDg?" dg":""}">
+    <!-- MAWB + HAWB + 상태 -->
     <div class="a-card-top">
       <div style="flex:1;min-width:0">
         <div style="display:flex;align-items:baseline;gap:7px">
@@ -2509,6 +2493,168 @@ window.savePw=function(){
   const accs=getAccounts();const i=accs.findIndex(a=>(a.userId||a.email||"")===pwTargetEmail);if(i<0)return;
   accs[i].password=nw;saveAccounts(accs);closePw();toast("비밀번호 변경 완료!");
 };
+
+
+
+/* ═══════════════════════════════════════════════════
+   PATCH: unified cargo cards + real update propagation
+═══════════════════════════════════════════════════ */
+function cargoKey(c){return String((c&& (c["AWB"]||c["MAWB"]))||"");}
+function mergeCargoUpdate(awb, data){
+  const key=String(awb||"");
+  const apply=(arr)=>{
+    if(!Array.isArray(arr))return;
+    const i=arr.findIndex(x=>String(x["AWB"]||x["MAWB"]||"")===key);
+    if(i>=0) Object.assign(arr[i], data);
+  };
+  apply(allCargos);
+  apply(shipperCargos);
+  if(currentCargo&&String(currentCargo["AWB"]||currentCargo["MAWB"]||"")===key) Object.assign(currentCargo,data);
+  saveCargosLocal(allCargos);
+  try{localStorage.setItem("cargoin_last_update", JSON.stringify({awb:key,data,ts:Date.now()}));}catch(e){}
+}
+function normalizeStepPayload(stepData){
+  const out={...stepData};
+  if(out["반입체크"]==="완료") out["상태"] = out["상태"] || "현장완료";
+  if(out["서류접수"]==="완료" && (currentCargo?.["사진완료"]==="완료" || out["사진완료"]==="완료")) out["상태"] = out["상태"] || "현장완료";
+  return out;
+}
+async function postStepToServer(awb, data){
+  if(!SHEET_URL)return {ok:false, skipped:true};
+  const payload={action:"updateStep", awb, ...data, updatedAt:new Date().toLocaleString("ko-KR")};
+  try{
+    const r=await apiPost(payload);
+    if(r && r.ok!==false) return {ok:true, action:"updateStep"};
+    // fallback for older Apps Script packages
+    const fb=await apiPost({
+      action:"updateField",
+      awb,
+      status:data["상태"]||currentCargo?.["상태"]||"현장완료",
+      fieldPcs:data["현장수량"]||currentCargo?.["현장수량"]||"",
+      fieldGw:data["현장중량"]||currentCargo?.["현장중량"]||"",
+      fieldVw:data["볼륨중량"]||currentCargo?.["볼륨중량"]||"",
+      fieldCw:data["운임중량"]||currentCargo?.["운임중량"]||"",
+      note:data["현장메모"]||currentCargo?.["현장메모"]||"",
+      checkedAt:new Date().toLocaleString("ko-KR"),
+      photoNote:data["사진수"]||currentCargo?.["사진수"]||""
+    });
+    return {ok:!!(fb&&fb.ok!==false), action:"updateField", raw:fb};
+  }catch(e){
+    console.warn("server step update failed", e);
+    return {ok:false, error:e.message};
+  }
+}
+async function pushStep(stepData){
+  const c=currentCargo;if(!c)return;
+  const awb=c["AWB"]||c["MAWB"];
+  const data=normalizeStepPayload(stepData);
+  mergeCargoUpdate(awb,data);
+  // refresh current visible screens immediately
+  if(session?.role==="admin"){renderAdminDash();renderAdminCargos();}
+  if(session?.role==="shipper"){renderSCounts();renderSCards(sTab);}
+  const res=await postStepToServer(awb,data);
+  if(!res.ok && SHEET_URL){toast("서버 저장 실패: Apps Script의 updateStep/updateField를 확인하세요",5000);}
+  return res;
+}
+
+function renderUnifiedCargoCard(c, mode="admin"){
+  const isDg=isDG(c);
+  const cut=cutoff(c);const remain=cut?(cut-new Date())/3600000:null;
+  const mawb=fmtMAWB(c["MAWB"]||c["AWB"]||"");
+  const hawb=c["HAWB"]||"";
+  const flight=c["편명/일자"]||c["편명"]||"";
+  const dest=c["DEST"]||c["목적지"]||"";
+  const shipper=c["SHIPPER"]||"";
+  const item=c["ITEM"]||c["품목"]||"";
+  const key=esc(c["AWB"]||c["MAWB"]||"");
+  const click=mode==="shipper"?` onclick="openSModal('${key}')"`:"";
+  const steps=[
+    {key:"반입체크",label:"반입"},
+    {key:"화물상태",label:"상태"},
+    {key:"실측완료",label:"실측"},
+    {key:"사진완료",label:"사진"},
+    {key:"서류접수",label:"서류"}
+  ];
+  return `<div class="a-cargo-card${isDg?" dg":""}"${click} style="${mode==="shipper"?"cursor:pointer":""}">
+    <div class="a-card-top">
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:baseline;gap:7px">
+          <span style="font-size:9px;font-weight:700;color:var(--g3);text-transform:uppercase;letter-spacing:.4px">MAWB</span>
+          <span class="a-awb">${esc(mawb)}</span>
+        </div>
+        ${hawb?`<div style="display:flex;align-items:baseline;gap:7px;margin-top:2px"><span style="font-size:9px;font-weight:700;color:var(--g3);text-transform:uppercase;letter-spacing:.4px">HAWB</span><span style="font-family:var(--mono);font-size:12px;font-weight:600;color:var(--g5)">${esc(hawb)}</span></div>`:""}
+      </div>
+      ${sBadge(c["상태"]||"입력대기")}
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin:7px 0 5px">
+      <div style="font-size:11px;color:var(--g4)"><span style="font-size:9px;color:var(--g3);font-weight:700;display:block;margin-bottom:1px">편명</span>${fmtFlight(flight,c["SKD"]||c["출발일시"]||"")||"—"}</div>
+      <div style="font-size:11px;color:var(--g4)"><span style="font-size:9px;color:var(--g3);font-weight:700;display:block;margin-bottom:1px">노선</span>ICN → ${esc(dest)||"—"}</div>
+      <div style="font-size:11px;color:var(--g4)"><span style="font-size:9px;color:var(--g3);font-weight:700;display:block;margin-bottom:1px">화주</span>${esc(shipper)||"—"}</div>
+      <div style="font-size:11px;color:var(--g4)"><span style="font-size:9px;color:var(--g3);font-weight:700;display:block;margin-bottom:1px">품목</span>${esc(item)||"—"}</div>
+    </div>
+    ${remain!==null?`<div style="font-size:11px;font-weight:700;color:${remain<0?"var(--red-dark)":remain<2?"var(--amber-dark)":"var(--green-dark)"};background:${remain<0?"var(--rl)":remain<2?"var(--al)":"var(--gl)"};border-radius:6px;padding:4px 9px;margin-bottom:5px;display:inline-flex;align-items:center;gap:5px">반입마감 ${fmtDate(cut,true).split(" ").slice(0,3).join(" ")} · ${remain<0?"⚠ 마감 초과":remain.toFixed(1)+"h 남음"}</div>`:""}
+    ${c["현장중량"]?`<div style="font-size:11px;color:var(--green-dark);background:var(--gl);border-radius:6px;padding:4px 9px;margin-bottom:5px">현장실측: ${esc(c["현장수량"]||"")}pcs · ${esc(c["현장중량"]||"")}kg${c["현장메모"]?" · "+esc(c["현장메모"]):""}${c["화물상태"]?" · "+esc(c["화물상태"]):""}</div>`:""}
+    <div style="display:flex;align-items:center;margin-top:8px;padding-top:8px;border-top:1px solid var(--g0)">
+      ${steps.map((s,i,arr)=>{
+        const val=c[s.key]||"";const done=val.length>0;const isBad=s.key==="화물상태"&&val&&val!=="이상없음";
+        const dotBg=done?(isBad?"var(--rl)":"var(--gl)"):"var(--g1)";
+        const dotColor=done?(isBad?"var(--red-dark)":"var(--green-dark)"):"var(--g3)";
+        const dotBorder=done?(isBad?"var(--status-urgent-border)":"var(--status-done-border)"):"var(--g2)";
+        const lineBg=done&&!isBad?"var(--green)":"var(--g1)";
+        return `<div style="display:flex;align-items:center;flex:1"><div style="display:flex;flex-direction:column;align-items:center;flex:1;gap:2px"><div style="width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;background:${dotBg};color:${dotColor};border:1.5px solid ${dotBorder}">${done?(isBad?"!":"✓"):(i+1)}</div><div style="font-size:9px;font-weight:600;color:${dotColor};white-space:nowrap">${s.label}</div></div>${i<arr.length-1?`<div style="height:1.5px;flex:1;background:${lineBg};max-width:14px;flex-shrink:0"></div>`:""}</div>`;
+      }).join("")}
+    </div>
+  </div>`;
+}
+function renderACard(c){return renderUnifiedCargoCard(c,"admin");}
+function renderAdminDash(){
+  document.getElementById("a-tot").textContent=allCargos.length;
+  document.getElementById("a-wait").textContent=allCargos.filter(c=>!c["상태"]||c["상태"]==="입력대기").length;
+  document.getElementById("a-field").textContent=allCargos.filter(c=>c["상태"]==="현장완료").length;
+  document.getElementById("a-done").textContent=allCargos.filter(c=>c["상태"]==="반입완료").length;
+  document.getElementById("a-recent").innerHTML=allCargos.slice(-5).reverse().map(c=>renderUnifiedCargoCard(c,"admin")).join("");
+}
+function renderAdminCargos(){
+  document.getElementById("a-cargo-cnt").textContent=allCargos.length+"건";
+  document.getElementById("a-cargo-list").innerHTML=allCargos.slice().reverse().map(c=>renderUnifiedCargoCard(c,"admin")).join("");
+  buildFilterOptions();
+}
+function renderSCards(t){
+  let list=shipperCargos;
+  if(t==="wait")list=list.filter(c=>c["상태"]==="입력대기");
+  if(t==="prog")list=list.filter(c=>c["상태"]==="현장완료");
+  if(t==="done")list=list.filter(c=>c["상태"]==="반입완료");
+  const el=document.getElementById("s-list");
+  if(!list.length){el.innerHTML='<div class="empty-state">해당 화물이 없습니다.</div>';return;}
+  el.innerHTML=list.map(c=>renderUnifiedCargoCard(c,"shipper")).join("");
+}
+window.filterShipper=function(){
+  const q=(document.getElementById("s-search")?.value||"").trim().toLowerCase();
+  const destF=document.getElementById("s-filter-dest")?.value||"";
+  const statusF=document.getElementById("s-filter-status")?.value||"";
+  let filtered=shipperCargos.filter(c=>{
+    if(q){const hay=[c["AWB"]||c["MAWB"]||"",c["HAWB"]||"",c["SHIPPER"]||"",c["ITEM"]||"",c["DEST"]||c["목적지"]||""].join(" ").toLowerCase();if(!hay.includes(q))return false;}
+    if(destF&&(c["DEST"]||c["목적지"]||"")!==destF)return false;
+    if(statusF&&(c["상태"]||"입력대기")!==statusF)return false;
+    if(!inDateRange(c,"s-date-from","s-date-to"))return false;
+    return true;
+  });
+  const el=document.getElementById("s-list");
+  const updEl=document.getElementById("s-updated");
+  if(updEl) updEl.textContent=`${filtered.length}건 (전체 ${shipperCargos.length}건) · ${nowStr()} 기준`;
+  if(!filtered.length){el.innerHTML='<div class="empty-state">해당 화물이 없습니다.</div>';return;}
+  el.innerHTML=filtered.map(c=>renderUnifiedCargoCard(c,"shipper")).join("");
+};
+
+window.addEventListener("storage", function(e){
+  if(e.key!=="cargoin_last_update"||!e.newValue)return;
+  try{
+    const msg=JSON.parse(e.newValue);
+    mergeCargoUpdate(msg.awb,msg.data||{});
+    if(session?.role==="admin"){renderAdminDash();renderAdminCargos();}
+    if(session?.role==="shipper"){renderSCounts();renderSCards(sTab);}
+  }catch(err){}
+});
 
 /* ── init ── */
 if(!localStorage.getItem(ACCS_KEY)||localStorage.getItem("cargoin_acc_ver")!=="v4"){saveAccounts(DEMO_ACCOUNTS);localStorage.setItem("cargoin_acc_ver","v4");}
