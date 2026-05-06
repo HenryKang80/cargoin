@@ -509,7 +509,7 @@ body{min-height:100vh;max-width:480px;margin:0 auto;background:var(--g0);color:v
 <!-- ════════════════════════════════════════
      LOGIN
 ════════════════════════════════════════ -->
-<div class="screen" id="scr-login" style="display:flex">
+<div class="screen on" id="scr-login">
   <div class="login-brand">
     <div class="login-logo">CargoIN</div>
     <div class="login-tagline">CARGO INBOUND MANAGEMENT</div>
@@ -1057,12 +1057,9 @@ function nowStr(){return new Date().toLocaleTimeString("ko",{hour:"2-digit",minu
 function showLoading(m="잠시만..."){document.getElementById("loading-msg").textContent=m;document.getElementById("loading").classList.remove("hide");}
 function hideLoading(){document.getElementById("loading").classList.add("hide");}
 function showScr(id){
-  document.querySelectorAll(".screen").forEach(s=>{
-    s.classList.remove("on");
-    s.style.display="";
-  });
-  const target=document.getElementById("scr-"+id);
-  if(target) target.classList.add("on");
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("on"));
+  const t=document.getElementById("scr-"+id);
+  if(t) t.classList.add("on");
 }
 function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
 function sBadge(s){const m={pending_field:"입력대기","입력대기":"입력대기","현장완료":"현장완료","반입완료":"반입완료"};const label=m[s]||s;const cls=label==="반입완료"?"b-done":label==="현장완료"?"b-field":"b-wait";return`<span class="badge ${cls}">${esc(label)}</span>`;}
