@@ -1758,11 +1758,20 @@ async function pushStep(stepData){
   const payload={action:"updateStep",awb,...stepData,updatedAt:new Date().toLocaleString("ko-KR")};
   try{
     if(SHEET_URL) await apiPost(payload);
-    // 로컬 캐시도 업데이트
-    const idx=allCargos.findIndex(x=>(x["AWB"]===awb||x["MAWB"]===awb));
-    if(idx>=0) Object.assign(allCargos[idx],stepData);
-    saveCargosLocal(allCargos);
-  }catch(e){console.log("pushStep error:",e);}
+  }catch(e){console.log("pushStep network error:",e);}
+  // 로컬 캐시 업데이트 (네트워크 성공/실패 무관)
+  const idx=allCargos.findIndex(x=>(x["AWB"]===awb||x["MAWB"]===awb));
+  if(idx>=0) Object.assign(allCargos[idx],stepData);
+  saveCargosLocal(allCargos);
+  // 포워딩 캐시도 동기화
+  const sidx=shipperCargos.findIndex(x=>(x["AWB"]===awb||x["MAWB"]===awb));
+  if(sidx>=0) Object.assign(shipperCargos[sidx],stepData);
+  // 관리자/포워딩 UI 즉시 반영
+  if(session&&session.role==="admin"){
+    renderAdminDash();renderAdminCargos();
+  }else if(session&&session.role==="shipper"){
+    renderSCounts();renderSCards(sTab);
+  }
 }
 
 // 단계 카드 상태 업데이트
@@ -1778,17 +1787,18 @@ function updateStepCard(num,state){
 }
 
 // 전체 진행 상태 체크 → 모두 완료면 완료 화면
-function checkAllDone(){
+async function checkAllDone(){
   const allDone=stepStatus.inbound&&stepStatus.size&&stepStatus.photo&&stepStatus.doc;
   if(allDone){
     const c=currentCargo;
     document.getElementById("fd-done").className="done-screen on";
     document.getElementById("fd-fi-body").style.display="none";
-    document.getElementById("fd-done-sub").textContent=`MAWB: ${fmtMAWB(c["AWB"]||c["MAWB"])}\n모든 단계 완료 · 화주에게 실시간 공유됨`;
-    // 최종 상태 반입완료로 업데이트
-    pushStep({상태:"반입완료"});
+    document.getElementById("fd-done-sub").textContent="MAWB: "+fmtMAWB(c["AWB"]||c["MAWB"])+"\n모든 단계 완료 · 화주에게 실시간 공유됨";
+    await pushStep({상태:"반입완료"});
     const idx=allCargos.findIndex(x=>(x["AWB"]===c["AWB"]||x["MAWB"]===c["MAWB"]));
     if(idx>=0){allCargos[idx]["상태"]="반입완료";saveCargosLocal(allCargos);}
+    const sidx=shipperCargos.findIndex(x=>(x["AWB"]===c["AWB"]||x["MAWB"]===c["MAWB"]));
+    if(sidx>=0){shipperCargos[sidx]["상태"]="반입완료";}
   }
 }
 
@@ -1945,7 +1955,7 @@ window.enableEdit=function(){
 ═══════════════════════════════════════════════════ */
 async function loadShipper(){
   showLoading("화물 불러오는 중...");
-  document.getElementById("s-updated").textContent="불러오는 중...";
+  const updEl=document.getElementById("s-updated");if(updEl)updEl.textContent="불러오는 중...";
   try{
     if(SHEET_URL){
       // shipperId로 먼저 시도, 없으면 화주명으로 매칭
@@ -2073,34 +2083,10 @@ function renderSCards(t){
   if(t==="prog")list=list.filter(c=>c["상태"]==="현장완료");
   if(t==="done")list=list.filter(c=>c["상태"]==="반입완료");
   const el=document.getElementById("s-list");
+  if(!el)return;
   if(!list.length){el.innerHTML='<div class="empty-state">해당 화물이 없습니다.</div>';return;}
-  el.innerHTML=list.map(c=>{
-    const status=c["상태"]||"입력대기";
-    const dep=(c["출발일시"]||c["SKD"])?new Date(c["출발일시"]||c["SKD"]):null;
-    const hasField=!!(c["현장중량"]||c["현장수량"]);
-    const steps=getSSteps(c);
-    return `<div class="shipper-card" onclick="openSModal('${esc(c["AWB"]||c["MAWB"]||"")}')">
-      <div class="sc-head">
-        <div class="sc-awb-row">
-          <div class="sc-awb">${esc(c["MAWB"]||c["AWB"]||"—")}</div>
-          ${sBadge(status)}
-        </div>
-        <div class="sc-route">${fmtFlight(c["편명/일자"]||c["편명"]||"",c["SKD"]||c["출발일시"]||"")} · ICN→${esc(c["DEST"]||c["목적지"]||"")}${dep?" · "+fmtDate(dep,true):""}</div>
-      </div>
-      <div class="timeline">${steps.map((s,i)=>`
-        <div class="tl-step">
-          <div class="tl-dot ${s.state}">${s.state==="done"?"✓":i+1}</div>
-          <div class="tl-label${s.state==="active"?" active":""}">${s.label}</div>
-        </div>${i<steps.length-1?`<div class="tl-line${s.state==="done"?" done":""}"></div>`:""}`).join("")}
-      </div>
-      <div class="sc-metrics">
-        <div class="cm-item"><div class="cm-label">수량</div><div class="cm-value${hasField?" updated":""}">${(hasField?c["현장수량"]:c["총수량"])||"—"}<span style="font-size:9px">pcs</span></div></div>
-        <div class="cm-item"><div class="cm-label">중량</div><div class="cm-value${hasField?" updated":""}">${(hasField?c["현장중량"]:c["총중량"])||"—"}<span style="font-size:9px">kg</span></div></div>
-        <div class="cm-item"><div class="cm-label">볼륨중량</div><div class="cm-value">${c["볼륨중량"]||"—"}<span style="font-size:9px">kg</span></div></div>
-        <div class="cm-item"><div class="cm-label">운임중량</div><div class="cm-value">${c["운임중량"]||"—"}<span style="font-size:9px">kg</span></div></div>
-      </div>
-    </div>`;
-  }).join("");
+  // 관리자 카드와 동일한 renderACard 재사용 (onclick만 openSModal로)
+  el.innerHTML=list.map(c=>renderACard(c,true)).join("");
 }
 
 function getSSteps(c){
@@ -2301,7 +2287,7 @@ window.resetAdminFilter=function(){
   renderAdminCargos();
 };
 
-function renderACard(c){
+function renderACard(c, isShipper){
   const isDg=isDG(c);
   const cut=cutoff(c);const remain=cut?(cut-new Date())/3600000:null;
   const mawb=fmtMAWB(c["MAWB"]||c["AWB"]||"");
@@ -2311,8 +2297,9 @@ function renderACard(c){
   const shipper=c["SHIPPER"]||"";
   const item=c["ITEM"]||c["품목"]||"";
   const awbKey=esc(c["AWB"]||c["MAWB"]||"");
-  return `<div class="a-cargo-card${isDg?" dg":""}">
-    <!-- MAWB + HAWB + 상태 -->
+  const cardClick=isShipper?`onclick="openSModal('${awbKey}')"`:""
+  const cardStyle=isShipper?"cursor:pointer":""
+  return `<div class="a-cargo-card${isDg?" dg":""}" ${cardClick} style="${cardStyle}">
     <div class="a-card-top">
       <div style="flex:1;min-width:0">
         <div style="display:flex;align-items:baseline;gap:7px">
