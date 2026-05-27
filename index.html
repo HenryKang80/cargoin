@@ -8356,6 +8356,2163 @@ if(typeof _openFieldDetailBeforeV113==="function"){
 setTimeout(v113ApplyAllCards,0);
 setTimeout(v113ApplyAllCards,300);
 
+
+/* v114 UPPERCASE REGISTRATION + KEEP ETD/ETA ON EDIT */
+function v114Upper(v){return String(v ?? "").replace(/[a-z]/g, ch=>ch.toUpperCase());}
+function v114Time(v){
+  let s=String(v ?? "").trim();
+  if(!s)return "";
+  const d=s.replace(/\D/g,"");
+  if(d.length>=4)return d.slice(0,2)+d.slice(2,4);
+  if(d.length===3)return "0"+d;
+  return v114Upper(s);
+}
+function v114BindUppercaseInputs(){
+  const ids=[
+    "r-consol","r-shipper","r-airline","r-dest","r-item","r-condi","r-mawb","r-flight","r-skd","r-eta","r-customer",
+    "s-r-consol","s-r-shipper","s-r-airline","s-r-dest","s-r-item","s-r-condi","s-r-mawb","s-r-flight","s-r-skd","s-r-eta","s-r-customer"
+  ];
+  ids.forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el || el.dataset.v114Upper==="1")return;
+    el.dataset.v114Upper="1";
+    el.addEventListener("input",()=>{
+      const pos=el.selectionStart;
+      if(id.endsWith("skd")||id.endsWith("eta")){
+        el.value=v114Time(el.value);
+      }else{
+        el.value=v114Upper(el.value);
+      }
+      try{el.setSelectionRange(pos,pos);}catch(e){}
+    });
+    el.addEventListener("blur",()=>{
+      if(id.endsWith("skd")||id.endsWith("eta"))el.value=v114Time(el.value);
+      else el.value=v114Upper(el.value);
+    });
+  });
+
+  // Dynamic HAWB/house fields
+  document.querySelectorAll(".cargo-house-block input,.af-fld input").forEach(el=>{
+    if(el.dataset.v114Upper==="1")return;
+    const label=(el.closest(".af-fld")?.querySelector("label")?.textContent||"").trim().toUpperCase();
+    if(["HAWB","CONSOL","SHIPPER","항공사","DEST","ITEM","CONDI","편명","ETD","ETA"].some(x=>label.includes(x))){
+      el.dataset.v114Upper="1";
+      el.addEventListener("input",()=>{
+        if(label.includes("ETD")||label.includes("ETA"))el.value=v114Time(el.value);
+        else el.value=v114Upper(el.value);
+      });
+      el.addEventListener("blur",()=>{
+        if(label.includes("ETD")||label.includes("ETA"))el.value=v114Time(el.value);
+        else el.value=v114Upper(el.value);
+      });
+    }
+  });
+}
+setInterval(v114BindUppercaseInputs,700);
+document.addEventListener("DOMContentLoaded",v114BindUppercaseInputs);
+setTimeout(v114BindUppercaseInputs,0);
+
+function v114NormalizeCargo(c){
+  c={...(c||{})};
+  const upperKeys=["CONSOL","SHIPPER","항공사","DEST","목적지","ITEM","품목","CONDI","화물구분","MAWB","AWB","HAWB","편명/일자","편명","고객사명","포워딩명","화주ID"];
+  upperKeys.forEach(k=>{if(c[k]!==undefined&&c[k]!==null)c[k]=v114Upper(c[k]);});
+  const etd=v114Time(c["ETD"]||c["SKD"]||c["출발일시"]||"");
+  const eta=v114Time(c["ETA"]||c["입고예정시간"]||"");
+  if(etd){c["ETD"]=etd;c["SKD"]=etd;c["출발일시"]=etd;}
+  if(eta){c["ETA"]=eta;c["입고예정시간"]=eta;}
+  return c;
+}
+
+/* Preserve old ETD/ETA when edit form leaves them blank */
+const _mergeCargoEditBeforeV114=typeof mergeCargoEdit==="function"?mergeCargoEdit:null;
+mergeCargoEdit=function(oldC,newC){
+  const oldN=v114NormalizeCargo(oldC||{});
+  const newN=v114NormalizeCargo(newC||{});
+  ["ETD","SKD","출발일시"].forEach(k=>{
+    if(!newN[k])newN[k]=oldN[k]||"";
+  });
+  ["ETA","입고예정시간"].forEach(k=>{
+    if(!newN[k])newN[k]=oldN[k]||"";
+  });
+  return {...oldN,...newN};
+};
+
+const _readCargoFormBeforeV114=typeof readCargoForm==="function"?readCargoForm:null;
+if(_readCargoFormBeforeV114){
+  readCargoForm=function(prefix,customerName,hawbs){
+    const c=_readCargoFormBeforeV114(prefix,customerName,hawbs);
+    const etd=v114Time((document.getElementById(prefix+"skd")?.value||document.getElementById(prefix+"etd")?.value||"").trim());
+    const eta=v114Time((document.getElementById(prefix+"eta")?.value||"").trim());
+    if(etd){c["ETD"]=etd;c["SKD"]=etd;c["출발일시"]=etd;}
+    if(eta){c["ETA"]=eta;c["입고예정시간"]=eta;}
+    return v114NormalizeCargo(c);
+  };
+}
+
+const _makeCargoFromFormBeforeV114=typeof makeCargoFromForm==="function"?makeCargoFromForm:null;
+if(_makeCargoFromFormBeforeV114){
+  makeCargoFromForm=function(prefix,customerName){
+    const c=_makeCargoFromFormBeforeV114(prefix,customerName);
+    const etd=v114Time((document.getElementById(prefix+"skd")?.value||document.getElementById(prefix+"etd")?.value||"").trim());
+    const eta=v114Time((document.getElementById(prefix+"eta")?.value||"").trim());
+    if(etd){c["ETD"]=etd;c["SKD"]=etd;c["출발일시"]=etd;}
+    if(eta){c["ETA"]=eta;c["입고예정시간"]=eta;}
+    return v114NormalizeCargo(c);
+  };
+}
+
+/* Dynamic house field: uppercase + ETD/ETA numeric format */
+const _updateHouseFieldBeforeV114=typeof updateHouseField==="function"?updateHouseField:null;
+if(_updateHouseFieldBeforeV114){
+  updateHouseField=function(mode,i,key,val){
+    let next=val;
+    if(["ETD","ETA","SKD","입고예정시간"].includes(key))next=v114Time(val);
+    else next=v114Upper(val);
+    return _updateHouseFieldBeforeV114(mode,i,key,next);
+  };
+}
+
+/* Register/save wrappers: normalize and keep edit ETD/ETA */
+function v114SyncAfterSave(){
+  try{allCargos=(allCargos||[]).map(v114NormalizeCargo);saveCargosLocal(allCargos);}catch(e){}
+  try{renderAdminDash?.();renderAdminCargos?.();}catch(e){}
+  try{renderSCounts?.();filterShipper?.();}catch(e){}
+  try{buildFieldFilterOptions?.();renderFieldList?.(allCargos);}catch(e){}
+}
+
+const _registerCargoBeforeV114=window.registerCargo;
+window.registerCargo=async function(){
+  v114BindUppercaseInputs();
+  // If edit mode is active, remember old ETA/ETD before old function runs
+  let oldKey=typeof adminEditKey!=="undefined"?adminEditKey:null;
+  let oldC=null;
+  try{if(oldKey&&typeof findCargoByKey==="function")oldC=findCargoByKey(allCargos,oldKey);}catch(e){}
+  const r=await _registerCargoBeforeV114?.();
+  // Normalize all new/edited rows
+  allCargos=(allCargos||[]).map(c=>{
+    let n=v114NormalizeCargo(c);
+    if(oldC && findCargoByKey && makeCargoKey && makeCargoKey(n)===makeCargoKey(v114NormalizeCargo(oldC))){
+      n=mergeCargoEdit(oldC,n);
+    }
+    return n;
+  });
+  saveCargosLocal(allCargos);
+  v114SyncAfterSave();
+  return r;
+};
+
+const _registerShipperCargoBeforeV114=window.registerShipperCargo;
+window.registerShipperCargo=function(){
+  v114BindUppercaseInputs();
+  let oldKey=typeof shipperEditKey!=="undefined"?shipperEditKey:null;
+  let oldC=null;
+  try{if(oldKey&&typeof findCargoByKey==="function")oldC=findCargoByKey(shipperCargos,oldKey);}catch(e){}
+  const r=_registerShipperCargoBeforeV114?.();
+  allCargos=(allCargos||[]).map(c=>v114NormalizeCargo(c));
+  if(oldC){
+    allCargos=allCargos.map(c=>{
+      try{return makeCargoKey(c)===makeCargoKey(v114NormalizeCargo(oldC))?mergeCargoEdit(oldC,c):c;}catch(e){return c;}
+    });
+  }
+  const customer=typeof currentCustomerName==="function"?currentCustomerName():"";
+  shipperCargos=(allCargos||[]).filter(c=>(c["고객사명"]||c["포워딩명"]||c["화주ID"]||"")===customer);
+  saveCargosLocal(allCargos);
+  v114SyncAfterSave();
+  return r;
+};
+
+/* On edit load, fill ETD/ETA from either old or new keys */
+const _setFormValuesBeforeV114=typeof setFormValues==="function"?setFormValues:null;
+if(_setFormValuesBeforeV114){
+  setFormValues=function(prefix,c,customerFixed){
+    c=v114NormalizeCargo(c||{});
+    _setFormValuesBeforeV114(prefix,c,customerFixed);
+    const etd=document.getElementById(prefix+"skd");
+    const eta=document.getElementById(prefix+"eta");
+    if(etd)etd.value=c["ETD"]||c["SKD"]||c["출발일시"]||"";
+    if(eta)eta.value=c["ETA"]||c["입고예정시간"]||"";
+    v114BindUppercaseInputs();
+  };
+}
+
+setTimeout(()=>{
+  try{allCargos=(allCargos||[]).map(v114NormalizeCargo);saveCargosLocal(allCargos);}catch(e){}
+  v114BindUppercaseInputs();
+},0);
+
+
+/* v115 RESTORE ETD/ETA INPUT STYLE + FLIGHT DATE FROM DATE */
+function v115Trim(v){return String(v ?? "").trim();}
+function v115Upper(v){return String(v ?? "").replace(/[a-z]/g,ch=>ch.toUpperCase());}
+function v115MonthName(m){
+  return ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"][Math.max(0,Math.min(11,Number(m)-1))]||"";
+}
+function v115DateTextFromValue(v){
+  const s=v115Trim(v);
+  if(!s)return "";
+  let m=s.match(/(\d{4})[-./](\d{1,2})[-./](\d{1,2})/);
+  if(m)return String(m[3]).padStart(2,"0")+"."+v115MonthName(m[2]);
+  m=s.match(/(\d{1,2})\s*\/\s*(\d{1,2})/);
+  if(m)return String(m[1]).padStart(2,"0")+"."+v115MonthName(m[2]);
+  m=s.match(/^(\d{1,2})$/);
+  if(m)return String(m[1]).padStart(2,"0");
+  return s;
+}
+function v115DateText(c){
+  return v115DateTextFromValue(c&&((c["DATE"]||c["온보드날짜"]||c["ONBOARD"]||c["DATE ON BOARD"]||"")));
+}
+function v115FlightOnly(c){
+  let fl=v115Trim(c&&((c["편명"]||c["편명/일자"]||"")));
+  fl=fl.replace(/\n/g," ").replace(/\s+/g," ");
+  const m=fl.match(/^([A-Z0-9 ]+?)\s*(?:\/|$)/i);
+  if(m)fl=v115Trim(m[1]).replace(/\s+/g,"");
+  return fl||"—";
+}
+function v115EtdEta(c){
+  const etd=v115Trim(c&&((c["ETD"]||c["SKD"]||c["출발일시"]||"")));
+  const eta=v115Trim(c&&((c["ETA"]||c["입고예정시간"]||"")));
+  if(etd&&eta)return `${etd}-${eta}`;
+  return etd||eta||"";
+}
+function v115FlightLine(c){
+  return [v115FlightOnly(c),v115DateText(c),v115EtdEta(c)].filter(Boolean).join(" / ");
+}
+
+/* ETD/ETA는 이전처럼 입력값을 강제 1200 형태로 바꾸지 않음. 영문만 대문자 유지 */
+function v115BindInputs(){
+  const upperIds=[
+    "r-consol","r-shipper","r-airline","r-dest","r-item","r-condi","r-mawb","r-flight","r-customer",
+    "s-r-consol","s-r-shipper","s-r-airline","s-r-dest","s-r-item","s-r-condi","s-r-mawb","s-r-flight","s-r-customer"
+  ];
+  upperIds.forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el||el.dataset.v115Upper==="1")return;
+    el.dataset.v115Upper="1";
+    el.addEventListener("input",()=>{el.value=v115Upper(el.value);});
+    el.addEventListener("blur",()=>{el.value=v115Upper(el.value);});
+  });
+  ["r-skd","r-eta","s-r-skd","s-r-eta"].forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el)return;
+    // v114에서 붙인 강제 시간 변환을 우회하기 위해 clone으로 이벤트 초기화
+    if(el.dataset.v115Restored==="1")return;
+    const clone=el.cloneNode(true);
+    clone.dataset.v115Restored="1";
+    clone.value=el.value||"";
+    el.parentNode.replaceChild(clone,el);
+  });
+}
+
+/* 읽을 때 ETD/ETA를 원문 그대로 유지 */
+const _readCargoFormBeforeV115=typeof readCargoForm==="function"?readCargoForm:null;
+if(_readCargoFormBeforeV115){
+  readCargoForm=function(prefix,customerName,hawbs){
+    const c=_readCargoFormBeforeV115(prefix,customerName,hawbs);
+    const etd=v115Trim(document.getElementById(prefix+"skd")?.value||"");
+    const eta=v115Trim(document.getElementById(prefix+"eta")?.value||"");
+    if(etd){c["ETD"]=etd;c["SKD"]=etd;c["출발일시"]=etd;}
+    if(eta){c["ETA"]=eta;c["입고예정시간"]=eta;}
+    c["편명"]=v115Upper(document.getElementById(prefix+"flight")?.value||c["편명"]||"");
+    c["편명/일자"]=c["편명"];
+    return c;
+  };
+}
+const _makeCargoFromFormBeforeV115=typeof makeCargoFromForm==="function"?makeCargoFromForm:null;
+if(_makeCargoFromFormBeforeV115){
+  makeCargoFromForm=function(prefix,customerName){
+    const c=_makeCargoFromFormBeforeV115(prefix,customerName);
+    const etd=v115Trim(document.getElementById(prefix+"skd")?.value||"");
+    const eta=v115Trim(document.getElementById(prefix+"eta")?.value||"");
+    if(etd){c["ETD"]=etd;c["SKD"]=etd;c["출발일시"]=etd;}
+    if(eta){c["ETA"]=eta;c["입고예정시간"]=eta;}
+    c["편명"]=v115Upper(document.getElementById(prefix+"flight")?.value||c["편명"]||"");
+    c["편명/일자"]=c["편명"];
+    return c;
+  };
+}
+
+/* 수정 시 기존 ETD/ETA 보존은 유지하되 값 자체를 변환하지 않음 */
+mergeCargoEdit=function(oldC,newC){
+  const merged={...(oldC||{}),...(newC||{})};
+  if(!v115Trim(newC&&newC["ETD"])&&!v115Trim(newC&&newC["SKD"])&&!v115Trim(newC&&newC["출발일시"])){
+    merged["ETD"]=(oldC&&oldC["ETD"])||"";
+    merged["SKD"]=(oldC&&oldC["SKD"])||merged["ETD"]||"";
+    merged["출발일시"]=(oldC&&oldC["출발일시"])||merged["ETD"]||"";
+  }
+  if(!v115Trim(newC&&newC["ETA"])&&!v115Trim(newC&&newC["입고예정시간"])){
+    merged["ETA"]=(oldC&&oldC["ETA"])||"";
+    merged["입고예정시간"]=(oldC&&oldC["입고예정시간"])||merged["ETA"]||"";
+  }
+  if(merged["편명"])merged["편명"]=v115Upper(merged["편명"]);
+  if(merged["편명/일자"])merged["편명/일자"]=v115Upper(merged["편명/일자"]);
+  return merged;
+};
+
+/* 화면 표시는 편명 / DATE날짜 / ETD-ETA */
+function v115PatchFlightDisplay(){
+  try{
+    document.querySelectorAll(".a-cargo-card,.shipper-card,#f-list-body .cargo-card").forEach(card=>{
+      let c=null;
+      const oc=card.getAttribute("onclick")||"";
+      const m=oc.match(/['`]([^'`]*(?:%7C%7C|\|\|)[^'`]*)['`]/);
+      if(m&&typeof findCargoByKey==="function")c=findCargoByKey(allCargos,m[1])||findCargoByKey(shipperCargos||[],m[1]);
+      if(!c)return;
+      const sub=[...card.querySelectorAll(".cc-sub")].find(el=>(el.textContent||"").includes("ICN")||(el.textContent||"").includes("→"));
+      if(sub){
+        const raw=sub.innerHTML;
+        const marker=raw.includes(" · ICN")?" · ICN":(raw.includes(" · ")?" · ":null);
+        if(marker){
+          const parts=raw.split(marker);
+          sub.innerHTML=esc(v115FlightLine(c))+marker+parts.slice(1).join(marker);
+        }else sub.textContent=v115FlightLine(c);
+      }
+    });
+    if(currentCargo){
+      const el=document.getElementById("fd-flt");
+      if(el)el.textContent=v115FlightLine(currentCargo);
+    }
+  }catch(e){}
+}
+
+["renderAdminCargos","filterAdminCargos","filterShipper","renderFieldList","filterField"].forEach(fn=>{
+  const old=window[fn];
+  if(typeof old==="function"){
+    window[fn]=function(...args){
+      const r=old.apply(this,args);
+      setTimeout(v115PatchFlightDisplay,0);
+      setTimeout(v115BindInputs,0);
+      return r;
+    };
+  }
+});
+const _setFormValuesBeforeV115=typeof setFormValues==="function"?setFormValues:null;
+if(_setFormValuesBeforeV115){
+  setFormValues=function(prefix,c,customerFixed){
+    _setFormValuesBeforeV115(prefix,c,customerFixed);
+    const etd=document.getElementById(prefix+"skd");
+    const eta=document.getElementById(prefix+"eta");
+    if(etd)etd.value=(c&&((c["ETD"]||c["SKD"]||c["출발일시"])))||"";
+    if(eta)eta.value=(c&&((c["ETA"]||c["입고예정시간"])))||"";
+    v115BindInputs();
+  };
+}
+setInterval(v115BindInputs,1000);
+setTimeout(()=>{v115BindInputs();v115PatchFlightDisplay();},0);
+
+
+/* v116 FIXED - ETD ETA BACK TO V113 STYLE FROM v115 */
+(function(){
+  function keep(v){ return String(v ?? "").trim(); }
+
+  // ETD/ETA는 v113처럼 사용자가 입력한 값을 그대로 보존한다.
+  // 단, 편명/영문 필드는 기존 v115 대문자 정책을 유지한다.
+  function restoreEtdEtaFields(prefix, c){
+    const etdEl = document.getElementById(prefix + "skd");
+    const etaEl = document.getElementById(prefix + "eta");
+    const etd = keep(etdEl ? etdEl.value : (c && (c.ETD || c.SKD || c["출발일시"])));
+    const eta = keep(etaEl ? etaEl.value : (c && (c.ETA || c["입고예정시간"])));
+
+    if(etd){
+      c.ETD = etd;
+      c.SKD = etd;
+      c["출발일시"] = etd;
+    }
+    if(eta){
+      c.ETA = eta;
+      c["입고예정시간"] = eta;
+    }
+    return c;
+  }
+
+  // 등록/수정 폼에서 ETD/ETA 입력 이벤트를 강제 포맷하지 않도록 clone으로 초기화
+  function unbindForcedEtdEtaFormat(){
+    ["r-skd","r-eta","s-r-skd","s-r-eta"].forEach(id=>{
+      const el = document.getElementById(id);
+      if(!el || el.dataset.v116Restored === "1") return;
+      const clone = el.cloneNode(true);
+      clone.value = el.value || "";
+      clone.dataset.v116Restored = "1";
+      clone.placeholder = clone.placeholder || (id.endsWith("eta") ? "ETA" : "ETD");
+      el.parentNode.replaceChild(clone, el);
+    });
+  }
+
+  if(typeof makeCargoFromForm === "function"){
+    const oldMakeCargoFromForm = makeCargoFromForm;
+    window.makeCargoFromForm = function(prefix, customerName){
+      const c = oldMakeCargoFromForm(prefix, customerName);
+      return restoreEtdEtaFields(prefix, c);
+    };
+  }
+
+  if(typeof readCargoForm === "function"){
+    const oldReadCargoForm = readCargoForm;
+    window.readCargoForm = function(prefix, customerName, hawbs){
+      const c = oldReadCargoForm(prefix, customerName, hawbs);
+      return restoreEtdEtaFields(prefix, c);
+    };
+  }
+
+  if(typeof setFormValues === "function"){
+    const oldSetFormValues = setFormValues;
+    window.setFormValues = function(prefix, c, customerFixed){
+      oldSetFormValues(prefix, c, customerFixed);
+      const etdEl = document.getElementById(prefix + "skd");
+      const etaEl = document.getElementById(prefix + "eta");
+      if(etdEl) etdEl.value = keep(c && (c.ETD || c.SKD || c["출발일시"]));
+      if(etaEl) etaEl.value = keep(c && (c.ETA || c["입고예정시간"]));
+      setTimeout(unbindForcedEtdEtaFormat, 0);
+    };
+  }
+
+  // 수정 저장 시 ETD/ETA 빈값으로 덮어쓰기 방지
+  window.mergeCargoEdit = function(oldC, newC){
+    const merged = { ...(oldC || {}), ...(newC || {}) };
+
+    const newEtd = keep(newC && (newC.ETD || newC.SKD || newC["출발일시"]));
+    const newEta = keep(newC && (newC.ETA || newC["입고예정시간"]));
+
+    if(!newEtd){
+      const oldEtd = keep(oldC && (oldC.ETD || oldC.SKD || oldC["출발일시"]));
+      merged.ETD = oldEtd;
+      merged.SKD = oldEtd;
+      merged["출발일시"] = oldEtd;
+    }
+    if(!newEta){
+      const oldEta = keep(oldC && (oldC.ETA || oldC["입고예정시간"]));
+      merged.ETA = oldEta;
+      merged["입고예정시간"] = oldEta;
+    }
+    return merged;
+  };
+
+  // v115 표시 형식은 유지: 편명 / DATE / ETD-ETA
+  // ETD/ETA 값은 변환하지 않고 그대로 사용
+  if(typeof v115FlightLine === "function"){
+    const oldV115FlightLine = v115FlightLine;
+    window.v115FlightLine = function(c){
+      return oldV115FlightLine(c);
+    };
+  }
+
+  setInterval(unbindForcedEtdEtaFormat, 1000);
+  document.addEventListener("DOMContentLoaded", unbindForcedEtdEtaFormat);
+  setTimeout(unbindForcedEtdEtaFormat, 0);
+})();
+
+
+/* v117 FIX ETD/ETA 4-DIGIT TIME PRESERVE */
+(function(){
+  function fixTime(v){
+    const raw = String(v ?? "").trim();
+    if(!raw) return "";
+    const digits = raw.replace(/\D/g, "");
+    if(digits.length === 4) return digits;       // 1050 -> 1050 그대로
+    if(digits.length === 3) return "0" + digits; // 830 -> 0830
+    if(digits.length > 4) return digits.slice(0,4);
+    return digits || raw;
+  }
+
+  function bindTime(id){
+    const el = document.getElementById(id);
+    if(!el || el.dataset.v117TimeFixed === "1") return;
+
+    // 기존 input 이벤트 제거를 위해 clone 교체
+    const clone = el.cloneNode(true);
+    clone.value = el.value || "";
+    clone.dataset.v117TimeFixed = "1";
+    clone.setAttribute("inputmode","numeric");
+    clone.setAttribute("placeholder", id.endsWith("eta") ? "ETA 예) 1300" : "ETD 예) 1050");
+
+    clone.addEventListener("input", function(){
+      const pos = clone.selectionStart;
+      const digits = clone.value.replace(/\D/g, "").slice(0,4);
+      clone.value = digits;
+      try{ clone.setSelectionRange(pos,pos); }catch(e){}
+    });
+
+    clone.addEventListener("blur", function(){
+      clone.value = fixTime(clone.value);
+    });
+
+    el.parentNode.replaceChild(clone, el);
+  }
+
+  function bindAll(){
+    ["r-skd","r-eta","s-r-skd","s-r-eta"].forEach(bindTime);
+  }
+
+  function applyTimeToCargo(prefix, c){
+    const etdEl = document.getElementById(prefix + "skd");
+    const etaEl = document.getElementById(prefix + "eta");
+    const etd = etdEl ? fixTime(etdEl.value) : "";
+    const eta = etaEl ? fixTime(etaEl.value) : "";
+
+    if(etd){
+      c.ETD = etd;
+      c.SKD = etd;
+      c["출발일시"] = etd;
+    }
+    if(eta){
+      c.ETA = eta;
+      c["입고예정시간"] = eta;
+    }
+    return c;
+  }
+
+  if(typeof makeCargoFromForm === "function"){
+    const oldMake = makeCargoFromForm;
+    window.makeCargoFromForm = function(prefix, customerName){
+      const c = oldMake(prefix, customerName);
+      return applyTimeToCargo(prefix, c);
+    };
+  }
+
+  if(typeof readCargoForm === "function"){
+    const oldRead = readCargoForm;
+    window.readCargoForm = function(prefix, customerName, hawbs){
+      const c = oldRead(prefix, customerName, hawbs);
+      return applyTimeToCargo(prefix, c);
+    };
+  }
+
+  if(typeof setFormValues === "function"){
+    const oldSet = setFormValues;
+    window.setFormValues = function(prefix, c, customerFixed){
+      oldSet(prefix, c, customerFixed);
+      setTimeout(function(){
+        bindAll();
+        const etdEl = document.getElementById(prefix + "skd");
+        const etaEl = document.getElementById(prefix + "eta");
+        if(etdEl) etdEl.value = fixTime((c && (c.ETD || c.SKD || c["출발일시"])) || "");
+        if(etaEl) etaEl.value = fixTime((c && (c.ETA || c["입고예정시간"])) || "");
+      },0);
+    };
+  }
+
+  // 기존에 잘못 저장된 0105 같은 값은 자동 추정 보정하지 않음.
+  // 새 입력/수정부터 1050 -> 1050으로 정확히 저장.
+  setInterval(bindAll, 800);
+  document.addEventListener("DOMContentLoaded", bindAll);
+  setTimeout(bindAll, 0);
+})();
+
+
+/* v118 ETD ETA PURE TEXT 00:00 - NO AUTO NUMBER FORCE */
+(function(){
+  function cleanTimeText(v){
+    let s = String(v ?? "").trim();
+    // 잘못 들어간 기본값/무의미값 제거
+    if(s === "0000" || s === "00:00" || s === "0") return "";
+    // 4자리만 들어온 경우 보기 좋게 00:00으로 바꿈
+    if(/^\d{4}$/.test(s)) return s.slice(0,2) + ":" + s.slice(2,4);
+    // 3자리만 들어온 경우 0 붙여 00:00
+    if(/^\d{3}$/.test(s)) return "0" + s.slice(0,1) + ":" + s.slice(1,3);
+    return s;
+  }
+
+  function bindTextTimeInput(id){
+    const old = document.getElementById(id);
+    if(!old || old.dataset.v118TextTime === "1") return;
+
+    const el = old.cloneNode(true);
+    el.dataset.v118TextTime = "1";
+    el.type = "text";
+    el.inputMode = "text";
+    el.placeholder = id.endsWith("eta") ? "ETA 예) 13:00" : "ETD 예) 10:50";
+    el.value = cleanTimeText(old.value);
+
+    // 입력 중에는 절대 자동으로 값 재배열하지 않음. 삭제 자유.
+    el.addEventListener("input", function(){
+      if(el.value === "0000" || el.value === "00:00") el.value = "";
+    });
+
+    // 포커스 아웃 때만 1050 -> 10:50 정도의 보기 형식 보정
+    el.addEventListener("blur", function(){
+      el.value = cleanTimeText(el.value);
+    });
+
+    old.parentNode.replaceChild(el, old);
+  }
+
+  function bindAllTextTimes(){
+    ["r-skd","r-eta","s-r-skd","s-r-eta"].forEach(bindTextTimeInput);
+  }
+
+  function applyTextTimeToCargo(prefix, c){
+    const etdEl = document.getElementById(prefix + "skd");
+    const etaEl = document.getElementById(prefix + "eta");
+    const etd = etdEl ? cleanTimeText(etdEl.value) : "";
+    const eta = etaEl ? cleanTimeText(etaEl.value) : "";
+
+    c.ETD = etd;
+    c.SKD = etd;
+    c["출발일시"] = etd;
+
+    c.ETA = eta;
+    c["입고예정시간"] = eta;
+    return c;
+  }
+
+  if(typeof makeCargoFromForm === "function"){
+    const oldMake = makeCargoFromForm;
+    window.makeCargoFromForm = function(prefix, customerName){
+      bindAllTextTimes();
+      const c = oldMake(prefix, customerName);
+      return applyTextTimeToCargo(prefix, c);
+    };
+  }
+
+  if(typeof readCargoForm === "function"){
+    const oldRead = readCargoForm;
+    window.readCargoForm = function(prefix, customerName, hawbs){
+      bindAllTextTimes();
+      const c = oldRead(prefix, customerName, hawbs);
+      return applyTextTimeToCargo(prefix, c);
+    };
+  }
+
+  if(typeof setFormValues === "function"){
+    const oldSet = setFormValues;
+    window.setFormValues = function(prefix, c, customerFixed){
+      oldSet(prefix, c, customerFixed);
+      setTimeout(function(){
+        bindAllTextTimes();
+        const etdEl = document.getElementById(prefix + "skd");
+        const etaEl = document.getElementById(prefix + "eta");
+        if(etdEl) etdEl.value = cleanTimeText((c && (c.ETD || c.SKD || c["출발일시"])) || "");
+        if(etaEl) etaEl.value = cleanTimeText((c && (c.ETA || c["입고예정시간"])) || "");
+      },0);
+    };
+  }
+
+  // 기존 저장 데이터 중 0000/00:00 기본값 정리
+  function cleanStoredTimes(){
+    try{
+      let changed = false;
+      (allCargos || []).forEach(c=>{
+        ["ETD","SKD","출발일시","ETA","입고예정시간"].forEach(k=>{
+          const nv = cleanTimeText(c[k]);
+          if(c[k] !== nv){ c[k] = nv; changed = true; }
+        });
+      });
+      if(changed) saveCargosLocal(allCargos);
+    }catch(e){}
+  }
+
+  setInterval(bindAllTextTimes, 800);
+  document.addEventListener("DOMContentLoaded", function(){
+    bindAllTextTimes();
+    cleanStoredTimes();
+  });
+  setTimeout(function(){
+    bindAllTextTimes();
+    cleanStoredTimes();
+  },0);
+})();
+
+
+/* v119 RESTORE ETD/ETA EXACTLY LIKE v111 - NO AUTO FORMAT, NO 0000 CLEANER */
+(function(){
+  function raw(v){ return String(v ?? "").trim(); }
+
+  function detachEtdEtaInputs(){
+    ["r-skd","r-eta","s-r-skd","s-r-eta"].forEach(id=>{
+      const el=document.getElementById(id);
+      if(!el || el.dataset.v119Raw==="1") return;
+      const clone=el.cloneNode(true);
+      clone.dataset.v119Raw="1";
+      clone.type="text";
+      clone.inputMode="text";
+      clone.value=el.value || "";
+      clone.placeholder=id.endsWith("eta") ? "ETA" : "ETD";
+      // v111처럼 아무 자동변환도 하지 않는다. 입력한 글자 그대로.
+      el.parentNode.replaceChild(clone,el);
+    });
+  }
+
+  // v111 방식: skd -> SKD/출발일시, eta -> 입고예정시간. 입력값 그대로.
+  function applyV111EtdEta(prefix,c){
+    const skd=raw(document.getElementById(prefix+"skd")?.value || "");
+    const eta=raw(document.getElementById(prefix+"eta")?.value || "");
+    c["SKD"]=skd;
+    c["출발일시"]=skd;
+    c["입고예정시간"]=eta;
+
+    // 기존 화면 표시 호환용 키는 유지하되 값은 동일하게 그대로 넣음
+    c["ETD"]=skd;
+    c["ETA"]=eta;
+    return c;
+  }
+
+  // v111 방식 readCargoForm 복구
+  window.readCargoForm=function(prefix, customerName, hawbs){
+    const g=id=>(document.getElementById(prefix+id)?.value||"").trim();
+    const mawb=g("mawb");
+    const dest=g("dest");
+    const item=g("item");
+    const condi=g("condi");
+    const pcs=g("pcs");
+    const gw=g("gw");
+    const customer=customerName||g("customer")||"";
+    const c={
+      "DATE":g("date"),
+      "CONSOL":g("consol"),
+      "SHIPPER":g("shipper"),
+      "항공사":g("airline"),
+      "DEST":dest,"목적지":dest,
+      "수량(PCS)":pcs,"총수량":pcs,
+      "중량(kg)":gw,"총중량":gw,
+      "ITEM":item,"품목":item,
+      "CONDI":condi,"화물구분":condi,
+      "MAWB":mawb,"AWB":mawb,
+      "HAWB":(hawbs||[]).filter(h=>h.trim()).join(", "),
+      "편명/일자":g("flight"),"편명":g("flight"),
+      "SKD":g("skd"),"출발일시":g("skd"),
+      "입고예정시간":g("eta"),
+      "고객사명":customer,"포워딩명":customer,"화주ID":customer,
+      "상태":"입력대기"
+    };
+    c["ETD"]=c["SKD"];
+    c["ETA"]=c["입고예정시간"];
+    return c;
+  };
+
+  // v111 방식 makeCargoFromForm 복구
+  window.makeCargoFromForm=function(prefix, customerName){
+    const g=id=>(document.getElementById(prefix+id)?.value||"").trim();
+    const mawb=g("mawb");
+    const shipper=g("shipper");
+    const airline=g("airline");
+    const dest=g("dest");
+    const hawbStr=(prefix==="s-r-"?sRegHawbs:regHawbs).filter(h=>h.trim()).join(", ");
+    const c={
+      "AWB":mawb,"MAWB":mawb,"HAWB":hawbStr,
+      "항공사":airline,"편명/일자":g("flight"),"편명":g("flight"),
+      "출발지":"ICN","DEST":dest,"목적지":dest,
+      "출발일시":g("skd"),"SKD":g("skd"),
+      "입고예정시간":g("eta"),
+      "CONSOL":g("consol"),
+      "CONDI":g("condi"),"화물구분":g("condi"),
+      "ITEM":g("item"),"품목":g("item"),
+      "SHIPPER":shipper,
+      "총수량":g("pcs"),"수량(PCS)":g("pcs"),
+      "총중량":g("gw"),"중량(kg)":g("gw"),
+      "고객사명":customerName||"",
+      "포워딩명":customerName||"",
+      "화주ID":customerName||"",
+      "상태":"입력대기",
+      "현장수량":"","현장중량":"","볼륨중량":"","운임중량":"","현장메모":"","반입시간":"","사진URL":""
+    };
+    c["ETD"]=c["SKD"];
+    c["ETA"]=c["입고예정시간"];
+    return c;
+  };
+
+  // v111 방식 setFormValues 복구: skd/eta 입력칸에 저장값 그대로 넣음
+  window.setFormValues=function(prefix,c,customerFixed){
+    const set=(id,val)=>{const el=document.getElementById(prefix+id);if(el)el.value=val||"";};
+    set("date",c["DATE"]||"");
+    set("consol",c["CONSOL"]||"");
+    set("shipper",c["SHIPPER"]||"");
+    set("airline",c["항공사"]||"");
+    set("dest",c["DEST"]||c["목적지"]||"");
+    set("pcs",c["수량(PCS)"]||c["총수량"]||"");
+    set("gw",c["중량(kg)"]||c["총중량"]||"");
+    set("item",c["ITEM"]||c["품목"]||"");
+    set("condi",c["CONDI"]||c["화물구분"]||"");
+    set("customer",customerFixed || c["고객사명"]||c["포워딩명"]||"");
+    set("mawb",c["MAWB"]||c["AWB"]||"");
+    set("flight",c["편명/일자"]||c["편명"]||"");
+    set("skd",c["SKD"]||c["출발일시"]||c["ETD"]||"");
+    set("eta",c["입고예정시간"]||c["ETA"]||"");
+    setTimeout(detachEtdEtaInputs,0);
+  };
+
+  // v111 방식 병합: 단순 병합. 단, v118 이후 호환 위해 ETD/ETA도 skd/eta와 맞춤.
+  window.mergeCargoEdit=function(oldC,newC){
+    const merged={...(oldC||{}),...(newC||{})};
+    merged["ETD"]=merged["SKD"]||merged["출발일시"]||merged["ETD"]||"";
+    merged["ETA"]=merged["입고예정시간"]||merged["ETA"]||"";
+    return merged;
+  };
+
+  // 이전 버전들이 만든 강제 포맷 함수들을 무력화
+  window.v114Time=function(v){return raw(v);};
+  window.v116ETD=function(v){return raw(v);};
+  window.v116ETA=function(v){return raw(v);};
+
+  setInterval(detachEtdEtaInputs,500);
+  document.addEventListener("DOMContentLoaded",detachEtdEtaInputs);
+  setTimeout(detachEtdEtaInputs,0);
+})();
+
+
+/* v122 FROM v119 ONLY - FIX STEP 4/5/6 V DISPLAY, KEEP CUSTOMER DETAIL UI */
+(function(){
+  function stepDoneV122(c,label){
+    if(!c)return false;
+    if(label==="입고")return c["화물입고확인"]==="완료"||c["반입체크"]==="완료"||c["입고체크"]==="완료";
+    if(label==="상태")return !!(c["화물상태"]||c["상태체크"]);
+    if(label==="실측")return c["실측완료"]==="완료"||c["실측완료"]==="넘김"||c["실측상태"]==="완료"||c["실측상태"]==="넘김"||c["실측넘기기"]==="완료"||!!(c["실측상세"]||c["현장실측상세"]||c["measureRows"]||c["sizeRows"]||c["현장수량"]||c["현장중량"]);
+    if(label==="사진")return c["사진완료"]==="완료"||c["사진완료"]==="넘김"||c["사진상태"]==="완료"||c["사진상태"]==="넘김"||c["사진넘기기"]==="완료"||!!(c["사진수"]||c["화물사진수"]||c["사진URL"]||c["화물사진"]);
+    if(label==="반입")return c["반입완료"]==="완료"||c["반입체크완료"]==="완료"||c["항공사반입완료"]==="완료";
+    if(label==="서류")return c["서류접수"]==="완료"||c["서류확인"]==="완료";
+    return false;
+  }
+
+  // Existing helpers read only old fields; extend them without changing layout.
+  window.isPhotoDone=function(c){
+    return stepDoneV122(c,"사진");
+  };
+  window.isFieldCompleteByDoc=function(c){
+    return stepDoneV122(c,"서류");
+  };
+
+  // Card V display used by admin/customer/field lists.
+  window.renderFieldCardSteps=function(c){
+    const labels=["입고","상태","실측","사진","반입","서류"];
+    return `<div class="field-card-steps">${labels.map((label,i,arr)=>{
+      const done=stepDoneV122(c,label);
+      const bad=label==="상태"&&typeof isAbnormalCargoStatus==="function"&&isAbnormalCargoStatus(c["화물상태"]||c["상태체크"]);
+      const dotCls=done?(bad?" bad":" done"):"";
+      const labelCls=done?(bad?" bad":" done"):"";
+      const mark=done?(bad?"!":"✓"):(i+1);
+      return `<div class="field-card-step">
+        <div class="field-card-step-inner">
+          <div class="field-card-step-dot${dotCls}">${mark}</div>
+          <div class="field-card-step-label${labelCls}">${label}</div>
+        </div>
+        ${i<arr.length-1?`<div class="field-card-step-line${done&&!bad?" done":""}"></div>`:""}
+      </div>`;
+    }).join("")}</div>`;
+  };
+  window.renderUnifiedCardSteps=function(c){return renderFieldCardSteps(c);};
+
+  // Customer/admin detail progress calculation. Keep the original detail UI, only correct done states.
+  window.getSSteps=function(c){
+    const labels=[
+      {label:"입고확인",key:"입고"},
+      {label:"상태확인",key:"상태"},
+      {label:"실측완료",key:"실측"},
+      {label:"사진완료",key:"사진"},
+      {label:"반입완료",key:"반입"},
+      {label:"서류접수",key:"서류"}
+    ];
+    let previousDone=true;
+    return labels.map(s=>{
+      const done=stepDoneV122(c,s.key);
+      const state=done?"done":(previousDone?"active":"pend");
+      if(!done)previousDone=false;
+      return {...s,state};
+    });
+  };
+
+  // Normalize fields saved by field buttons 4,5,6 so other apps can see the same V.
+  const oldPushStepV122=typeof pushStep==="function"?pushStep:null;
+  window.pushStep=async function(stepData){
+    const d={...(stepData||{})};
+
+    if("사진완료" in d || "사진수" in d || "사진URL" in d || "사진상태" in d || "사진넘기기" in d){
+      const on=d["사진완료"]==="완료"||d["사진완료"]==="넘김"||d["사진상태"]==="완료"||d["사진상태"]==="넘김"||d["사진넘기기"]==="완료"||!!d["사진수"]||!!d["사진URL"];
+      d["사진완료"]=on?(d["사진완료"]||"완료"):"";
+      d["사진상태"]=on?(d["사진상태"]||d["사진완료"]||"완료"):"";
+      if(d["사진수"])d["화물사진수"]=d["사진수"];
+      if(d["사진URL"])d["화물사진"]=d["사진URL"];
+    }
+    if("반입체크완료" in d || "반입완료" in d || "항공사반입완료" in d){
+      const on=d["반입체크완료"]==="완료"||d["반입완료"]==="완료"||d["항공사반입완료"]==="완료";
+      d["반입체크완료"]=on?"완료":"";
+      d["반입완료"]=on?"완료":"";
+      d["항공사반입완료"]=on?"완료":"";
+    }
+    if("서류접수" in d || "서류확인" in d){
+      const on=d["서류접수"]==="완료"||d["서류확인"]==="완료";
+      d["서류접수"]=on?"완료":"";
+      d["서류확인"]=on?"완료":"";
+    }
+
+    const r=oldPushStepV122?await oldPushStepV122(d):undefined;
+    try{renderAdminCargos?.();}catch(e){}
+    try{filterShipper?.();}catch(e){}
+    try{renderFieldList?.(allCargos);}catch(e){}
+    return r;
+  };
+
+  // Photo confirm should also save the aliases, but no UI change.
+  const oldConfirmPhotoV122=window.confirmPhoto;
+  if(typeof oldConfirmPhotoV122==="function"){
+    window.confirmPhoto=async function(){
+      const cnt=(fieldPhotos||[]).filter(Boolean).length;
+      if(!cnt)return oldConfirmPhotoV122();
+      const r=await oldConfirmPhotoV122();
+      await pushStep({사진수:cnt+"장",화물사진수:cnt+"장",사진완료:"완료",사진상태:"완료"});
+      try{updateStepCard(4,"done");}catch(e){}
+      return r;
+    };
+  }
+
+  // Force re-render of cards with corrected V calculation after screen refresh.
+  ["renderAdminCargos","filterAdminCargos","filterShipper","renderFieldList","filterField"].forEach(fn=>{
+    const old=window[fn];
+    if(typeof old==="function"){
+      window[fn]=function(...args){
+        const r=old.apply(this,args);
+        setTimeout(()=>{
+          try{
+            document.querySelectorAll(".a-cargo-card,.shipper-card,#f-list-body .cargo-card").forEach(card=>{
+              const oc=card.getAttribute("onclick")||"";
+              const m=oc.match(/['`]([^'`]*(?:%7C%7C|\|\|)[^'`]*)['`]/);
+              let c=null;
+              if(m&&typeof findCargoByKey==="function")c=findCargoByKey(allCargos,m[1])||findCargoByKey(shipperCargos||[],m[1]);
+              if(c){
+                const steps=card.querySelector(".field-card-steps");
+                if(steps)steps.outerHTML=renderFieldCardSteps(c);
+              }
+            });
+          }catch(e){}
+        },0);
+        return r;
+      };
+    }
+  });
+})();
+
+
+/* v123 FROM v122 - KEEP ADMIN/FIELD SEARCH RESULT AFTER UPDATE */
+(function(){
+  function hasValue(id){
+    const el=document.getElementById(id);
+    return !!(el && String(el.value||"").trim());
+  }
+  function hasAdminFilter(){
+    return hasValue("a-search")||hasValue("a-filter-shipper")||hasValue("a-filter-dest")||hasValue("a-filter-status")||hasValue("a-date-from")||hasValue("a-date-to");
+  }
+  function hasFieldFilter(){
+    return hasValue("f-search")||hasValue("f-filter-fwd")||hasValue("f-filter-status")||hasValue("f-filter-dest")||hasValue("f-date-from")||hasValue("f-date-to");
+  }
+  function refreshAdminKeepSearch(){
+    try{
+      renderAdminDash?.();
+      if(hasAdminFilter()) filterAdminCargos?.();
+      else renderAdminCargos?.();
+    }catch(e){console.log("v123 admin refresh",e);}
+  }
+  function refreshFieldKeepSearch(){
+    try{
+      buildFieldFilterOptions?.();
+      if(hasFieldFilter()) filterField?.();
+      else renderFieldList?.(allCargos||[]);
+      renderClientBar?.();
+    }catch(e){console.log("v123 field refresh",e);}
+  }
+
+  const oldRefreshV123 = typeof refreshCargoViewsAfterUpdate==="function" ? refreshCargoViewsAfterUpdate : null;
+  window.refreshCargoViewsAfterUpdate=function(){
+    try{
+      if(session?.role==="admin"){ refreshAdminKeepSearch(); return; }
+      if(session?.role==="field"){ refreshFieldKeepSearch(); return; }
+      if(session?.role==="shipper"){
+        if(oldRefreshV123)return oldRefreshV123();
+        renderSCounts?.();filterShipper?.();
+        return;
+      }
+    }catch(e){console.log("v123 refresh override",e);}
+    if(oldRefreshV123)return oldRefreshV123();
+  };
+
+  const oldPushV123 = typeof pushStep==="function" ? pushStep : null;
+  if(oldPushV123){
+    window.pushStep=async function(stepData){
+      const r=await oldPushV123(stepData);
+      setTimeout(()=>{
+        if(session?.role==="admin") refreshAdminKeepSearch();
+        if(session?.role==="field") refreshFieldKeepSearch();
+      },0);
+      return r;
+    };
+  }
+
+  const oldFilterFieldV123=typeof filterField==="function"?filterField:null;
+  if(oldFilterFieldV123){
+    window.filterField=function(...args){
+      window.__v123_allow_field_full_render=true;
+      try{return oldFilterFieldV123.apply(this,args);}
+      finally{window.__v123_allow_field_full_render=false;}
+    };
+  }
+  const oldFilterAdminV123=typeof filterAdminCargos==="function"?filterAdminCargos:null;
+  if(oldFilterAdminV123){
+    window.filterAdminCargos=function(...args){
+      window.__v123_allow_admin_full_render=true;
+      try{return oldFilterAdminV123.apply(this,args);}
+      finally{window.__v123_allow_admin_full_render=false;}
+    };
+  }
+
+  const oldRenderAdminV123=typeof renderAdminCargos==="function"?renderAdminCargos:null;
+  if(oldRenderAdminV123){
+    window.renderAdminCargos=function(...args){
+      if(hasAdminFilter() && window.__v123_allow_admin_full_render!==true){
+        return filterAdminCargos?.();
+      }
+      return oldRenderAdminV123.apply(this,args);
+    };
+  }
+  const oldRenderFieldV123=typeof renderFieldList==="function"?renderFieldList:null;
+  if(oldRenderFieldV123){
+    window.renderFieldList=function(list){
+      if(hasFieldFilter() && window.__v123_allow_field_full_render!==true){
+        return filterField?.();
+      }
+      return oldRenderFieldV123.call(this,list);
+    };
+  }
+})();
+
+
+/* v124 FROM v123 - SIZE SKIP SHOW '-' ON CARDS AND '패스' IN DETAIL */
+(function(){
+  function isSizeSkipV124(c){
+    return !!(c && (
+      c["실측넘기기"]==="완료" ||
+      c["실측넘기기"]==="Y" ||
+      c["실측넘기기"]===true ||
+      c["실측완료"]==="넘김" ||
+      c["실측상태"]==="넘김" ||
+      c["실측패스"]==="완료"
+    ));
+  }
+  function isStepDoneV124(c,label){
+    if(!c)return false;
+    if(label==="입고")return c["화물입고확인"]==="완료"||c["반입체크"]==="완료"||c["입고체크"]==="완료";
+    if(label==="상태")return !!(c["화물상태"]||c["상태체크"]);
+    if(label==="실측")return isSizeSkipV124(c)||c["실측완료"]==="완료"||c["실측상태"]==="완료"||!!(c["실측상세"]||c["현장실측상세"]||c["measureRows"]||c["sizeRows"]||c["현장수량"]||c["현장중량"]);
+    if(label==="사진")return c["사진완료"]==="완료"||c["사진완료"]==="넘김"||c["사진상태"]==="완료"||c["사진상태"]==="넘김"||c["사진넘기기"]==="완료"||!!(c["사진수"]||c["화물사진수"]||c["사진URL"]||c["화물사진"]);
+    if(label==="반입")return c["반입완료"]==="완료"||c["반입체크완료"]==="완료"||c["항공사반입완료"]==="완료";
+    if(label==="서류")return c["서류접수"]==="완료"||c["서류확인"]==="완료";
+    return false;
+  }
+
+  window.renderFieldCardSteps=function(c){
+    const labels=["입고","상태","실측","사진","반입","서류"];
+    return `<div class="field-card-steps">${labels.map((label,i,arr)=>{
+      const done=isStepDoneV124(c,label);
+      const skip=label==="실측"&&isSizeSkipV124(c);
+      const bad=label==="상태"&&typeof isAbnormalCargoStatus==="function"&&isAbnormalCargoStatus(c["화물상태"]||c["상태체크"]);
+      const dotCls=done?(bad?" bad":" done"):"";
+      const labelCls=done?(bad?" bad":" done"):"";
+      const mark=done?(skip?"-":(bad?"!":"✓")):(i+1);
+      return `<div class="field-card-step">
+        <div class="field-card-step-inner">
+          <div class="field-card-step-dot${dotCls}">${mark}</div>
+          <div class="field-card-step-label${labelCls}">${label}</div>
+        </div>
+        ${i<arr.length-1?`<div class="field-card-step-line${done&&!bad?" done":""}"></div>`:""}
+      </div>`;
+    }).join("")}</div>`;
+  };
+  window.renderUnifiedCardSteps=function(c){return renderFieldCardSteps(c);};
+
+  /* 실측넘기기 저장 시 패스 별칭도 남겨 상세에서 확실히 인식 */
+  const oldPushV124=typeof pushStep==="function"?pushStep:null;
+  if(oldPushV124){
+    window.pushStep=async function(stepData){
+      const d={...(stepData||{})};
+      const skip=d["실측완료"]==="넘김"||d["실측상태"]==="넘김"||d["실측넘기기"]==="완료";
+      if(skip){
+        d["실측완료"]="넘김";
+        d["실측상태"]="넘김";
+        d["실측넘기기"]="완료";
+        d["실측패스"]="완료";
+      }
+      const r=await oldPushV124(d);
+      setTimeout(()=>{
+        try{renderAdminCargos?.();}catch(e){}
+        try{filterShipper?.();}catch(e){}
+        try{renderFieldList?.(allCargos);}catch(e){}
+      },0);
+      return r;
+    };
+  }
+
+  /* 기존 고객사/관리자 상세 구조 유지: 실측란 텍스트만 패스로 보정 */
+  function patchDetailPassV124(){
+    try{
+      const candidates=document.querySelectorAll("#s-m-body .mi-item,.modal .mi-item,.sheet .mi-item,.cargo-detail-modal .mi-item");
+      candidates.forEach(item=>{
+        const lbl=item.querySelector(".mi-lbl")?.textContent?.trim()||"";
+        if(lbl.includes("실측")){
+          const c=typeof currentCargo!=="undefined"&&currentCargo?currentCargo:null;
+          if(c&&isSizeSkipV124(c)){
+            const val=item.querySelector(".mi-val");
+            if(val)val.textContent="패스";
+          }
+        }
+      });
+      // 상세가 renderCustomerFieldInfo 기반이면 '실측' 라벨 옆 대기중/넘김 텍스트도 패스로 교체
+      const body=document.getElementById("s-m-body");
+      if(body){
+        body.querySelectorAll("*").forEach(el=>{
+          if(el.children.length===0 && /넘김|실측 넘김/.test(el.textContent||"")){
+            el.textContent=(el.textContent||"").replace(/실측\s*넘김|넘김/g,"패스");
+          }
+        });
+      }
+    }catch(e){}
+  }
+
+  const oldOpenAdminV124=typeof openAdminCargoDetail==="function"?openAdminCargoDetail:null;
+  if(oldOpenAdminV124){
+    window.openAdminCargoDetail=function(...args){
+      const r=oldOpenAdminV124.apply(this,args);
+      setTimeout(patchDetailPassV124,50);
+      return r;
+    };
+  }
+  const oldOpenSV124=typeof openSModalByKey==="function"?openSModalByKey:null;
+  if(oldOpenSV124){
+    window.openSModalByKey=function(...args){
+      const r=oldOpenSV124.apply(this,args);
+      setTimeout(patchDetailPassV124,50);
+      return r;
+    };
+  }
+  const oldOpenModalV124=typeof openCargoDetailModal==="function"?openCargoDetailModal:null;
+  if(oldOpenModalV124){
+    window.openCargoDetailModal=function(c,mode){
+      const r=oldOpenModalV124(c,mode);
+      setTimeout(()=>{
+        if(isSizeSkipV124(c)){
+          const body=document.getElementById("s-m-body");
+          if(body){
+            body.innerHTML=body.innerHTML.replace(/실측\s*넘김|넘김/g,"패스");
+          }
+        }
+        patchDetailPassV124();
+      },50);
+      return r;
+    };
+  }
+
+  /* 카드 재렌더 후 실측 '-' 유지 */
+  ["renderAdminCargos","filterAdminCargos","filterShipper","renderFieldList","filterField"].forEach(fn=>{
+    const old=window[fn];
+    if(typeof old==="function"){
+      window[fn]=function(...args){
+        const r=old.apply(this,args);
+        setTimeout(()=>{
+          try{
+            document.querySelectorAll(".a-cargo-card,.shipper-card,#f-list-body .cargo-card").forEach(card=>{
+              const oc=card.getAttribute("onclick")||"";
+              const m=oc.match(/['`]([^'`]*(?:%7C%7C|\|\|)[^'`]*)['`]/);
+              let c=null;
+              if(m&&typeof findCargoByKey==="function")c=findCargoByKey(allCargos,m[1])||findCargoByKey(shipperCargos||[],m[1]);
+              if(c){
+                const steps=card.querySelector(".field-card-steps");
+                if(steps)steps.outerHTML=renderFieldCardSteps(c);
+              }
+            });
+          }catch(e){}
+        },0);
+        return r;
+      };
+    }
+  });
+})();
+
+
+/* v125 FROM v124 - SKIP MARKS, 6STEP COMPLETE, ARCHIVE RESTORE FIX */
+(function(){
+  function T(v){return String(v??"").trim();}
+  function M(c){return T(c&&(c["MAWB"]||c["AWB"]||""));}
+  function H(c){return T(c&&(c["HAWB"]||"M/SINGLE"))||"M/SINGLE";}
+  function same(c,m,h){return M(c)===T(m)&&H(c)===T(h||"M/SINGLE");}
+  function now(){return new Date().toLocaleString("ko-KR");}
+
+  function isSizeSkip(c){
+    return !!(c&&(c["실측넘기기"]==="완료"||c["실측넘기기"]==="Y"||c["실측넘기기"]===true||c["실측완료"]==="넘김"||c["실측상태"]==="넘김"||c["실측패스"]==="완료"));
+  }
+  function hasSize(c){
+    return !!(c&&(c["실측상세"]||c["현장실측상세"]||c["measureRows"]||c["sizeRows"]||c["현장수량"]||c["현장중량"]||c["볼륨중량"]||c["운임중량"]||c["실측완료"]==="완료"||c["실측상태"]==="완료"));
+  }
+  function isPhotoSkip(c){
+    return !!(c&&(c["사진넘기기"]==="완료"||c["사진넘기기"]==="Y"||c["사진넘기기"]===true||c["사진완료"]==="넘김"||c["사진상태"]==="넘김"||c["사진패스"]==="완료"));
+  }
+  function hasPhoto(c){
+    return !!(c&&(c["사진URL"]||c["화물사진"]||c["사진수"]||c["화물사진수"]||c["사진완료"]==="완료"||c["사진상태"]==="완료"));
+  }
+  function done(c,label){
+    if(label==="입고")return c["화물입고확인"]==="완료"||c["반입체크"]==="완료"||c["입고체크"]==="완료";
+    if(label==="상태")return !!(c["화물상태"]||c["상태체크"]);
+    if(label==="실측")return hasSize(c)||isSizeSkip(c);
+    if(label==="사진")return hasPhoto(c)||isPhotoSkip(c);
+    if(label==="반입")return c["반입완료"]==="완료"||c["반입체크완료"]==="완료"||c["항공사반입완료"]==="완료";
+    if(label==="서류")return c["서류접수"]==="완료"||c["서류확인"]==="완료";
+    return false;
+  }
+  function isAll6Done(c){
+    return ["입고","상태","실측","사진","반입","서류"].every(x=>done(c,x));
+  }
+
+  /* 3단계/4단계 넘기기는 목록 카드에서 '-' 표시. 실제 실측/사진이 있으면 ✓ 우선 */
+  window.renderFieldCardSteps=function(c){
+    const labels=["입고","상태","실측","사진","반입","서류"];
+    return `<div class="field-card-steps">${labels.map((label,i,arr)=>{
+      const on=done(c,label);
+      const skip=(label==="실측"&&isSizeSkip(c)&&!hasSize(c))||(label==="사진"&&isPhotoSkip(c)&&!hasPhoto(c));
+      const bad=label==="상태"&&typeof isAbnormalCargoStatus==="function"&&isAbnormalCargoStatus(c["화물상태"]||c["상태체크"]);
+      const dotCls=on?(bad?" bad":" done"):"";
+      const labelCls=on?(bad?" bad":" done"):"";
+      const mark=on?(skip?"-":(bad?"!":"✓")):(i+1);
+      return `<div class="field-card-step">
+        <div class="field-card-step-inner">
+          <div class="field-card-step-dot${dotCls}">${mark}</div>
+          <div class="field-card-step-label${labelCls}">${label}</div>
+        </div>
+        ${i<arr.length-1?`<div class="field-card-step-line${on&&!bad?" done":""}"></div>`:""}
+      </div>`;
+    }).join("")}</div>`;
+  };
+  window.renderUnifiedCardSteps=function(c){return renderFieldCardSteps(c);};
+
+  function normalize(d){
+    d={...(d||{})};
+    if("실측완료" in d||"실측상태" in d||"실측넘기기" in d||"실측상세" in d||"현장실측상세" in d||"measureRows" in d||"sizeRows" in d||"현장수량" in d||"현장중량" in d){
+      const detail=d["실측상세"]||d["현장실측상세"]||d["measureRows"]||d["sizeRows"]||"";
+      const real=!!(detail||d["현장수량"]||d["현장중량"]||d["실측완료"]==="완료"||d["실측상태"]==="완료");
+      const skip=d["실측완료"]==="넘김"||d["실측상태"]==="넘김"||d["실측넘기기"]==="완료";
+      if(real){
+        d["실측완료"]="완료";d["실측상태"]="완료";d["실측넘기기"]="";d["실측패스"]="";
+        if(detail){d["실측상세"]=detail;d["현장실측상세"]=detail;d["measureRows"]=detail;d["sizeRows"]=detail;}
+      }else if(skip){
+        d["실측완료"]="넘김";d["실측상태"]="넘김";d["실측넘기기"]="완료";d["실측패스"]="완료";
+      }else{
+        d["실측완료"]="";d["실측상태"]="";d["실측넘기기"]="";d["실측패스"]="";
+      }
+    }
+    if("사진완료" in d||"사진상태" in d||"사진넘기기" in d||"사진수" in d||"화물사진수" in d||"사진URL" in d||"화물사진" in d){
+      const ph=d["사진URL"]||d["화물사진"]||"";
+      const real=!!(ph||d["사진수"]||d["화물사진수"]||d["사진완료"]==="완료"||d["사진상태"]==="완료");
+      const skip=d["사진완료"]==="넘김"||d["사진상태"]==="넘김"||d["사진넘기기"]==="완료";
+      if(real){
+        d["사진완료"]="완료";d["사진상태"]="완료";d["사진넘기기"]="";d["사진패스"]="";
+        if(d["사진수"])d["화물사진수"]=d["사진수"];
+        if(d["화물사진수"])d["사진수"]=d["화물사진수"];
+        if(ph){d["사진URL"]=ph;d["화물사진"]=ph;}
+      }else if(skip){
+        d["사진완료"]="넘김";d["사진상태"]="넘김";d["사진넘기기"]="완료";d["사진패스"]="완료";
+      }else{
+        d["사진완료"]="";d["사진상태"]="";d["사진넘기기"]="";d["사진패스"]="";d["사진수"]="";d["화물사진수"]="";d["사진URL"]="";d["화물사진"]="";
+      }
+    }
+    if("서류접수" in d||"서류확인" in d){
+      const on=d["서류접수"]==="완료"||d["서류확인"]==="완료";
+      d["서류접수"]=on?"완료":"";d["서류확인"]=on?"완료":"";
+      if(!on&&d["상태"]==="현장완료")d["상태"]="입력대기";
+    }
+    return d;
+  }
+
+  const oldPush=typeof pushStep==="function"?pushStep:null;
+  window.pushStep=async function(stepData){
+    const d=normalize(stepData);
+    const r=oldPush?await oldPush(d):undefined;
+    if(currentCargo&&isAll6Done(currentCargo)){
+      currentCargo["상태"]="현장완료";
+      const mawb=M(currentCargo),hawb=H(currentCargo);
+      (allCargos||[]).forEach(c=>{if(same(c,mawb,hawb))c["상태"]="현장완료";});
+      (shipperCargos||[]).forEach(c=>{if(same(c,mawb,hawb))c["상태"]="현장완료";});
+      try{saveCargosLocal(allCargos);}catch(e){}
+    }
+    setTimeout(()=>{try{renderAdminCargos?.();}catch(e){}try{filterShipper?.();}catch(e){}try{renderFieldList?.(allCargos);}catch(e){}},0);
+    return r;
+  };
+
+  window.isFieldCompleteByDoc=function(c){return done(c,"서류")||isAll6Done(c);};
+  const oldDisplay=typeof displayStatusByDoc==="function"?displayStatusByDoc:null;
+  window.displayStatusByDoc=function(c){
+    if(isAll6Done(c)||done(c,"서류"))return "현장완료";
+    return oldDisplay?oldDisplay(c):(c&&c["상태"]?c["상태"]:"입력대기");
+  };
+
+  const oldSize=window.confirmSize;
+  window.confirmSize=async function(){
+    if(typeof oldSize==="function")await oldSize();
+    if(currentCargo){
+      await pushStep({실측완료:"완료",실측상태:"완료",실측넘기기:"",실측패스:""});
+      try{updateStepCard(3,"done");}catch(e){}
+    }
+  };
+  const oldPhoto=window.confirmPhoto;
+  window.confirmPhoto=async function(){
+    const r=typeof oldPhoto==="function"?await oldPhoto():undefined;
+    if(currentCargo&&hasPhoto(currentCargo)){
+      await pushStep({사진완료:"완료",사진상태:"완료",사진넘기기:"",사진패스:""});
+      try{updateStepCard(4,"done");}catch(e){}
+    }
+    return r;
+  };
+
+  /* 6단계 모두 완료되면 현장앱 완료화면 + 수정/목록 버튼 복원 */
+  window.checkAllDone=function(){
+    if(!currentCargo||!isAll6Done(currentCargo))return;
+    currentCargo["상태"]="현장완료";
+    try{pushStep({상태:"현장완료"});}catch(e){}
+    const doneBox=document.getElementById("fd-done");
+    const body=document.getElementById("fd-fi-body");
+    if(body)body.style.display="none";
+    if(doneBox){
+      doneBox.className="done-screen on";
+      const sub=document.getElementById("fd-done-sub");
+      if(sub)sub.textContent=`MAWB: ${typeof fmtMAWB==="function"?fmtMAWB(M(currentCargo)):M(currentCargo)}\nHAWB: ${H(currentCargo)}\n6단계 완료 · 고객사/관리자에게 실시간 공유됨`;
+      if(!document.getElementById("fd-done-actions-v125")){
+        const div=document.createElement("div");
+        div.id="fd-done-actions-v125";
+        div.style.cssText="display:flex;gap:8px;justify-content:center;margin-top:16px";
+        div.innerHTML=`<button onclick="document.getElementById('fd-fi-body').style.display='flex';document.getElementById('fd-done').classList.remove('on')" style="height:36px;padding:0 14px;border-radius:999px;border:1.5px solid var(--green);background:#fff;color:var(--green-dark);font-weight:900">수정</button>
+        <button onclick="backField()" style="height:36px;padding:0 14px;border-radius:999px;border:0;background:var(--green);color:#fff;font-weight:900">목록</button>`;
+        doneBox.appendChild(div);
+      }
+    }
+  };
+
+  /* 상세 페이지: 실측 패스 표시 */
+  function patchDetailPass(){
+    try{
+      const modalCargo=typeof currentCargo!=="undefined"?currentCargo:null;
+      document.querySelectorAll("#s-m-body,.modal,.sheet,.cargo-detail-modal,#a-detail-modal").forEach(root=>{
+        if(!root)return;
+        if(modalCargo&&isSizeSkip(modalCargo)){
+          root.innerHTML=root.innerHTML.replace(/실측\s*넘김|넘김/g,"패스");
+        }
+        root.querySelectorAll(".mi-item").forEach(item=>{
+          const lbl=item.querySelector(".mi-lbl")?.textContent||"";
+          if(lbl.includes("실측")&&modalCargo&&isSizeSkip(modalCargo)){
+            const val=item.querySelector(".mi-val"); if(val)val.textContent="패스";
+          }
+        });
+      });
+    }catch(e){}
+  }
+  ["openSModalByKey","openAdminCargoDetail","openCargoDetailModal"].forEach(fn=>{
+    const old=window[fn];
+    if(typeof old==="function"){
+      window[fn]=function(...args){
+        const r=old.apply(this,args);
+        setTimeout(patchDetailPass,50);
+        return r;
+      };
+    }
+  });
+
+  /* 보관 복원 시 보관 플래그만 해제하고 기존 단계정보/사진/실측은 유지 */
+  window.restoreCargoFieldV104=function(key){
+    let found=false;
+    (allCargos||[]).forEach(c=>{
+      const k=typeof makeCargoKey==="function"?makeCargoKey(c):"";
+      if(k===key){
+        c["보관"]="";c["보관상태"]="";c["archiveStatus"]="";c["복원일시"]=now();found=true;
+      }
+    });
+    if(!found){try{toast("복원할 보관 건을 찾지 못했습니다.");}catch(e){}return;}
+    try{saveCargosLocal(allCargos);}catch(e){}
+    try{renderFieldArchiveDashboardV104?.();}catch(e){}
+    try{buildFieldFilterOptions?.();filterField?.();}catch(e){}
+    try{renderAdminCargos?.();filterShipper?.();}catch(e){}
+    try{toast("보관 건을 복원했습니다. 기존 기능을 그대로 사용할 수 있습니다.");}catch(e){}
+  };
+
+  /* 카드 재렌더 후 -/✓ 유지 */
+  ["renderAdminCargos","filterAdminCargos","filterShipper","renderFieldList","filterField"].forEach(fn=>{
+    const old=window[fn];
+    if(typeof old==="function"){
+      window[fn]=function(...args){
+        const r=old.apply(this,args);
+        setTimeout(()=>{
+          try{
+            document.querySelectorAll(".a-cargo-card,.shipper-card,#f-list-body .cargo-card").forEach(card=>{
+              const oc=card.getAttribute("onclick")||"";
+              const m=oc.match(/['`]([^'`]*(?:%7C%7C|\|\|)[^'`]*)['`]/);
+              let c=null;
+              if(m&&typeof findCargoByKey==="function")c=findCargoByKey(allCargos,m[1])||findCargoByKey(shipperCargos||[],m[1]);
+              if(c){
+                const steps=card.querySelector(".field-card-steps");
+                if(steps)steps.outerHTML=renderFieldCardSteps(c);
+              }
+            });
+          }catch(e){}
+        },0);
+        return r;
+      };
+    }
+  });
+})();
+
+
+/* v126 FROM v125 - SHIPPER STATUS COMPLETE + SKIP OVERRIDES OLD SIZE/PHOTO */
+(function(){
+  function T(v){return String(v??"").trim();}
+  function M(c){return T(c&&(c["MAWB"]||c["AWB"]||""));}
+  function H(c){return T(c&&(c["HAWB"]||"M/SINGLE"))||"M/SINGLE";}
+  function same(c,m,h){return M(c)===T(m)&&H(c)===T(h||"M/SINGLE");}
+
+  function sizeSkip(c){
+    return !!(c&&(c["실측넘기기"]==="완료"||c["실측넘기기"]==="Y"||c["실측넘기기"]===true||c["실측완료"]==="넘김"||c["실측상태"]==="넘김"||c["실측패스"]==="완료"));
+  }
+  function photoSkip(c){
+    return !!(c&&(c["사진넘기기"]==="완료"||c["사진넘기기"]==="Y"||c["사진넘기기"]===true||c["사진완료"]==="넘김"||c["사진상태"]==="넘김"||c["사진패스"]==="완료"));
+  }
+  function realSize(c){
+    return !!(c&&(c["실측완료"]==="완료"||c["실측상태"]==="완료"||c["실측상세"]||c["현장실측상세"]||c["measureRows"]||c["sizeRows"]||c["현장수량"]||c["현장중량"]));
+  }
+  function realPhoto(c){
+    return !!(c&&(c["사진완료"]==="완료"||c["사진상태"]==="완료"||c["사진수"]||c["화물사진수"]||c["사진URL"]||c["화물사진"]));
+  }
+  function done(c,label){
+    if(label==="입고")return c["화물입고확인"]==="완료"||c["반입체크"]==="완료"||c["입고체크"]==="완료";
+    if(label==="상태")return !!(c["화물상태"]||c["상태체크"]);
+    if(label==="실측")return sizeSkip(c)||realSize(c);
+    if(label==="사진")return photoSkip(c)||realPhoto(c);
+    if(label==="반입")return c["반입완료"]==="완료"||c["반입체크완료"]==="완료"||c["항공사반입완료"]==="완료";
+    if(label==="서류")return c["서류접수"]==="완료"||c["서류확인"]==="완료";
+    return false;
+  }
+  function all6(c){return ["입고","상태","실측","사진","반입","서류"].every(x=>done(c,x));}
+
+  /* 고객사도 6단계 완료 시 현장완료 */
+  window.displayStatusByDoc=function(c){
+    if(all6(c)||c["서류접수"]==="완료"||c["서류확인"]==="완료"||c["상태"]==="현장완료")return "현장완료";
+    return c&&c["상태"]?c["상태"]:"입력대기";
+  };
+  window.isFieldCompleteByDoc=function(c){return all6(c)||c["서류접수"]==="완료"||c["서류확인"]==="완료";};
+
+  /* 넘기기 체크가 있으면 기존 실측/사진 데이터보다 패스가 우선 */
+  const oldRenderSize=typeof renderSizeWeightLines==="function"?renderSizeWeightLines:null;
+  window.renderSizeWeightLines=function(c){
+    if(sizeSkip(c))return "패스";
+    return oldRenderSize?oldRenderSize(c):"";
+  };
+  const oldRenderMeasureTable=typeof renderMeasureRowsTable==="function"?renderMeasureRowsTable:null;
+  if(oldRenderMeasureTable){
+    window.renderMeasureRowsTable=function(c){
+      if(sizeSkip(c))return "";
+      return oldRenderMeasureTable(c);
+    };
+  }
+
+  /* 카드 단계 표시: 실측/사진 넘기기는 기존 정보가 있어도 '-' 우선 */
+  window.renderFieldCardSteps=function(c){
+    const labels=["입고","상태","실측","사진","반입","서류"];
+    return `<div class="field-card-steps">${labels.map((label,i,arr)=>{
+      const on=done(c,label);
+      const skip=(label==="실측"&&sizeSkip(c))||(label==="사진"&&photoSkip(c));
+      const bad=label==="상태"&&typeof isAbnormalCargoStatus==="function"&&isAbnormalCargoStatus(c["화물상태"]||c["상태체크"]);
+      const dotCls=on?(bad?" bad":" done"):"";
+      const labelCls=on?(bad?" bad":" done"):"";
+      const mark=on?(skip?"-":(bad?"!":"✓")):(i+1);
+      return `<div class="field-card-step">
+        <div class="field-card-step-inner">
+          <div class="field-card-step-dot${dotCls}">${mark}</div>
+          <div class="field-card-step-label${labelCls}">${label}</div>
+        </div>
+        ${i<arr.length-1?`<div class="field-card-step-line${on&&!bad?" done":""}"></div>`:""}
+      </div>`;
+    }).join("")}</div>`;
+  };
+  window.renderUnifiedCardSteps=function(c){return renderFieldCardSteps(c);};
+
+  /* 저장 시 넘기기 값이 있으면 패스 플래그를 확실히 남김 */
+  const oldPush=typeof pushStep==="function"?pushStep:null;
+  if(oldPush){
+    window.pushStep=async function(stepData){
+      const d={...(stepData||{})};
+      if(d["실측완료"]==="넘김"||d["실측상태"]==="넘김"||d["실측넘기기"]==="완료"){
+        d["실측완료"]="넘김";d["실측상태"]="넘김";d["실측넘기기"]="완료";d["실측패스"]="완료";
+      }
+      if(d["사진완료"]==="넘김"||d["사진상태"]==="넘김"||d["사진넘기기"]==="완료"){
+        d["사진완료"]="넘김";d["사진상태"]="넘김";d["사진넘기기"]="완료";d["사진패스"]="완료";
+      }
+      const r=await oldPush(d);
+      if(currentCargo&&all6(currentCargo)){
+        currentCargo["상태"]="현장완료";
+        const m=M(currentCargo),h=H(currentCargo);
+        (allCargos||[]).forEach(c=>{if(same(c,m,h))c["상태"]="현장완료";});
+        (shipperCargos||[]).forEach(c=>{if(same(c,m,h))c["상태"]="현장완료";});
+        try{saveCargosLocal(allCargos);}catch(e){}
+      }
+      setTimeout(()=>{try{renderAdminCargos?.();}catch(e){}try{filterShipper?.();}catch(e){}try{renderFieldList?.(allCargos);}catch(e){}},0);
+      return r;
+    };
+  }
+
+  /* 상세 페이지에서 실측/사진 패스 우선 표시 */
+  function patchPassDetail(){
+    try{
+      document.querySelectorAll("#s-m-body,.modal,.sheet,.cargo-detail-modal,#a-detail-modal").forEach(root=>{
+        if(!root)return;
+        // 카드/상세 텍스트상 '넘김'은 패스로 통일
+        root.querySelectorAll("*").forEach(el=>{
+          if(el.children.length===0 && /넘김|실측 넘김|사진 넘김/.test(el.textContent||"")){
+            el.textContent=(el.textContent||"").replace(/실측\s*넘김|사진\s*넘김|넘김/g,"패스");
+          }
+        });
+        root.querySelectorAll(".mi-item").forEach(item=>{
+          const lbl=item.querySelector(".mi-lbl")?.textContent||"";
+          const val=item.querySelector(".mi-val");
+          if(!val)return;
+          // currentCargo가 없을 수 있어 텍스트 보정 위주, 현재 상세가 currentCargo 기반이면 더 정확히 패치
+          if(typeof currentCargo!=="undefined"&&currentCargo){
+            if(lbl.includes("실측")&&sizeSkip(currentCargo))val.textContent="패스";
+            if(lbl.includes("사진")&&photoSkip(currentCargo))val.textContent="패스";
+          }
+        });
+      });
+    }catch(e){}
+  }
+  ["openSModalByKey","openAdminCargoDetail","openCargoDetailModal"].forEach(fn=>{
+    const old=window[fn];
+    if(typeof old==="function"){
+      window[fn]=function(...args){
+        const r=old.apply(this,args);
+        setTimeout(patchPassDetail,50);
+        return r;
+      };
+    }
+  });
+
+  /* 목록/검색 후 표시 유지 */
+  ["renderAdminCargos","filterAdminCargos","filterShipper","renderFieldList","filterField"].forEach(fn=>{
+    const old=window[fn];
+    if(typeof old==="function"){
+      window[fn]=function(...args){
+        const r=old.apply(this,args);
+        setTimeout(()=>{
+          try{
+            document.querySelectorAll(".a-cargo-card,.shipper-card,#f-list-body .cargo-card").forEach(card=>{
+              const oc=card.getAttribute("onclick")||"";
+              const m=oc.match(/['`]([^'`]*(?:%7C%7C|\|\|)[^'`]*)['`]/);
+              let c=null;
+              if(m&&typeof findCargoByKey==="function")c=findCargoByKey(allCargos,m[1])||findCargoByKey(shipperCargos||[],m[1]);
+              if(c){
+                const steps=card.querySelector(".field-card-steps");
+                if(steps)steps.outerHTML=renderFieldCardSteps(c);
+                const badge=card.querySelector(".badge");
+                if(badge && all6(c)){badge.textContent="현장완료";badge.className="badge b-field";}
+              }
+            });
+          }catch(e){}
+        },0);
+        return r;
+      };
+    }
+  });
+})();
+
+
+/* v127 TWO-ROLE APP + SUPERVISOR MODE */
+(function(){
+  const SUP_ID="SP";
+  const SUP_PW="0000";
+
+  function ensureSupervisorAccountV127(){
+    try{
+      let accs=[];
+      try{accs=JSON.parse(localStorage.getItem(ACCS_KEY)||"[]");}catch(e){accs=[];}
+      if(!Array.isArray(accs)||!accs.length)accs=[...DEMO_ACCOUNTS];
+      const sup={userId:SUP_ID,password:SUP_PW,name:"SUPERVISOR",role:"supervisor",shipperId:"",status:"활성"};
+      const idx=accs.findIndex(a=>String(a.userId||"").toUpperCase()===SUP_ID);
+      if(idx>=0)accs[idx]={...accs[idx],...sup};
+      else accs.push(sup);
+      localStorage.setItem(ACCS_KEY,JSON.stringify(accs));
+    }catch(e){console.log("ensureSupervisorAccountV127",e);}
+  }
+
+  function allAccountsV127(){
+    try{return JSON.parse(localStorage.getItem(ACCS_KEY)||"[]")||[];}catch(e){return [];}
+  }
+  function saveAccountsV127(accs){
+    localStorage.setItem(ACCS_KEY,JSON.stringify(accs||[]));
+  }
+  window.approveAccountV127=function(userId){
+    const accs=allAccountsV127();
+    const a=accs.find(x=>String(x.userId)===String(userId));
+    if(a)a.status="활성";
+    saveAccountsV127(accs);
+    renderSupervisorV127();
+    toast("회원을 승인했습니다.");
+  };
+  window.blockAccountV127=function(userId){
+    const accs=allAccountsV127();
+    const a=accs.find(x=>String(x.userId)===String(userId));
+    if(a)a.status="차단";
+    saveAccountsV127(accs);
+    renderSupervisorV127();
+    toast("회원을 차단했습니다.");
+  };
+  window.resetAccountPwV127=function(userId){
+    const pw=prompt("새 비밀번호를 입력하세요","111");
+    if(!pw)return;
+    const accs=allAccountsV127();
+    const a=accs.find(x=>String(x.userId)===String(userId));
+    if(a)a.password=pw;
+    saveAccountsV127(accs);
+    renderSupervisorV127();
+    toast("비밀번호를 변경했습니다.");
+  };
+  window.deleteAccountV127=function(userId){
+    if(!confirm("이 회원을 삭제할까요?"))return;
+    const accs=allAccountsV127().filter(x=>String(x.userId)!==String(userId));
+    saveAccountsV127(accs);
+    renderSupervisorV127();
+    toast("회원을 삭제했습니다.");
+  };
+
+  function roleLabelV127(role){
+    if(role==="shipper")return "고객사";
+    if(role==="field")return "현장직원";
+    if(role==="supervisor")return "슈퍼바이저";
+    if(role==="admin")return "관리자";
+    return role||"";
+  }
+
+  function renderSupervisorV127(){
+    const root=document.getElementById("scr-supervisor");
+    if(!root)return;
+    const accs=allAccountsV127();
+    const cargos=(allCargos||[]);
+    const pending=accs.filter(a=>(a.status||"활성")==="승인대기").length;
+    const active=accs.filter(a=>(a.status||"활성")==="활성").length;
+    const blocked=accs.filter(a=>(a.status||"활성")==="차단").length;
+
+    root.innerHTML=`
+      <div class="admin-top" style="background:linear-gradient(135deg,#312e81,#7c3aed)">
+        <div>
+          <div style="font-size:11px;font-weight:800;opacity:.8">CargoIN Supervisor</div>
+          <div style="font-size:20px;font-weight:900;margin-top:2px">회원/전체 화물 관리</div>
+        </div>
+        <button onclick="logout()" style="height:34px;padding:0 12px;border-radius:999px;border:1px solid rgba(255,255,255,.5);background:rgba(255,255,255,.12);color:#fff;font-weight:900">로그아웃</button>
+      </div>
+      <div class="admin-page on" style="padding:14px">
+        <div class="dash-grid" style="grid-template-columns:repeat(4,1fr);gap:10px">
+          <div class="dash-card"><div class="dc-label">전체회원</div><div class="dc-value">${accs.length}</div></div>
+          <div class="dash-card"><div class="dc-label">승인대기</div><div class="dc-value">${pending}</div></div>
+          <div class="dash-card"><div class="dc-label">활성</div><div class="dc-value">${active}</div></div>
+          <div class="dash-card"><div class="dc-label">전체화물</div><div class="dc-value">${cargos.length}</div></div>
+        </div>
+
+        <div class="modal-sec" style="margin-top:14px">
+          <div class="modal-stitle">회원 관리</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            ${accs.map(a=>`
+              <div class="acc-card" style="display:flex;align-items:center;gap:10px">
+                <div class="acc-avatar ${a.role==="field"?"field":a.role==="shipper"?"shipper":"admin"}">${esc((a.name||a.userId||"?").charAt(0))}</div>
+                <div class="acc-info" style="flex:1;min-width:0">
+                  <div class="acc-name">${esc(a.name||"—")} <span style="font-size:11px;color:var(--g3);font-weight:800">(${esc(a.userId||"")})</span></div>
+                  <div style="font-size:11px;color:var(--g3);font-weight:700;margin-top:2px">${roleLabelV127(a.role)} · 상태 ${esc(a.status||"활성")} ${a.shipperId?`· 고객사 ${esc(a.shipperId)}`:""}</div>
+                </div>
+                <div style="display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end">
+                  <button onclick="approveAccountV127('${esc(a.userId)}')" style="height:28px;padding:0 9px;border-radius:999px;border:1px solid var(--green);background:#fff;color:var(--green-dark);font-weight:900;font-size:11px">승인</button>
+                  <button onclick="blockAccountV127('${esc(a.userId)}')" style="height:28px;padding:0 9px;border-radius:999px;border:1px solid var(--amber);background:#fff;color:var(--amber-dark);font-weight:900;font-size:11px">차단</button>
+                  <button onclick="resetAccountPwV127('${esc(a.userId)}')" style="height:28px;padding:0 9px;border-radius:999px;border:1px solid var(--g2);background:#fff;color:var(--g5);font-weight:900;font-size:11px">PW</button>
+                  ${a.role!=="supervisor"?`<button onclick="deleteAccountV127('${esc(a.userId)}')" style="height:28px;padding:0 9px;border-radius:999px;border:1px solid var(--red);background:#fff;color:var(--red);font-weight:900;font-size:11px">삭제</button>`:""}
+                </div>
+              </div>
+            `).join("")}
+          </div>
+        </div>
+
+        <div class="modal-sec" style="margin-top:14px">
+          <div class="modal-stitle">전체 화물 조회</div>
+          <input id="sp-cargo-search" oninput="renderSupervisorCargoListV127()" placeholder="MAWB · HAWB · DEST · 고객사 · 화주 · 품목 검색" style="width:100%;height:42px;border:1.5px solid var(--g1);border-radius:12px;padding:0 12px;font-weight:800;margin-bottom:10px"/>
+          <div id="sp-cargo-list"></div>
+        </div>
+      </div>
+    `;
+    renderSupervisorCargoListV127();
+  }
+
+  window.renderSupervisorCargoListV127=function(){
+    const el=document.getElementById("sp-cargo-list");
+    if(!el)return;
+    const q=String(document.getElementById("sp-cargo-search")?.value||"").toLowerCase().trim();
+    const rows=(allCargos||[]).filter(c=>{
+      if(!q)return true;
+      return [c["MAWB"],c["AWB"],c["HAWB"],c["DEST"],c["목적지"],c["고객사명"],c["포워딩명"],c["SHIPPER"],c["ITEM"],c["품목"]].join(" ").toLowerCase().includes(q);
+    });
+    el.innerHTML=rows.length?rows.slice(0,80).map(c=>`
+      <div class="a-cargo-card" style="margin-bottom:8px">
+        <div class="cc-head">
+          <div style="flex:1;min-width:0">
+            <div><span style="font-size:9px;font-weight:700;color:var(--g3)">MAWB</span> <span class="mawb-display">${esc(typeof fmtMAWB==="function"?fmtMAWB(c["MAWB"]||c["AWB"]||""):(c["MAWB"]||c["AWB"]||""))}</span></div>
+            ${c["HAWB"]?`<div style="margin-top:4px;font-size:12px;font-weight:800;color:var(--g4)">HAWB ${esc(c["HAWB"])}</div>`:""}
+          </div>
+          ${typeof sBadge==="function"?sBadge(displayStatusByDoc(c)):""}
+        </div>
+        <div class="cc-sub" style="margin-top:6px">${esc(c["편명"]||c["편명/일자"]||"—")} · ICN→${esc(c["DEST"]||c["목적지"]||"—")} · ${esc(c["총수량"]||c["수량(PCS)"]||"—")}pcs</div>
+        <div class="cc-sub" style="margin-top:3px;color:var(--g4)">고객사 ${esc(c["고객사명"]||c["포워딩명"]||"—")} · 화주 ${esc(c["SHIPPER"]||"—")}</div>
+        ${typeof renderFieldCardSteps==="function"?renderFieldCardSteps(c):""}
+      </div>
+    `).join(""):`<div class="empty-state">조회 결과가 없습니다.</div>`;
+  };
+
+  // 회원가입 UI 추가
+  window.openSignupV127=function(){
+    const box=document.createElement("div");
+    box.className="modal on";
+    box.id="signup-v127-modal";
+    box.innerHTML=`
+      <div class="modal-inner">
+        <div class="modal-head">
+          <div>
+            <div class="modal-title">회원가입</div>
+            <div class="modal-route">고객사 또는 현장직원으로 가입 신청</div>
+          </div>
+          <button class="modal-x" onclick="document.getElementById('signup-v127-modal').remove()">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="af-grid">
+            <div class="af-fld"><label>아이디</label><input id="sg-id" placeholder="예) AB"/></div>
+            <div class="af-fld"><label>비밀번호</label><input id="sg-pw" placeholder="비밀번호"/></div>
+            <div class="af-fld"><label>이름/회사명</label><input id="sg-name" placeholder="회사명 또는 이름"/></div>
+            <div class="af-fld"><label>역할</label><select id="sg-role" style="height:42px;border:1.5px solid var(--g1);border-radius:12px;padding:0 10px;font-weight:800"><option value="shipper">고객사</option><option value="field">현장직원</option></select></div>
+          </div>
+          <button onclick="signupV127()" style="width:100%;height:44px;margin-top:14px;border:0;border-radius:14px;background:var(--green);color:#fff;font-weight:900">가입 신청</button>
+        </div>
+      </div>`;
+    document.body.appendChild(box);
+  };
+  window.signupV127=function(){
+    const id=String(document.getElementById("sg-id")?.value||"").trim().toUpperCase();
+    const pw=String(document.getElementById("sg-pw")?.value||"").trim();
+    const name=String(document.getElementById("sg-name")?.value||"").trim().toUpperCase();
+    const role=document.getElementById("sg-role")?.value||"shipper";
+    if(!id||!pw||!name){toast("아이디, 비밀번호, 이름/회사명을 입력해 주세요.");return;}
+    const accs=allAccountsV127();
+    if(accs.some(a=>String(a.userId).toUpperCase()===id)){toast("이미 존재하는 아이디입니다.");return;}
+    accs.push({userId:id,password:pw,name,role,shipperId:role==="shipper"?name:"",status:"승인대기"});
+    saveAccountsV127(accs);
+    document.getElementById("signup-v127-modal")?.remove();
+    toast("가입 신청 완료. 슈퍼바이저 승인 후 사용 가능합니다.");
+  };
+
+  // 로그인 화면에 회원가입 버튼 노출
+  function injectSignupBtnV127(){
+    const scr=document.getElementById("scr-login")||document.querySelector(".login-screen");
+    if(!scr||document.getElementById("signup-v127-btn"))return;
+    const btn=document.createElement("button");
+    btn.id="signup-v127-btn";
+    btn.textContent="회원가입";
+    btn.onclick=openSignupV127;
+    btn.style.cssText="width:100%;height:42px;margin-top:10px;border-radius:14px;border:1.5px solid var(--g1);background:#fff;color:var(--g5);font-weight:900";
+    const target=scr.querySelector("button")?.parentNode||scr;
+    target.appendChild(btn);
+  }
+
+  // 로그인 성공 후 supervisor 분기
+  const oldLoginV127=window.login;
+  if(typeof oldLoginV127==="function"){
+    window.login=function(...args){
+      ensureSupervisorAccountV127();
+      const r=oldLoginV127.apply(this,args);
+      setTimeout(()=>{
+        try{
+          if(session?.role==="supervisor" || session?.userId===SUP_ID){
+            if(!document.getElementById("scr-supervisor")){
+              const s=document.createElement("div");
+              s.id="scr-supervisor";
+              s.className="screen";
+              document.body.appendChild(s);
+            }
+            showScr("supervisor");
+            renderSupervisorV127();
+          }
+        }catch(e){}
+      },80);
+      return r;
+    };
+  }
+
+  // 계정 목록에 supervisor가 있어도 기존 화면 오류 방지
+  const oldGetAccountsV127=typeof getAccounts==="function"?getAccounts:null;
+  if(oldGetAccountsV127){
+    window.getAccounts=function(){
+      ensureSupervisorAccountV127();
+      return oldGetAccountsV127();
+    };
+  }
+
+  ensureSupervisorAccountV127();
+  setTimeout(()=>{injectSignupBtnV127();},0);
+  document.addEventListener("DOMContentLoaded",()=>{ensureSupervisorAccountV127();injectSignupBtnV127();});
+})();
+
+
+/* v128 FROM v127 - SUPERVISOR ONLY MEMBER MANAGEMENT */
+(function(){
+  function roleLabelV128(role){
+    if(role==="shipper")return "고객사";
+    if(role==="field")return "현장직원";
+    if(role==="supervisor")return "슈퍼바이저";
+    if(role==="admin")return "관리자";
+    return role||"";
+  }
+  function accsV128(){
+    try{return JSON.parse(localStorage.getItem(ACCS_KEY)||"[]")||[];}catch(e){return [];}
+  }
+  function saveAccsV128(accs){
+    localStorage.setItem(ACCS_KEY,JSON.stringify(accs||[]));
+  }
+
+  window.approveAccountV128=function(userId){
+    const accs=accsV128();
+    const a=accs.find(x=>String(x.userId)===String(userId));
+    if(a)a.status="활성";
+    saveAccsV128(accs);
+    renderSupervisorV127();
+    toast("회원을 승인했습니다.");
+  };
+  window.blockAccountV128=function(userId){
+    const accs=accsV128();
+    const a=accs.find(x=>String(x.userId)===String(userId));
+    if(a)a.status="차단";
+    saveAccsV128(accs);
+    renderSupervisorV127();
+    toast("회원을 차단했습니다.");
+  };
+  window.resetAccountPwV128=function(userId){
+    const pw=prompt("새 비밀번호를 입력하세요","111");
+    if(!pw)return;
+    const accs=accsV128();
+    const a=accs.find(x=>String(x.userId)===String(userId));
+    if(a)a.password=pw;
+    saveAccsV128(accs);
+    renderSupervisorV127();
+    toast("비밀번호를 변경했습니다.");
+  };
+  window.deleteAccountV128=function(userId){
+    if(!confirm("이 회원을 삭제할까요?"))return;
+    saveAccsV128(accsV128().filter(x=>String(x.userId)!==String(userId)));
+    renderSupervisorV127();
+    toast("회원을 삭제했습니다.");
+  };
+
+  window.renderSupervisorV127=function(){
+    const root=document.getElementById("scr-supervisor");
+    if(!root)return;
+    const accs=accsV128();
+    const pending=accs.filter(a=>(a.status||"활성")==="승인대기").length;
+    const active=accs.filter(a=>(a.status||"활성")==="활성").length;
+    const blocked=accs.filter(a=>(a.status||"활성")==="차단").length;
+
+    root.innerHTML=`
+      <div class="admin-top" style="background:linear-gradient(135deg,#312e81,#7c3aed)">
+        <div>
+          <div style="font-size:11px;font-weight:800;opacity:.8">CargoIN Supervisor</div>
+          <div style="font-size:20px;font-weight:900;margin-top:2px">회원 관리</div>
+        </div>
+        <button onclick="logout()" style="height:34px;padding:0 12px;border-radius:999px;border:1px solid rgba(255,255,255,.5);background:rgba(255,255,255,.12);color:#fff;font-weight:900">로그아웃</button>
+      </div>
+
+      <div class="admin-page on" style="padding:14px">
+        <div class="dash-grid" style="grid-template-columns:repeat(4,1fr);gap:10px">
+          <div class="dash-card"><div class="dc-label">전체회원</div><div class="dc-value">${accs.length}</div></div>
+          <div class="dash-card"><div class="dc-label">승인대기</div><div class="dc-value">${pending}</div></div>
+          <div class="dash-card"><div class="dc-label">활성</div><div class="dc-value">${active}</div></div>
+          <div class="dash-card"><div class="dc-label">차단</div><div class="dc-value">${blocked}</div></div>
+        </div>
+
+        <div class="modal-sec" style="margin-top:14px">
+          <div class="modal-stitle">회원 관리</div>
+          <div style="font-size:12px;color:var(--g4);font-weight:700;margin-bottom:10px">
+            가입 신청 회원을 승인하거나 차단하고, 비밀번호를 초기화할 수 있습니다.
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            ${accs.map(a=>`
+              <div class="acc-card" style="display:flex;align-items:center;gap:10px">
+                <div class="acc-avatar ${a.role==="field"?"field":a.role==="shipper"?"shipper":"admin"}">${esc((a.name||a.userId||"?").charAt(0))}</div>
+                <div class="acc-info" style="flex:1;min-width:0">
+                  <div class="acc-name">${esc(a.name||"—")} <span style="font-size:11px;color:var(--g3);font-weight:800">(${esc(a.userId||"")})</span></div>
+                  <div style="font-size:11px;color:var(--g3);font-weight:700;margin-top:2px">${roleLabelV128(a.role)} · 상태 ${esc(a.status||"활성")} ${a.shipperId?`· 고객사 ${esc(a.shipperId)}`:""}</div>
+                </div>
+                <div style="display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end">
+                  <button onclick="approveAccountV128('${esc(a.userId)}')" style="height:28px;padding:0 9px;border-radius:999px;border:1px solid var(--green);background:#fff;color:var(--green-dark);font-weight:900;font-size:11px">승인</button>
+                  <button onclick="blockAccountV128('${esc(a.userId)}')" style="height:28px;padding:0 9px;border-radius:999px;border:1px solid var(--amber);background:#fff;color:var(--amber-dark);font-weight:900;font-size:11px">차단</button>
+                  <button onclick="resetAccountPwV128('${esc(a.userId)}')" style="height:28px;padding:0 9px;border-radius:999px;border:1px solid var(--g2);background:#fff;color:var(--g5);font-weight:900;font-size:11px">PW</button>
+                  ${a.role!=="supervisor"?`<button onclick="deleteAccountV128('${esc(a.userId)}')" style="height:28px;padding:0 9px;border-radius:999px;border:1px solid var(--red);background:#fff;color:var(--red);font-weight:900;font-size:11px">삭제</button>`:""}
+                </div>
+              </div>
+            `).join("")}
+          </div>
+        </div>
+      </div>
+    `;
+  };
+})();
+
+
+/* v129 FINAL - SUPERVISOR MEMBER + CARGO OPS ONLY */
+(function(){
+  function E(v){try{return esc(v)}catch(e){return String(v??"").replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}}
+  function accs(){try{return JSON.parse(localStorage.getItem(ACCS_KEY)||"[]")||[];}catch(e){return []}}
+  function saveAccs(a){localStorage.setItem(ACCS_KEY,JSON.stringify(a||[]));}
+  function roleLabel(r){return r==="shipper"?"고객사":r==="field"?"현장직원":r==="supervisor"?"슈퍼바이저":r==="admin"?"관리자":(r||"");}
+
+  window.approveAccountV129=function(id){const a=accs();const x=a.find(v=>String(v.userId)===String(id));if(x)x.status="활성";saveAccs(a);renderSupervisorV127();toast("회원을 승인했습니다.");};
+  window.blockAccountV129=function(id){const a=accs();const x=a.find(v=>String(v.userId)===String(id));if(x)x.status="차단";saveAccs(a);renderSupervisorV127();toast("회원을 차단했습니다.");};
+  window.resetAccountPwV129=function(id){const pw=prompt("새 비밀번호를 입력하세요","111");if(!pw)return;const a=accs();const x=a.find(v=>String(v.userId)===String(id));if(x)x.password=pw;saveAccs(a);renderSupervisorV127();toast("비밀번호를 변경했습니다.");};
+  window.deleteAccountV129=function(id){if(!confirm("이 회원을 삭제할까요?"))return;saveAccs(accs().filter(v=>String(v.userId)!==String(id)));renderSupervisorV127();toast("회원을 삭제했습니다.");};
+
+  function cargoText(c){return [c["MAWB"],c["AWB"],c["HAWB"],c["DEST"],c["목적지"],c["고객사명"],c["포워딩명"],c["SHIPPER"],c["ITEM"],c["품목"]].join(" ").toLowerCase();}
+  window.supervisorEditCargoV129=function(key){
+    const c=findCargoByKey(allCargos,key); if(!c){toast("화물을 찾지 못했습니다.");return;}
+    const fields=[
+      ["MAWB","MAWB",c["MAWB"]||c["AWB"]||""],
+      ["HAWB","HAWB",c["HAWB"]||""],
+      ["DEST","DEST",c["DEST"]||c["목적지"]||""],
+      ["SHIPPER","화주명",c["SHIPPER"]||""],
+      ["ITEM","ITEM",c["ITEM"]||c["품목"]||""]
+    ];
+    const vals={};
+    for(const [k,label,val] of fields){const n=prompt(label,val);if(n===null)return;vals[k]=String(n).trim().toUpperCase();}
+    Object.assign(c,{"MAWB":vals.MAWB,"AWB":vals.MAWB,"HAWB":vals.HAWB,"DEST":vals.DEST,"목적지":vals.DEST,"SHIPPER":vals.SHIPPER,"ITEM":vals.ITEM,"품목":vals.ITEM,"updatedAt":new Date().toLocaleString("ko-KR")});
+    saveCargosLocal(allCargos); renderSupervisorV127(); toast("화물 정보를 수정했습니다.");
+  };
+  window.supervisorDeleteCargoV129=function(key){
+    if(!confirm("이 화물을 삭제할까요?"))return;
+    allCargos=(allCargos||[]).filter(c=>makeCargoKey(c)!==key);
+    saveCargosLocal(allCargos); renderSupervisorV127(); toast("화물을 삭제했습니다.");
+  };
+  window.renderSupervisorCargoListV129=function(){
+    const el=document.getElementById("sp-cargo-list"); if(!el)return;
+    const q=String(document.getElementById("sp-cargo-search")?.value||"").toLowerCase().trim();
+    const rows=(allCargos||[]).filter(c=>!q||cargoText(c).includes(q));
+    el.innerHTML=rows.length?rows.slice(0,120).map(c=>{
+      const key=makeCargoKey(c);
+      return `<div class="a-cargo-card" style="margin-bottom:8px">
+        <div class="cc-head">
+          <div style="flex:1;min-width:0">
+            <div><span style="font-size:9px;font-weight:700;color:var(--g3)">MAWB</span> <span class="mawb-display">${E(typeof fmtMAWB==="function"?fmtMAWB(c["MAWB"]||c["AWB"]||""):(c["MAWB"]||c["AWB"]||""))}</span></div>
+            ${c["HAWB"]?`<div style="margin-top:4px;font-size:12px;font-weight:800;color:var(--g4)">HAWB ${E(c["HAWB"])}</div>`:""}
+          </div>
+          ${typeof sBadge==="function"?sBadge(displayStatusByDoc(c)):""}
+        </div>
+        <div class="cc-sub" style="margin-top:6px">${E(c["편명"]||c["편명/일자"]||"—")} · ICN→${E(c["DEST"]||c["목적지"]||"—")} · ${E(c["총수량"]||c["수량(PCS)"]||"—")}pcs</div>
+        <div class="cc-sub" style="margin-top:3px;color:var(--g4)">고객사 ${E(c["고객사명"]||c["포워딩명"]||"—")} · 화주 ${E(c["SHIPPER"]||"—")}</div>
+        ${typeof renderFieldCardSteps==="function"?renderFieldCardSteps(c):""}
+        <div style="display:flex;gap:6px;margin-top:10px">
+          <button onclick="supervisorEditCargoV129('${key}')" style="height:30px;padding:0 12px;border-radius:999px;border:1.5px solid #4338CA;background:#fff;color:#4338CA;font-weight:900;font-size:11px">수정</button>
+          <button onclick="supervisorDeleteCargoV129('${key}')" style="height:30px;padding:0 12px;border-radius:999px;border:1.5px solid var(--red);background:#fff;color:var(--red);font-weight:900;font-size:11px">삭제</button>
+        </div>
+      </div>`;
+    }).join(""):`<div class="empty-state">조회 결과가 없습니다.</div>`;
+  };
+  window.renderSupervisorV127=function(){
+    const root=document.getElementById("scr-supervisor"); if(!root)return;
+    const a=accs(), pending=a.filter(x=>(x.status||"활성")==="승인대기").length, active=a.filter(x=>(x.status||"활성")==="활성").length, blocked=a.filter(x=>(x.status||"활성")==="차단").length;
+    root.innerHTML=`
+      <div class="admin-top" style="background:linear-gradient(135deg,#312e81,#7c3aed)">
+        <div><div style="font-size:11px;font-weight:800;opacity:.8">CargoIN Supervisor</div><div style="font-size:20px;font-weight:900;margin-top:2px">운영 관리</div></div>
+        <button onclick="logout()" style="height:34px;padding:0 12px;border-radius:999px;border:1px solid rgba(255,255,255,.5);background:rgba(255,255,255,.12);color:#fff;font-weight:900">로그아웃</button>
+      </div>
+      <div class="admin-page on" style="padding:14px">
+        <div class="dash-grid" style="grid-template-columns:repeat(4,1fr);gap:10px">
+          <div class="dash-card"><div class="dc-label">전체회원</div><div class="dc-value">${a.length}</div></div>
+          <div class="dash-card"><div class="dc-label">승인대기</div><div class="dc-value">${pending}</div></div>
+          <div class="dash-card"><div class="dc-label">활성</div><div class="dc-value">${active}</div></div>
+          <div class="dash-card"><div class="dc-label">차단</div><div class="dc-value">${blocked}</div></div>
+        </div>
+        <div class="modal-sec" style="margin-top:14px">
+          <div class="modal-stitle">회원 관리</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            ${a.map(x=>`<div class="acc-card" style="display:flex;align-items:center;gap:10px">
+              <div class="acc-avatar ${x.role==="field"?"field":x.role==="shipper"?"shipper":"admin"}">${E((x.name||x.userId||"?").charAt(0))}</div>
+              <div class="acc-info" style="flex:1;min-width:0">
+                <div class="acc-name">${E(x.name||"—")} <span style="font-size:11px;color:var(--g3);font-weight:800">(${E(x.userId||"")})</span></div>
+                <div style="font-size:11px;color:var(--g3);font-weight:700;margin-top:2px">${roleLabel(x.role)} · 상태 ${E(x.status||"활성")} ${x.shipperId?`· 고객사 ${E(x.shipperId)}`:""}</div>
+              </div>
+              <div style="display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end">
+                <button onclick="approveAccountV129('${E(x.userId)}')" style="height:28px;padding:0 9px;border-radius:999px;border:1px solid var(--green);background:#fff;color:var(--green-dark);font-weight:900;font-size:11px">승인</button>
+                <button onclick="blockAccountV129('${E(x.userId)}')" style="height:28px;padding:0 9px;border-radius:999px;border:1px solid var(--amber);background:#fff;color:var(--amber-dark);font-weight:900;font-size:11px">차단</button>
+                <button onclick="resetAccountPwV129('${E(x.userId)}')" style="height:28px;padding:0 9px;border-radius:999px;border:1px solid var(--g2);background:#fff;color:var(--g5);font-weight:900;font-size:11px">PW</button>
+                ${x.role!=="supervisor"?`<button onclick="deleteAccountV129('${E(x.userId)}')" style="height:28px;padding:0 9px;border-radius:999px;border:1px solid var(--red);background:#fff;color:var(--red);font-weight:900;font-size:11px">삭제</button>`:""}
+              </div>
+            </div>`).join("")}
+          </div>
+        </div>
+        <div class="modal-sec" style="margin-top:14px">
+          <div class="modal-stitle">전체 화물 조회 / 문제 수정</div>
+          <input id="sp-cargo-search" oninput="renderSupervisorCargoListV129()" placeholder="MAWB · HAWB · DEST · 고객사 · 화주 · 품목 검색" style="width:100%;height:42px;border:1.5px solid var(--g1);border-radius:12px;padding:0 12px;font-weight:800;margin-bottom:10px"/>
+          <div id="sp-cargo-list"></div>
+        </div>
+      </div>`;
+    renderSupervisorCargoListV129();
+  };
+})();
+
+
+/* v130 FROM v129 - FIX SIGNUP BUTTON + REMOVE ADMIN CARGO UI */
+(function(){
+  function E(v){try{return esc(v)}catch(e){return String(v??"").replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}}
+  function getAccs(){try{return JSON.parse(localStorage.getItem(ACCS_KEY)||"[]")||[];}catch(e){return []}}
+  function saveAccs(a){localStorage.setItem(ACCS_KEY,JSON.stringify(a||[]));}
+  function roleLabel(r){return r==="shipper"?"고객사":r==="field"?"현장직원":r==="supervisor"?"슈퍼바이저":r==="admin"?"슈퍼바이저":(r||"");}
+
+  /* 회원가입 버튼 동작 복구 */
+  window.openSignupV127 = window.openSignupV130 = function(){
+    const old=document.getElementById("signup-v130-modal")||document.getElementById("signup-v127-modal");
+    if(old)old.remove();
+    const box=document.createElement("div");
+    box.className="modal on";
+    box.id="signup-v130-modal";
+    box.innerHTML=`
+      <div class="modal-inner">
+        <div class="modal-head">
+          <div>
+            <div class="modal-title">회원가입</div>
+            <div class="modal-route">고객사 또는 현장직원으로 가입 신청</div>
+          </div>
+          <button class="modal-x" onclick="document.getElementById('signup-v130-modal').remove()">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="af-grid">
+            <div class="af-fld"><label>아이디</label><input id="sg-id" placeholder="예) AB"/></div>
+            <div class="af-fld"><label>비밀번호</label><input id="sg-pw" type="password" placeholder="비밀번호"/></div>
+            <div class="af-fld"><label>이름/회사명</label><input id="sg-name" placeholder="회사명 또는 이름"/></div>
+            <div class="af-fld">
+              <label>역할</label>
+              <select id="sg-role" style="height:42px;border:1.5px solid var(--g1);border-radius:12px;padding:0 10px;font-weight:800">
+                <option value="shipper">고객사</option>
+                <option value="field">현장직원</option>
+              </select>
+            </div>
+          </div>
+          <button onclick="signupV130()" style="width:100%;height:44px;margin-top:14px;border:0;border-radius:14px;background:var(--green);color:#fff;font-weight:900">가입 신청</button>
+        </div>
+      </div>`;
+    document.body.appendChild(box);
+    setTimeout(()=>document.getElementById("sg-id")?.focus(),50);
+  };
+
+  window.signupV127 = window.signupV130 = function(){
+    const id=String(document.getElementById("sg-id")?.value||"").trim().toUpperCase();
+    const pw=String(document.getElementById("sg-pw")?.value||"").trim();
+    const name=String(document.getElementById("sg-name")?.value||"").trim().toUpperCase();
+    const role=document.getElementById("sg-role")?.value||"shipper";
+    if(!id||!pw||!name){toast("아이디, 비밀번호, 이름/회사명을 입력해 주세요.");return;}
+    const accs=getAccs();
+    if(accs.some(a=>String(a.userId||"").toUpperCase()===id)){toast("이미 존재하는 아이디입니다.");return;}
+    accs.push({userId:id,password:pw,name,role,shipperId:role==="shipper"?name:"",status:"승인대기"});
+    saveAccs(accs);
+    document.getElementById("signup-v130-modal")?.remove();
+    toast("가입 신청 완료. 슈퍼바이저 승인 후 사용 가능합니다.");
+  };
+
+  function injectSignupButtonV130(){
+    const login=document.getElementById("scr-login") || document.querySelector(".login-screen") || document.body;
+    if(!login || document.getElementById("signup-v130-btn"))return;
+    const btn=document.createElement("button");
+    btn.id="signup-v130-btn";
+    btn.type="button";
+    btn.textContent="회원가입";
+    btn.onclick=function(e){e.preventDefault();e.stopPropagation();openSignupV130();};
+    btn.style.cssText="width:100%;height:42px;margin-top:10px;border-radius:14px;border:1.5px solid var(--g1);background:#fff;color:var(--g5);font-weight:900";
+    const loginBtn=[...login.querySelectorAll("button")].find(b=>/로그인|LOGIN/i.test(b.textContent||""));
+    if(loginBtn && loginBtn.parentNode) loginBtn.parentNode.appendChild(btn);
+    else login.appendChild(btn);
+  }
+
+  /* 슈퍼바이저 화면: 회원관리 + 전체화물 문제수정만. 대시보드/화물등록/기존 관리자 메뉴 제거 */
+  function cargoText(c){return [c["MAWB"],c["AWB"],c["HAWB"],c["DEST"],c["목적지"],c["고객사명"],c["포워딩명"],c["SHIPPER"],c["ITEM"],c["품목"]].join(" ").toLowerCase();}
+  window.renderSupervisorCargoListV129=function(){
+    const el=document.getElementById("sp-cargo-list"); if(!el)return;
+    const q=String(document.getElementById("sp-cargo-search")?.value||"").toLowerCase().trim();
+    const rows=(allCargos||[]).filter(c=>!q||cargoText(c).includes(q));
+    el.innerHTML=rows.length?rows.slice(0,120).map(c=>{
+      const key=makeCargoKey(c);
+      return `<div class="a-cargo-card" style="margin-bottom:8px">
+        <div class="cc-head">
+          <div style="flex:1;min-width:0">
+            <div><span style="font-size:9px;font-weight:700;color:var(--g3)">MAWB</span> <span class="mawb-display">${E(typeof fmtMAWB==="function"?fmtMAWB(c["MAWB"]||c["AWB"]||""):(c["MAWB"]||c["AWB"]||""))}</span></div>
+            ${c["HAWB"]?`<div style="margin-top:4px;font-size:12px;font-weight:800;color:var(--g4)">HAWB ${E(c["HAWB"])}</div>`:""}
+          </div>
+          ${typeof sBadge==="function"?sBadge(displayStatusByDoc(c)):""}
+        </div>
+        <div class="cc-sub" style="margin-top:6px">${E(c["편명"]||c["편명/일자"]||"—")} · ICN→${E(c["DEST"]||c["목적지"]||"—")} · ${E(c["총수량"]||c["수량(PCS)"]||"—")}pcs</div>
+        <div class="cc-sub" style="margin-top:3px;color:var(--g4)">고객사 ${E(c["고객사명"]||c["포워딩명"]||"—")} · 화주 ${E(c["SHIPPER"]||"—")}</div>
+        ${typeof renderFieldCardSteps==="function"?renderFieldCardSteps(c):""}
+        <div style="display:flex;gap:6px;margin-top:10px">
+          <button onclick="supervisorEditCargoV129('${key}')" style="height:30px;padding:0 12px;border-radius:999px;border:1.5px solid #4338CA;background:#fff;color:#4338CA;font-weight:900;font-size:11px">문제수정</button>
+          <button onclick="supervisorDeleteCargoV129('${key}')" style="height:30px;padding:0 12px;border-radius:999px;border:1.5px solid var(--red);background:#fff;color:var(--red);font-weight:900;font-size:11px">삭제</button>
+        </div>
+      </div>`;
+    }).join(""):`<div class="empty-state">조회 결과가 없습니다.</div>`;
+  };
+
+  window.renderSupervisorV127=function(){
+    const root=document.getElementById("scr-supervisor"); if(!root)return;
+    const accs=getAccs();
+    root.innerHTML=`
+      <div class="admin-top" style="background:linear-gradient(135deg,#312e81,#7c3aed)">
+        <div>
+          <div style="font-size:11px;font-weight:800;opacity:.8">CargoIN Supervisor</div>
+          <div style="font-size:20px;font-weight:900;margin-top:2px">회원 관리 / 문제 수정</div>
+        </div>
+        <button onclick="logout()" style="height:34px;padding:0 12px;border-radius:999px;border:1px solid rgba(255,255,255,.5);background:rgba(255,255,255,.12);color:#fff;font-weight:900">로그아웃</button>
+      </div>
+      <div class="admin-page on" style="padding:14px">
+        <div class="modal-sec">
+          <div class="modal-stitle">회원 관리</div>
+          <div style="font-size:12px;color:var(--g4);font-weight:700;margin-bottom:10px">가입 신청 승인/차단, 비밀번호 초기화, 회원 삭제</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            ${accs.map(a=>`<div class="acc-card" style="display:flex;align-items:center;gap:10px">
+              <div class="acc-avatar ${a.role==="field"?"field":a.role==="shipper"?"shipper":"admin"}">${E((a.name||a.userId||"?").charAt(0))}</div>
+              <div class="acc-info" style="flex:1;min-width:0">
+                <div class="acc-name">${E(a.name||"—")} <span style="font-size:11px;color:var(--g3);font-weight:800">(${E(a.userId||"")})</span></div>
+                <div style="font-size:11px;color:var(--g3);font-weight:700;margin-top:2px">${roleLabel(a.role)} · 상태 ${E(a.status||"활성")} ${a.shipperId?`· 고객사 ${E(a.shipperId)}`:""}</div>
+              </div>
+              <div style="display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end">
+                <button onclick="approveAccountV129('${E(a.userId)}')" style="height:28px;padding:0 9px;border-radius:999px;border:1px solid var(--green);background:#fff;color:var(--green-dark);font-weight:900;font-size:11px">승인</button>
+                <button onclick="blockAccountV129('${E(a.userId)}')" style="height:28px;padding:0 9px;border-radius:999px;border:1px solid var(--amber);background:#fff;color:var(--amber-dark);font-weight:900;font-size:11px">차단</button>
+                <button onclick="resetAccountPwV129('${E(a.userId)}')" style="height:28px;padding:0 9px;border-radius:999px;border:1px solid var(--g2);background:#fff;color:var(--g5);font-weight:900;font-size:11px">PW</button>
+                ${a.role!=="supervisor"?`<button onclick="deleteAccountV129('${E(a.userId)}')" style="height:28px;padding:0 9px;border-radius:999px;border:1px solid var(--red);background:#fff;color:var(--red);font-weight:900;font-size:11px">삭제</button>`:""}
+              </div>
+            </div>`).join("")}
+          </div>
+        </div>
+        <div class="modal-sec" style="margin-top:14px">
+          <div class="modal-stitle">전체 화물 조회 / 문제 수정</div>
+          <input id="sp-cargo-search" oninput="renderSupervisorCargoListV129()" placeholder="MAWB · HAWB · DEST · 고객사 · 화주 · 품목 검색" style="width:100%;height:42px;border:1.5px solid var(--g1);border-radius:12px;padding:0 12px;font-weight:800;margin-bottom:10px"/>
+          <div id="sp-cargo-list"></div>
+        </div>
+      </div>`;
+    renderSupervisorCargoListV129();
+  };
+
+  /* 기존 admin role로 로그인해도 supervisor 화면만 보이게 함 */
+  const oldLogin=window.login;
+  if(typeof oldLogin==="function"){
+    window.login=function(...args){
+      const r=oldLogin.apply(this,args);
+      setTimeout(()=>{
+        if(session && (session.role==="admin" || session.role==="supervisor" || session.userId==="SP")){
+          session.role="supervisor";
+          if(!document.getElementById("scr-supervisor")){
+            const s=document.createElement("div");s.id="scr-supervisor";s.className="screen";document.body.appendChild(s);
+          }
+          showScr("supervisor");
+          renderSupervisorV127();
+        }
+      },80);
+      return r;
+    };
+  }
+
+  setInterval(injectSignupButtonV130,1000);
+  setTimeout(injectSignupButtonV130,0);
+  document.addEventListener("DOMContentLoaded",injectSignupButtonV130);
+})();
+
 </script>
 </body>
 </html>
