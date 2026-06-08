@@ -867,6 +867,7 @@ body{min-height:100vh;max-width:480px;margin:0 auto;background:var(--g0);color:v
 }
 
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
@@ -10511,6 +10512,698 @@ setTimeout(()=>{v115BindInputs();v115PatchFlightDisplay();},0);
   setInterval(injectSignupButtonV130,1000);
   setTimeout(injectSignupButtonV130,0);
   document.addEventListener("DOMContentLoaded",injectSignupButtonV130);
+})();
+
+
+/* v133 FROM v130 - CORE FLOW STABLE TEST PATCH
+   Purpose: 고객사 등록 → 현장 6단계 업데이트 → 고객사 확인
+   Scope: Do not remove customer/field existing UI. Patch only shared-store sync and step aliases.
+*/
+(function(){
+  const STORE_KEY = "cargoin_v2";
+  const EVENT_NAME = "cargoin:data-updated";
+
+  function T(v){ return String(v ?? "").trim(); }
+  function U(v){ return T(v).toUpperCase(); }
+  function mawb(c){ return T(c && (c["MAWB"] || c["AWB"] || "")); }
+  function hawb(c){ return T(c && (c["HAWB"] || "M/SINGLE")) || "M/SINGLE"; }
+  function sameCargo(a,b){ return mawb(a)===mawb(b) && hawb(a)===hawb(b); }
+
+  function loadAll(){
+    try{
+      const arr = JSON.parse(localStorage.getItem(STORE_KEY) || "[]");
+      return Array.isArray(arr) ? arr : [];
+    }catch(e){ return []; }
+  }
+  function saveAll(rows){
+    localStorage.setItem(STORE_KEY, JSON.stringify(rows || []));
+    window.dispatchEvent(new CustomEvent(EVENT_NAME, {detail:{at:Date.now()}}));
+  }
+  window.getCargosLocal = loadAll;
+  window.saveCargosLocal = function(rows){
+    saveAll(rows || []);
+  };
+
+  function currentCustomerKey(){
+    return T(session && (session.shipperId || session.name || session.userId || ""));
+  }
+  function belongsToCustomer(c,key){
+    if(!key) return true;
+    const vals = [c["고객사명"], c["포워딩명"], c["화주ID"], c["SHIPPER"]].map(T);
+    return vals.some(v => v && v === key);
+  }
+
+  function rebuildShipper(){
+    allCargos = loadAll();
+    const key = currentCustomerKey();
+    shipperCargos = (allCargos || []).filter(c => belongsToCustomer(c,key));
+  }
+  function refreshShipper(){
+    try{
+      rebuildShipper();
+      renderSCounts?.();
+      if(typeof filterShipper === "function") filterShipper();
+      else renderSCards?.(typeof sTab !== "undefined" ? sTab : "all");
+      const b=document.getElementById("s-sync-btn")||document.getElementById("s-sync");
+      if(b) b.textContent="동기화됨";
+    }catch(e){ console.log("v133 refreshShipper", e); }
+  }
+  function refreshField(){
+    try{
+      allCargos = loadAll();
+      buildFieldFilterOptions?.();
+      if(typeof filterField === "function") filterField();
+      else renderFieldList?.(allCargos || []);
+      renderClientBar?.();
+      const b=document.getElementById("f-sync-btn")||document.getElementById("f-sync");
+      if(b) b.textContent="동기화됨";
+    }catch(e){ console.log("v133 refreshField", e); }
+  }
+  function refreshCurrent(){
+    if(session?.role === "shipper") refreshShipper();
+    else if(session?.role === "field") refreshField();
+  }
+
+  window.syncShipper = window.syncShipperV133 = function(){
+    refreshShipper();
+    toast?.("고객사 데이터 동기화 완료");
+  };
+  window.syncField = window.syncFieldV133 = function(){
+    refreshField();
+    toast?.("현장 데이터 동기화 완료");
+  };
+
+  function bindSyncButton(id,fn){
+    const el=document.getElementById(id);
+    if(!el || el.dataset.v133Sync==="1") return;
+    el.dataset.v133Sync="1";
+    el.style.pointerEvents="auto";
+    el.style.touchAction="manipulation";
+    el.onclick=function(e){ e.preventDefault(); e.stopPropagation(); fn(); };
+    el.addEventListener("touchend",function(e){ e.preventDefault(); e.stopPropagation(); fn(); },{passive:false});
+  }
+  function bindSyncButtons(){
+    bindSyncButton("s-sync-btn",window.syncShipperV133);
+    bindSyncButton("s-sync",window.syncShipperV133);
+    bindSyncButton("f-sync-btn",window.syncFieldV133);
+    bindSyncButton("f-sync",window.syncFieldV133);
+  }
+
+  function normalizeStep(d){
+    d={...(d||{})};
+
+    if("반입체크" in d || "입고체크" in d || "화물입고확인" in d){
+      const on=d["반입체크"]==="완료" || d["입고체크"]==="완료" || d["화물입고확인"]==="완료";
+      d["반입체크"]=on?"완료":"";
+      d["입고체크"]=on?"완료":"";
+      d["화물입고확인"]=on?"완료":"";
+    }
+    if("화물상태" in d || "상태체크" in d){
+      const st=d["화물상태"] || d["상태체크"] || "";
+      d["화물상태"]=st;
+      d["상태체크"]=st;
+    }
+    if("실측완료" in d || "실측상태" in d || "실측넘기기" in d || "실측상세" in d || "현장실측상세" in d || "measureRows" in d || "sizeRows" in d || "현장수량" in d || "현장중량" in d){
+      const detail=d["실측상세"] || d["현장실측상세"] || d["measureRows"] || d["sizeRows"] || "";
+      const skip=d["실측완료"]==="넘김" || d["실측상태"]==="넘김" || d["실측넘기기"]==="완료";
+      const real=!!(detail || d["현장수량"] || d["현장중량"] || d["실측완료"]==="완료" || d["실측상태"]==="완료");
+      if(skip){
+        d["실측완료"]="넘김";
+        d["실측상태"]="넘김";
+        d["실측넘기기"]="완료";
+        d["실측패스"]="완료";
+      }else if(real){
+        d["실측완료"]="완료";
+        d["실측상태"]="완료";
+        d["실측넘기기"]="";
+        d["실측패스"]="";
+        if(detail){
+          d["실측상세"]=detail;
+          d["현장실측상세"]=detail;
+          d["measureRows"]=detail;
+          d["sizeRows"]=detail;
+        }
+      }else{
+        d["실측완료"]="";
+        d["실측상태"]="";
+        d["실측넘기기"]="";
+        d["실측패스"]="";
+      }
+    }
+    if("사진완료" in d || "사진상태" in d || "사진넘기기" in d || "사진수" in d || "화물사진수" in d || "사진URL" in d || "화물사진" in d){
+      const ph=d["사진URL"] || d["화물사진"] || "";
+      const skip=d["사진완료"]==="넘김" || d["사진상태"]==="넘김" || d["사진넘기기"]==="완료";
+      const real=!!(ph || d["사진수"] || d["화물사진수"] || d["사진완료"]==="완료" || d["사진상태"]==="완료");
+      if(skip){
+        d["사진완료"]="넘김";
+        d["사진상태"]="넘김";
+        d["사진넘기기"]="완료";
+        d["사진패스"]="완료";
+      }else if(real){
+        d["사진완료"]="완료";
+        d["사진상태"]="완료";
+        d["사진넘기기"]="";
+        d["사진패스"]="";
+        if(d["사진수"]) d["화물사진수"]=d["사진수"];
+        if(d["화물사진수"]) d["사진수"]=d["화물사진수"];
+        if(ph){ d["사진URL"]=ph; d["화물사진"]=ph; }
+      }else{
+        d["사진완료"]="";
+        d["사진상태"]="";
+        d["사진넘기기"]="";
+        d["사진패스"]="";
+        d["사진수"]="";
+        d["화물사진수"]="";
+        d["사진URL"]="";
+        d["화물사진"]="";
+      }
+    }
+    if("반입체크완료" in d || "반입완료" in d || "항공사반입완료" in d){
+      const on=d["반입체크완료"]==="완료" || d["반입완료"]==="완료" || d["항공사반입완료"]==="완료";
+      d["반입체크완료"]=on?"완료":"";
+      d["반입완료"]=on?"완료":"";
+      d["항공사반입완료"]=on?"완료":"";
+    }
+    if("서류접수" in d || "서류확인" in d){
+      const on=d["서류접수"]==="완료" || d["서류확인"]==="완료";
+      d["서류접수"]=on?"완료":"";
+      d["서류확인"]=on?"완료":"";
+    }
+    return d;
+  }
+
+  function done(c,label){
+    if(!c) return false;
+    if(label==="입고") return c["화물입고확인"]==="완료" || c["반입체크"]==="완료" || c["입고체크"]==="완료";
+    if(label==="상태") return !!(c["화물상태"] || c["상태체크"]);
+    if(label==="실측") return c["실측완료"]==="완료" || c["실측완료"]==="넘김" || c["실측상태"]==="완료" || c["실측상태"]==="넘김" || c["실측넘기기"]==="완료" || !!(c["실측상세"]||c["현장실측상세"]||c["measureRows"]||c["sizeRows"]||c["현장수량"]||c["현장중량"]);
+    if(label==="사진") return c["사진완료"]==="완료" || c["사진완료"]==="넘김" || c["사진상태"]==="완료" || c["사진상태"]==="넘김" || c["사진넘기기"]==="완료" || !!(c["사진수"]||c["화물사진수"]||c["사진URL"]||c["화물사진"]);
+    if(label==="반입") return c["반입완료"]==="완료" || c["반입체크완료"]==="완료" || c["항공사반입완료"]==="완료";
+    if(label==="서류") return c["서류접수"]==="완료" || c["서류확인"]==="완료";
+    return false;
+  }
+  function allDone(c){ return ["입고","상태","실측","사진","반입","서류"].every(x=>done(c,x)); }
+  window.isFieldCompleteByDoc=function(c){ return allDone(c) || done(c,"서류"); };
+  window.displayStatusByDoc=function(c){
+    if(allDone(c) || done(c,"서류") || c?.["상태"]==="현장완료") return "현장완료";
+    return c?.["상태"] || "입력대기";
+  };
+
+  window.renderFieldCardSteps=function(c){
+    const labels=["입고","상태","실측","사진","반입","서류"];
+    return `<div class="field-card-steps">${labels.map((label,i,arr)=>{
+      const on=done(c,label);
+      const skip=(label==="실측"&&(c["실측완료"]==="넘김"||c["실측상태"]==="넘김"||c["실측넘기기"]==="완료")) || (label==="사진"&&(c["사진완료"]==="넘김"||c["사진상태"]==="넘김"||c["사진넘기기"]==="완료"));
+      const bad=label==="상태" && typeof isAbnormalCargoStatus==="function" && isAbnormalCargoStatus(c["화물상태"]||c["상태체크"]);
+      const mark=on?(skip?"-":(bad?"!":"✓")):(i+1);
+      return `<div class="field-card-step">
+        <div class="field-card-step-inner">
+          <div class="field-card-step-dot${on?(bad?" bad":" done"):""}">${mark}</div>
+          <div class="field-card-step-label${on?(bad?" bad":" done"):""}">${label}</div>
+        </div>
+        ${i<arr.length-1?`<div class="field-card-step-line${on&&!bad?" done":""}"></div>`:""}
+      </div>`;
+    }).join("")}</div>`;
+  };
+  window.renderUnifiedCardSteps=function(c){ return renderFieldCardSteps(c); };
+
+  window.pushStep=async function(stepData){
+    if(!currentCargo) return;
+    const data=normalizeStep(stepData);
+    data.updatedAt=new Date().toLocaleString("ko-KR");
+    const key={MAWB:mawb(currentCargo), HAWB:hawb(currentCargo)};
+    const rows=loadAll();
+    let found=false;
+    rows.forEach(c=>{
+      if(mawb(c)===key.MAWB && hawb(c)===key.HAWB){
+        Object.assign(c,data);
+        if(allDone(c)) c["상태"]="현장완료";
+        currentCargo=c;
+        found=true;
+      }
+    });
+    if(!found){
+      Object.assign(currentCargo,data);
+      if(allDone(currentCargo)) currentCargo["상태"]="현장완료";
+      rows.unshift(currentCargo);
+    }
+    allCargos=rows;
+    saveAll(rows);
+    try{ if(SHEET_URL) await apiPost({action:"updateStep",awb:key.MAWB,mawb:key.MAWB,hawb:key.HAWB,...data}); }catch(e){ console.log("v133 api",e); }
+    refreshCurrent();
+  };
+
+  // preserve customer registration and ensure it writes to shared store
+  const oldRegShip=window.registerShipperCargo;
+  if(typeof oldRegShip==="function"){
+    window.registerShipperCargo=function(){
+      const before=loadAll().length;
+      const r=oldRegShip.apply(this,arguments);
+      allCargos=loadAll();
+      rebuildShipper();
+      if(loadAll().length===before && typeof makeCargoFromForm==="function"){
+        const customer=(typeof currentCustomerName==="function"?currentCustomerName():currentCustomerKey());
+        const c=makeCargoFromForm("s-r-",customer);
+        if(c && c["MAWB"]){
+          const rows=loadAll();
+          rows.unshift(c);
+          allCargos=rows;
+          saveAll(rows);
+          rebuildShipper();
+        }
+      }
+      refreshShipper();
+      return r;
+    };
+  }
+
+  // field action wrappers
+  function setRow(rowId,cbId,on,bad){
+    const cb=document.getElementById(cbId), row=document.getElementById(rowId);
+    if(cb) cb.checked=!!on;
+    if(row){ row.classList.toggle(bad?"checked-bad":"checked",!!on); if(!on)row.classList.remove("checked","checked-bad");}
+  }
+  function upd(n,on){ try{ updateStepCard(n,on?"done":""); }catch(e){} }
+  window.toggleInbound=function(){
+    const cb=document.getElementById("fd-inbound-check");
+    const on=!(cb&&cb.checked);
+    setRow("fd-inbound-row","fd-inbound-check",on,false);
+    const lbl=document.getElementById("fd-inbound-lbl"); if(lbl)lbl.textContent=on?"완료 ✓":"탭하여 확인";
+    stepStatus.inbound=on;
+    pushStep({반입체크:on?"완료":"",입고체크:on?"완료":"",화물입고확인:on?"완료":""});
+    upd(1,on);
+  };
+  // Keep existing toggleCond but ensure it saves aliases after old UI changes
+  const oldCond=window.toggleCond;
+  window.toggleCond=async function(type){
+    if(typeof oldCond==="function") await oldCond(type);
+    const st=typeof getCondStatus==="function"?getCondStatus():"";
+    stepStatus.cond=!!st;
+    await pushStep({화물상태:st,상태체크:st});
+    upd(2,!!st);
+  };
+  window.skipSizeCheck=function(){
+    const cb=document.getElementById("fd-size-skip");
+    const on=!(cb&&cb.checked);
+    setRow("fd-size-skip-row","fd-size-skip",on,false);
+    stepStatus.size=on;
+    pushStep({실측완료:on?"넘김":"",실측상태:on?"넘김":"",실측넘기기:on?"완료":"",실측패스:on?"완료":""});
+    upd(3,on);
+    const b=document.getElementById("fd-size-confirm-btn"); if(b){b.textContent=on?"✓ 실측 넘김 완료":"실측전송";b.className=on?"size-confirm-btn confirmed":"size-confirm-btn";}
+  };
+  const oldSize=window.confirmSize;
+  window.confirmSize=async function(){
+    if(typeof oldSize==="function") await oldSize();
+    await pushStep({실측완료:"완료",실측상태:"완료",실측넘기기:"","실측패스":""});
+    stepStatus.size=true; upd(3,true);
+  };
+  window.skipPhotoCheck=function(){
+    const cb=document.getElementById("fd-photo-skip");
+    const on=!(cb&&cb.checked);
+    setRow("fd-photo-skip-row","fd-photo-skip",on,false);
+    stepStatus.photo=on;
+    pushStep({사진완료:on?"넘김":"",사진상태:on?"넘김":"",사진넘기기:on?"완료":"",사진패스:on?"완료":"",사진수:on?"넘김":"",화물사진수:on?"넘김":""});
+    upd(4,on);
+    const b=document.getElementById("fd-photo-confirm-btn"); if(b){b.textContent=on?"✓ 사진 넘김 완료":"사진전송";b.className=on?"photo-confirm-btn confirmed":"photo-confirm-btn";}
+  };
+  window.confirmPhoto=async function(){
+    const photos=(fieldPhotos||[]).filter(Boolean);
+    if(!photos.length){ toast?.("사진을 최소 1장 찍어주세요. 필요 없으면 화물사진 넘기기를 체크하세요."); return; }
+    const data=JSON.stringify(photos);
+    await pushStep({사진수:photos.length+"장",화물사진수:photos.length+"장",사진완료:"완료",사진상태:"완료",사진넘기기:"",사진패스:"",사진URL:data,화물사진:data});
+    stepStatus.photo=true; upd(4,true);
+    const b=document.getElementById("fd-photo-confirm-btn"); if(b){b.textContent="사진전송 ✓완료";b.className="photo-confirm-btn confirmed";}
+  };
+  window.onAirlineInboundCheck=function(){
+    const cb=document.getElementById("fd-airline-inbound");
+    const on=!(cb&&cb.checked);
+    setRow("fd-airline-row","fd-airline-inbound",on,false);
+    stepStatus.airline=on;
+    pushStep({반입체크완료:on?"완료":"",반입완료:on?"완료":"",항공사반입완료:on?"완료":""});
+    upd(5,on);
+  };
+  window.onDocCheck=function(type){
+    const cbId=type==="doc"?"fd-doc-awb":"fd-doc-dgd", rowId=type==="doc"?"fd-doc-row":"fd-dgd-row";
+    const cb=document.getElementById(cbId);
+    const on=!(cb&&cb.checked);
+    setRow(rowId,cbId,on,false);
+    if(type==="doc"){
+      stepStatus.doc=on;
+      pushStep({서류접수:on?"완료":"",서류확인:on?"완료":"",상태:on?"현장완료":"입력대기"});
+      upd(6,on);
+      setTimeout(checkAllDone,50);
+    }else pushStep({DGD접수:on?"완료":""});
+  };
+
+  window.checkAllDone=function(){
+    if(!currentCargo || !allDone(currentCargo)) return;
+    currentCargo["상태"]="현장완료";
+    const rows=loadAll();
+    rows.forEach(c=>{ if(mawb(c)===mawb(currentCargo)&&hawb(c)===hawb(currentCargo)) c["상태"]="현장완료"; });
+    saveAll(rows);
+    const body=document.getElementById("fd-fi-body"), doneBox=document.getElementById("fd-done");
+    if(body) body.style.display="none";
+    if(doneBox){
+      doneBox.className="done-screen on";
+      const sub=document.getElementById("fd-done-sub");
+      if(sub) sub.textContent=`MAWB: ${typeof fmtMAWB==="function"?fmtMAWB(mawb(currentCargo)):mawb(currentCargo)}\nHAWB: ${hawb(currentCargo)}\n6단계 완료 · 고객사에게 공유됨`;
+    }
+  };
+
+  // Update current screen when local data changed in same tab
+  window.addEventListener(EVENT_NAME, function(){ setTimeout(refreshCurrent,0); });
+  window.addEventListener("storage", function(e){ if(e.key===STORE_KEY) setTimeout(refreshCurrent,0); });
+
+  ["renderSCards","renderSCard","filterShipper","renderFieldList","filterField"].forEach(fn=>{
+    const old=window[fn];
+    if(typeof old==="function"){
+      window[fn]=function(...args){
+        const r=old.apply(this,args);
+        setTimeout(()=>{bindSyncButtons();},0);
+        return r;
+      };
+    }
+  });
+
+  setInterval(bindSyncButtons,1000);
+  setTimeout(()=>{bindSyncButtons();refreshCurrent();},0);
+  document.addEventListener("DOMContentLoaded",()=>{bindSyncButtons();refreshCurrent();});
+})();
+
+
+/* v134 FROM v133 - FIELD ARCHIVE RESTORE RETURNS TO ACTIVE CARGO LIST */
+(function(){
+  function T(v){return String(v??"").trim();}
+  function keyOf(c){
+    try{return typeof makeCargoKey==="function"?makeCargoKey(c):encodeURIComponent([(c["MAWB"]||c["AWB"]||""),c["HAWB"]||""].join("||"));}catch(e){return "";}
+  }
+  function loadRows(){
+    try{return typeof getCargosLocal==="function"?getCargosLocal():(JSON.parse(localStorage.getItem("cargoin_v2")||"[]")||[]);}catch(e){return allCargos||[];}
+  }
+  function saveRows(rows){
+    allCargos=rows||[];
+    try{saveCargosLocal(allCargos);}catch(e){
+      try{localStorage.setItem("cargoin_v2",JSON.stringify(allCargos));}catch(_){}
+    }
+  }
+  function clearArchiveFlags(c){
+    [
+      "보관","보관상태","archiveStatus","보관사유","보관일시",
+      "archived","isArchived","archive","숨김","hidden","hideFromField"
+    ].forEach(k=>{ if(k in c) c[k]=""; });
+    c["복원일시"]=new Date().toLocaleString("ko-KR");
+    c["복원상태"]="복원";
+    c["복원강제"]="Y"; // 완료/날짜경과 자동보관이 즉시 다시 걸리지 않게 함
+  }
+
+  const oldShouldAutoArchiveV134 = typeof shouldAutoArchiveV100==="function" ? shouldAutoArchiveV100 : null;
+  window.shouldAutoArchiveV100=function(c){
+    if(c && (c["복원강제"]==="Y" || c["복원상태"]==="복원")) return false;
+    return oldShouldAutoArchiveV134 ? oldShouldAutoArchiveV134(c) : false;
+  };
+
+  window.isArchivedCargoV100=function(c){
+    if(c && (c["복원강제"]==="Y" || c["복원상태"]==="복원")) return false;
+    return !!(c && (c["보관"]==="Y" || c["보관상태"]==="보관" || c["archiveStatus"]==="archived" || c["archived"]===true || c["isArchived"]===true));
+  };
+  window.isArchivedCargoV104=window.isArchivedCargoV100;
+
+  window.normalizeArchiveFlagsV100=function(){
+    (allCargos||[]).forEach(c=>{
+      if(c && (c["복원강제"]==="Y" || c["복원상태"]==="복원")) return;
+      if(oldShouldAutoArchiveV134 && oldShouldAutoArchiveV134(c)){
+        c["보관"]="Y";
+        c["보관상태"]="보관";
+        c["archiveStatus"]="archived";
+        c["보관사유"]=c["보관사유"]||"완료/날짜경과";
+      }
+    });
+  };
+
+  window.archivedCargosV104=function(){
+    return (allCargos||[]).filter(c=>window.isArchivedCargoV100(c));
+  };
+
+  window.restoreCargoFieldV104=function(key){
+    let rows=loadRows();
+    let found=false;
+    rows.forEach(c=>{
+      const k=keyOf(c);
+      if(k===key || decodeURIComponent(k)===decodeURIComponent(String(key||""))){
+        clearArchiveFlags(c);
+        found=true;
+      }
+    });
+    if(!found){
+      try{toast("복원할 보관 건을 찾지 못했습니다.");}catch(e){}
+      return;
+    }
+    saveRows(rows);
+
+    try{renderFieldArchiveDashboardV104?.();}catch(e){}
+    try{buildFieldFilterOptions?.();}catch(e){}
+    try{
+      // 현재 검색/필터가 있으면 그 기준으로 다시 표시, 없으면 전체 화물목록에 즉시 복귀
+      const hasFilter=["f-search","f-filter-fwd","f-filter-status","f-filter-dest","f-date-from","f-date-to"].some(id=>T(document.getElementById(id)?.value));
+      if(hasFilter && typeof filterField==="function") filterField();
+      else renderFieldList?.(allCargos);
+    }catch(e){}
+    try{renderClientBar?.();}catch(e){}
+    try{toast("복원 완료 — 원래 화물목록에 다시 표시됩니다.");}catch(e){}
+  };
+
+  // 혹시 다른 복원 함수명이 쓰이는 버튼도 동일 동작으로 연결
+  window.restoreCargoFieldV100=window.restoreCargoFieldV104;
+})();
+
+
+/* v137 FROM v134 - SUPABASE STABLE CORE
+   기존 v134 UI/기능 유지 + Supabase 로그인/조회/등록/단계저장 연결
+*/
+(function(){
+  const SB_URL_KEY="cargoin_supabase_url";
+  const SB_KEY_KEY="cargoin_supabase_anon";
+  let sb=null, sbUser=null, sbProfile=null, sbChannel=null;
+
+  function T(v){return String(v??"").trim();}
+  function E(v){try{return esc(v)}catch(e){return String(v??"").replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}}
+  function hasCfg(){return !!(localStorage.getItem(SB_URL_KEY)&&localStorage.getItem(SB_KEY_KEY)&&window.supabase);}
+  function client(){
+    if(sb)return sb;
+    if(!hasCfg())return null;
+    sb=window.supabase.createClient(localStorage.getItem(SB_URL_KEY),localStorage.getItem(SB_KEY_KEY));
+    return sb;
+  }
+  function email(id){id=T(id);return id.includes("@")?id.toLowerCase():id.toLowerCase()+"@cargoin.local";}
+  function roleMap(r){return r==="customer"?"shipper":r;}
+  function cKey(c){return [T(c["MAWB"]||c["AWB"]),T(c["HAWB"]||"M/SINGLE")||"M/SINGLE"].join("||");}
+  function toLegacy(c){
+    return {
+      _sb_id:c.id,id:c.id,company_id:c.company_id,
+      AWB:c.mawb||"",MAWB:c.mawb||"",HAWB:c.hawb||"",
+      SHIPPER:c.shipper||"",
+      ITEM:c.item||"",품목:c.item||"",
+      CONDI:c.condi||"",화물구분:c.condi||"",
+      DEST:c.dest||"",목적지:c.dest||"",
+      편명:c.flight||"","편명/일자":c.flight||"",
+      SKD:c.etd||"",ETD:c.etd||"",출발일시:c.etd||"",
+      ETA:c.eta||"",입고예정시간:c.eta||"",
+      상태:c.status||"입력대기",
+      고객사명:sbProfile?.name||"",포워딩명:sbProfile?.name||"",화주ID:sbProfile?.name||""
+    };
+  }
+  function fromLegacy(c){
+    return {
+      company_id:sbProfile?.company_id,
+      mawb:T(c["MAWB"]||c["AWB"]),
+      hawb:T(c["HAWB"]),
+      shipper:T(c["SHIPPER"]),
+      item:T(c["ITEM"]||c["품목"]),
+      condi:T(c["CONDI"]||c["화물구분"]),
+      dest:T(c["DEST"]||c["목적지"]),
+      flight:T(c["편명"]||c["편명/일자"]),
+      etd:T(c["ETD"]||c["SKD"]||c["출발일시"]),
+      eta:T(c["ETA"]||c["입고예정시간"]),
+      status:T(c["상태"]||"입력대기"),
+      created_by:sbUser?.id||null
+    };
+  }
+  function memoObj(m){
+    try{return typeof m==="string"?JSON.parse(m):(m||{});}catch(e){return {};}
+  }
+
+  window.openSBConfigV137=function(){
+    document.getElementById("sb-config-modal-v137")?.remove();
+    const box=document.createElement("div");
+    box.className="modal on";
+    box.id="sb-config-modal-v137";
+    box.style.zIndex="999999";
+    box.innerHTML=`
+      <div class="modal-inner" style="max-width:520px">
+        <div class="modal-head">
+          <div><div class="modal-title">Supabase 연결 설정</div><div class="modal-route">Project URL / Publishable key</div></div>
+          <button class="modal-x" type="button" onclick="document.getElementById('sb-config-modal-v137').remove()">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="af-grid">
+            <div class="af-fld"><label>Project URL</label><input id="sb-url-v137" value="${E(localStorage.getItem(SB_URL_KEY)||"https://ofkokslwlfdstduhlldd.supabase.co")}"/></div>
+            <div class="af-fld"><label>Publishable key</label><input id="sb-key-v137" value="${E(localStorage.getItem(SB_KEY_KEY)||"")}" placeholder="eyJ..."/></div>
+          </div>
+          <button type="button" onclick="saveSBConfigV137()" style="width:100%;height:44px;margin-top:14px;border:0;border-radius:14px;background:var(--green,#16a34a);color:#fff;font-weight:900">저장</button>
+          <button type="button" onclick="clearSBConfigV137()" style="width:100%;height:40px;margin-top:8px;border:1.5px solid #ddd;border-radius:14px;background:#fff;color:#444;font-weight:900">저장값 초기화</button>
+        </div>
+      </div>`;
+    document.body.appendChild(box);
+  };
+  window.saveSBConfigV137=function(){
+    const url=T(document.getElementById("sb-url-v137")?.value);
+    const key=T(document.getElementById("sb-key-v137")?.value);
+    if(!url||!key){alert("URL과 Publishable key를 입력하세요.");return;}
+    localStorage.setItem(SB_URL_KEY,url);
+    localStorage.setItem(SB_KEY_KEY,key);
+    sb=null;client();
+    document.getElementById("sb-config-modal-v137")?.remove();
+    const btn=document.getElementById("sb-config-btn-v137");
+    if(btn)btn.textContent="Supabase 연결됨 / 설정 변경";
+    try{toast("Supabase 설정 저장 완료");}catch(e){}
+  };
+  window.clearSBConfigV137=function(){
+    localStorage.removeItem(SB_URL_KEY);
+    localStorage.removeItem(SB_KEY_KEY);
+    sb=null;
+    const k=document.getElementById("sb-key-v137");if(k)k.value="";
+    try{toast("Supabase 설정 초기화 완료");}catch(e){}
+  };
+  function injectBtn(){
+    const login=document.querySelector(".login-box")||document.getElementById("scr-login");
+    if(!login||document.getElementById("sb-config-btn-v137"))return;
+    const btn=document.createElement("button");
+    btn.id="sb-config-btn-v137";
+    btn.type="button";
+    btn.textContent=hasCfg()?"Supabase 연결됨 / 설정 변경":"Supabase 연결 설정";
+    btn.style.cssText="width:100%;height:42px;margin-top:10px;border-radius:14px;border:1.5px solid #d1d5db;background:#fff;color:#374151;font-weight:900;cursor:pointer;pointer-events:auto;touch-action:manipulation;position:relative;z-index:9999";
+    btn.onclick=function(e){e.preventDefault();e.stopPropagation();openSBConfigV137();};
+    btn.addEventListener("touchend",function(e){e.preventDefault();e.stopPropagation();openSBConfigV137();},{passive:false});
+    login.appendChild(btn);
+  }
+
+  async function loadProfile(){
+    const {data,error}=await client().from("profiles").select("*").eq("id",sbUser.id).single();
+    if(error){console.log(error);try{toast("프로필 조회 실패: "+error.message);}catch(e){};return null;}
+    sbProfile=data;return data;
+  }
+  async function loadCargos(){
+    const {data,error}=await client().from("cargos").select("*").order("created_at",{ascending:false});
+    if(error){console.log(error);try{toast("화물 조회 실패: "+error.message);}catch(e){};return [];}
+    let rows=(data||[]).map(toLegacy);
+    const ids=rows.map(r=>r._sb_id).filter(Boolean);
+    if(ids.length){
+      const {data:ups,error:ue}=await client().from("field_updates").select("*").in("cargo_id",ids).order("updated_at",{ascending:true});
+      if(!ue && Array.isArray(ups)){
+        const by={};rows.forEach(r=>by[r._sb_id]=r);
+        ups.forEach(u=>{
+          if(!by[u.cargo_id])return;
+          Object.assign(by[u.cargo_id],memoObj(u.memo));
+          if(u.step_status)by[u.cargo_id]["상태"]=u.step_status;
+          if(u.photos&&!by[u.cargo_id]["사진URL"])by[u.cargo_id]["사진URL"]=typeof u.photos==="string"?u.photos:JSON.stringify(u.photos);
+        });
+      }else if(ue)console.log("field_updates load error",ue);
+    }
+    allCargos=rows;
+    if(session?.role==="shipper")shipperCargos=rows;
+    try{saveCargosLocal(rows);}catch(e){}
+    return rows;
+  }
+  async function refresh(){
+    await loadCargos();
+    try{
+      if(session?.role==="shipper"){renderSCounts?.();filterShipper?.();}
+      else if(session?.role==="field"){buildFieldFilterOptions?.();filterField?.();renderClientBar?.();}
+      else if(session?.role==="supervisor"){renderSupervisorV127?.();}
+    }catch(e){console.log("refresh error",e);}
+  }
+  function realtime(){
+    const c=client();
+    if(!c||!sbProfile)return;
+    if(sbChannel){try{c.removeChannel(sbChannel)}catch(e){}}
+    sbChannel=c.channel("cargoin-v137")
+      .on("postgres_changes",{event:"*",schema:"public",table:"cargos"},()=>refresh())
+      .on("postgres_changes",{event:"*",schema:"public",table:"field_updates"},()=>refresh())
+      .subscribe();
+  }
+
+  const oldDoLogin=window.doLogin;
+  window.doLogin=async function(){
+    if(!hasCfg())return oldDoLogin?oldDoLogin():undefined;
+    const id=T(document.getElementById("l-email")?.value);
+    const pw=T(document.getElementById("l-pw")?.value);
+    const {data,error}=await client().auth.signInWithPassword({email:email(id),password:pw});
+    if(error){const er=document.getElementById("l-err");if(er)er.textContent="로그인 실패: "+error.message;return;}
+    sbUser=data.user;
+    const p=await loadProfile();
+    if(!p)return;
+    session={userId:id.toUpperCase(),email:data.user.email,name:p.name||id.toUpperCase(),role:roleMap(p.role),shipperId:p.name||id.toUpperCase(),company_id:p.company_id};
+    localStorage.setItem("cargoin_session",JSON.stringify(session));
+    await loadCargos();realtime();
+    if(session.role==="shipper"){showScr("shipper");renderSCounts?.();filterShipper?.();}
+    else if(session.role==="field"){showScr("field");buildFieldFilterOptions?.();renderFieldList?.(allCargos);renderClientBar?.();}
+    else{showScr("supervisor");renderSupervisorV127?.();}
+  };
+  const oldLogout=window.logout;
+  window.logout=function(){try{client()?.auth.signOut();}catch(e){} sbUser=null;sbProfile=null; return oldLogout?oldLogout():undefined;};
+
+  const oldReg=window.registerShipperCargo;
+  window.registerShipperCargo=async function(){
+    if(!hasCfg()||!sbProfile)return oldReg?oldReg():undefined;
+    const customer=typeof currentCustomerName==="function"?currentCustomerName():(session?.name||"");
+    const c=makeCargoFromForm("s-r-",customer);
+    if(typeof validateCargoRequired==="function"&&!validateCargoRequired(c)){toast("MAWB, SHIPPER, 항공사, DEST는 필수입니다.");return;}
+    const {error}=await client().from("cargos").insert(fromLegacy(c));
+    if(error){console.log(error);toast("화물 등록 실패: "+error.message);return;}
+    try{sRegHawbs=[];renderSRegHawbs?.();}catch(e){}
+    try{["s-r-consol","s-r-shipper","s-r-airline","s-r-dest","s-r-pcs","s-r-gw","s-r-item","s-r-condi","s-r-mawb","s-r-flight","s-r-skd","s-r-eta"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});}catch(e){}
+    await refresh();toast("화물 등록 완료");
+  };
+
+  async function findId(c){
+    if(c?._sb_id)return c._sb_id;
+    const key=cKey(c);
+    const rows=await loadCargos();
+    const f=rows.find(r=>cKey(r)===key);
+    return f?._sb_id||null;
+  }
+  const oldPush=window.pushStep;
+  window.pushStep=async function(stepData){
+    let legacyResult;
+    try{if(typeof oldPush==="function")legacyResult=await oldPush(stepData);}catch(e){console.log("legacy push error",e);}
+    if(!hasCfg()||!sbProfile||!currentCargo)return legacyResult;
+    const id=await findId(currentCargo);
+    if(!id){toast("Supabase 화물 ID를 찾지 못했습니다.");return legacyResult;}
+    const data={...(stepData||{})};
+    const complete=data["서류접수"]==="완료"||data["서류확인"]==="완료"||data["상태"]==="현장완료";
+    const status=complete?"현장완료":(data["상태"]||currentCargo["상태"]||"입력대기");
+    const {error:ie}=await client().from("field_updates").insert({cargo_id:id,step_no:0,step_status:status,memo:JSON.stringify(data),photos:data["사진URL"]||data["화물사진"]||null,updated_by:sbUser?.id||null});
+    if(ie)console.log("field update insert error",ie);
+    const {error:ue}=await client().from("cargos").update({status}).eq("id",id);
+    if(ue){console.log(ue);toast("현장 업데이트 저장 실패: "+ue.message);return legacyResult;}
+    await refresh();
+    return legacyResult;
+  };
+
+  window.syncShipper=window.syncShipperV137=async function(){if(hasCfg()&&sbProfile){await refresh();toast("Supabase 동기화 완료");}};
+  window.syncField=window.syncFieldV137=async function(){if(hasCfg()&&sbProfile){await refresh();toast("Supabase 동기화 완료");}};
+  function bindSync(){
+    [["s-sync-btn",window.syncShipperV137],["s-sync",window.syncShipperV137],["f-sync-btn",window.syncFieldV137],["f-sync",window.syncFieldV137]].forEach(([id,fn])=>{
+      const el=document.getElementById(id); if(!el)return;
+      el.style.pointerEvents="auto"; el.style.touchAction="manipulation";
+      el.onclick=function(e){e.preventDefault();e.stopPropagation();fn();return false;};
+      if(el.dataset.v137Touch!=="1"){el.dataset.v137Touch="1";el.addEventListener("touchend",function(e){e.preventDefault();e.stopPropagation();fn();},{passive:false});}
+    });
+  }
+
+  setInterval(()=>{injectBtn();bindSync();},1000);
+  setTimeout(()=>{injectBtn();bindSync();},0);
+  document.addEventListener("DOMContentLoaded",()=>{injectBtn();bindSync();});
 })();
 
 </script>
